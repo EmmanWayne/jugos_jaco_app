@@ -35,15 +35,26 @@ android {
 }
 
 dependencies {
+    implementation(libs.play.services.location) // Usa la referencia desde TOML
 
-    implementation(libs.appcompat)
+    implementation(libs.fragment.ktx)     // Para FragmentManager y ciclo de vida
+    implementation(libs.circleimageview)
+    // Agregar Glide
+    implementation(libs.glide)
+    // Agregar Glide Compiler
+    annotationProcessor(libs.glideCompiler)
+    implementation(libs.volley)
+     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.constraintlayout)
     implementation(libs.lifecycle.livedata.ktx)
     implementation(libs.lifecycle.viewmodel.ktx)
     implementation(libs.navigation.fragment)
     implementation(libs.navigation.ui)
+    implementation(libs.activity)
+    implementation(libs.recyclerview)
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
+    implementation("com.github.chrisbanes:PhotoView:2.3.0")
 }

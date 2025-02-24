@@ -3,23 +3,78 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/mobile_navigation"
-    app:startDestination="@+id/nav_home">
+    app:startDestination="@+id/nav_ventas">
 
+    <!-- HomeFragment -->
     <fragment
-        android:id="@+id/nav_home"
+        android:id="@+id/nav_ventas"
         android:name="com.jugos_jaco_app.ui.home.HomeFragment"
         android:label="@string/menu_home"
-        tools:layout="@layout/fragment_home" />
+        tools:layout="@layout/fragment_home">
 
+        <!-- Acción para navegar a NuevoClienteFragment -->
+        <action
+            android:id="@+id/action_home_to_nuevoClienteFragment"
+            app:destination="@id/nuevoClienteFragment" />
+    </fragment>
+
+    <!-- GalleryFragment -->
     <fragment
-        android:id="@+id/nav_gallery"
+        android:id="@+id/nav_clientes"
         android:name="com.jugos_jaco_app.ui.gallery.GalleryFragment"
         android:label="@string/menu_gallery"
-        tools:layout="@layout/fragment_gallery" />
+        tools:layout="@layout/fragment_gallery">
 
+        <!-- Acción para navegar a NuevoClienteFragment -->
+        <action
+            android:id="@+id/action_gallery_to_nuevoClienteFragment"
+            app:destination="@id/nuevoClienteFragment" />
+    </fragment>
+
+    <!-- SlideshowFragment -->
     <fragment
         android:id="@+id/nav_slideshow"
         android:name="com.jugos_jaco_app.ui.slideshow.SlideshowFragment"
         android:label="@string/menu_slideshow"
         tools:layout="@layout/fragment_slideshow" />
+
+    <!-- NuevoClienteFragment -->
+    <fragment
+        android:id="@+id/nuevoClienteFragment"
+        android:name="com.jugos_jaco_app.ui.clients.NewClientFragment"
+        android:label="Nuevo Cliente"
+        tools:layout="@layout/fragment_new_client" />
+
+    <fragment
+        android:id="@+id/clientDetailsFragment"
+        android:name="com.jugos_jaco_app.ui.clients.ClientDetailsFragment"
+        android:label="Detalles del Cliente"
+        tools:layout="@layout/fragment_client_details">
+
+        <argument
+            android:name="firstName"
+            app:argType="string" />
+        <argument
+            android:name="lastName"
+            app:argType="string" />
+        <argument
+            android:name="phoneNumber"
+            app:argType="string" />
+        <argument
+            android:name="adress"
+            app:argType="string" />
+        <argument
+            android:name="latitude"
+            app:argType="string"
+          />
+        <argument
+            android:name="longitude"
+            app:argType="string"
+              />
+
+        <action
+            android:id="@+id/action_gallery_to_clientDetailsFragment"
+            app:destination="@id/clientDetailsFragment" />
+    </fragment>
+
 </navigation>

@@ -1,0 +1,11 @@
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Fondo de color primario -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/primary" />
+            <corners android:radius="4dp" /> <!-- Bordes redondeados -->
+        </shape>
+    </item>
+    <!-- Ícono de persona -->
+    <item android:drawable="@drawable/ic_person" android:gravity="center" />
+</layer-list>

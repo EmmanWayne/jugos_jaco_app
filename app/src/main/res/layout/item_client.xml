@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:card_view="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content">
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cardView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        card_view:cardBackgroundColor="#FFFF"
+        android:foreground="?android:attr/selectableItemBackground"
+        card_view:cardCornerRadius="5dp"
+        card_view:cardUseCompatPadding="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <!-- Imagen del cliente -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1.1"
+                android:orientation="vertical">
+
+                <de.hdodenhof.circleimageview.CircleImageView
+                    android:id="@+id/imageitem"
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
+                    android:src="@drawable/cliente_icon"
+                    android:layout_gravity="center"
+                    android:layout_marginVertical="5dp"/>
+            </LinearLayout>
+
+            <!-- Detalles del cliente (Nombre, Teléfono) -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:layout_weight="3.5"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tvFullName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:layout_marginTop="10dp"
+                    android:text="Nombre"
+                    android:layout_marginLeft="3dp"
+                    android:textColor="@android:color/black"
+                    android:textStyle="bold"
+                    android:textSize="13sp" />
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <TextView
+                        android:id="@+id/tvPhoneNumber"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_vertical"
+                        android:layout_marginLeft="3dp"
+                        android:layout_marginTop="13dp"
+                        android:text="Teléfono:"
+                        android:textColor="#757575"
+                        android:textSize="15sp" />
+
+                </RelativeLayout>
+
+            </LinearLayout>
+
+            <!-- Ícono de coordenadas en la parte derecha -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginTop="30dp"
+                android:layout_marginEnd="10dp"
+                card_view:cardElevation="5dp"
+                card_view:cardCornerRadius="10dp"
+                card_view:cardBackgroundColor="@android:color/white">
+
+                <ImageView
+                    android:id="@+id/ivCoordinatesIcon"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:padding="10dp"
+                    android:src="@drawable/ic_no_coordinates"
+                    android:background="?android:attr/selectableItemBackground"/>
+            </androidx.cardview.widget.CardView>
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginTop="30dp"
+                android:layout_marginEnd="10dp"
+                card_view:cardElevation="5dp"
+                card_view:cardCornerRadius="10dp"
+                card_view:cardBackgroundColor="@android:color/white">
+
+                <ImageView
+                    android:id="@+id/ivPhoneIcon"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:padding="10dp"
+                    android:src="@drawable/ic_phone"
+                    android:background="?android:attr/selectableItemBackground"/>
+            </androidx.cardview.widget.CardView>
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginTop="30dp"
+                android:layout_marginEnd="10dp"
+                card_view:cardElevation="5dp"
+                card_view:cardCornerRadius="10dp"
+                card_view:cardBackgroundColor="@android:color/white">
+
+                <ImageView
+                    android:id="@+id/ivVentaIcon"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:padding="10dp"
+                    android:src="@drawable/ic_sales"
+                    android:background="?android:attr/selectableItemBackground"/>
+            </androidx.cardview.widget.CardView>
+            <!-- Ícono de teléfono a la derecha -->
+
+        </LinearLayout>
+
+    </androidx.cardview.widget.CardView>
+
+</RelativeLayout>

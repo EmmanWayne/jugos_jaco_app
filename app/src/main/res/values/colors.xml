@@ -1,10 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="purple_200">#FFBB86FC</color>
-    <color name="purple_500">#FF6200EE</color>
-    <color name="purple_700">#FF3700B3</color>
+    <color name="purple_200">#E04C3C</color>
+    <color name="purple_500">#E04C3C</color>
+    <color name="purple_700">#E04C3C</color>
     <color name="teal_200">#FF03DAC5</color>
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
+    <color name="secondary">#6AA956</color> <!-- Verde de la empresa -->
+    <color name="tamarind_brown">#7F4B3A</color> <!-- Café Tamarindo -->
+    <color name="lighter_red">#E04C3C</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="primary">#C02A27</color> <!-- Rojo de la empresa -->
+    <color name="primary_dark">#A92321</color> <!-- Rojo oscuro -->
+
 </resources>
