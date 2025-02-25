@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/mobile_navigation"
-    app:startDestination="@+id/nav_ventas">
+    app:startDestination="@+id/nav_clientes">
 
     <!-- HomeFragment -->
     <fragment
@@ -21,8 +21,8 @@
     <!-- GalleryFragment -->
     <fragment
         android:id="@+id/nav_clientes"
-        android:name="com.jugos_jaco_app.ui.gallery.GalleryFragment"
-        android:label="@string/menu_gallery"
+        android:name="com.jugos_jaco_app.ui.fragments_client.ClientsFragment"
+        android:label="@string/clients"
         tools:layout="@layout/fragment_gallery">
 
         <!-- Acción para navegar a NuevoClienteFragment -->
@@ -76,5 +76,6 @@
             android:id="@+id/action_gallery_to_clientDetailsFragment"
             app:destination="@id/clientDetailsFragment" />
     </fragment>
+
 
 </navigation>

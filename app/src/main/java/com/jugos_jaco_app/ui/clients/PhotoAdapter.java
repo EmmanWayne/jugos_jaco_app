@@ -10,17 +10,34 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.jugos_jaco_app.R;
+import java.util.ArrayList;
 import java.util.List;
 
 public class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.PhotoViewHolder> {
 
-    private List<String> photoPaths;
-    private OnPhotoListener onPhotoListener;
+    private List<String> photos;
     private Context context;
+    private OnPhotoListener onPhotoListener;
 
-    public PhotoAdapter(List<String> photoPaths, OnPhotoListener onPhotoListener) {
-        this.photoPaths = photoPaths;
+    public PhotoAdapter(List<String> photos, Context context, OnPhotoListener onPhotoListener) {
+        this.photos = new ArrayList<>(photos); // Crear una copia de la lista
+        this.context = context;
         this.onPhotoListener = onPhotoListener;
+    }
+
+    // Método para actualizar la lista de fotos de forma segura
+    public void updatePhotos(List<String> newPhotos) {
+        this.photos = new ArrayList<>(newPhotos);
+        notifyDataSetChanged();
+    }
+
+    // Método para eliminar una foto de forma segura
+    public void removePhoto(int position) {
+        if (position >= 0 && position < photos.size()) {
+            photos.remove(position);
+            notifyItemRemoved(position);
+            notifyItemRangeChanged(position, photos.size());
+        }
     }
 
     @NonNull
@@ -33,7 +50,7 @@ public class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.PhotoViewHol
 
     @Override
     public void onBindViewHolder(@NonNull PhotoViewHolder holder, int position) {
-        String photoPath = photoPaths.get(position);
+        String photoPath = photos.get(position);
         Uri imageUri = Uri.parse(photoPath);
 
         // Cargar la imagen usando Glide
@@ -50,14 +67,16 @@ public class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.PhotoViewHol
 
         // Configurar el clic largo para eliminar la imagen
         holder.imageView.setOnLongClickListener(v -> {
-            onPhotoListener.onPhotoClick(position);
+            if (position < photos.size()) { // Verificar que la posición sea válida
+                onPhotoListener.onPhotoClick(position);
+            }
             return true;
         });
     }
 
     @Override
     public int getItemCount() {
-        return photoPaths.size();
+        return photos.size();
     }
 
     public static class PhotoViewHolder extends RecyclerView.ViewHolder {

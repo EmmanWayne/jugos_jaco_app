@@ -9,245 +9,245 @@
         android:layout_margin="8dp"
         app:cardCornerRadius="12dp"
         app:cardElevation="20dp">
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp">
-
-        <!-- Mensaje de advertencia -->
-        <TextView
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Por favor, llene los campos con la información correcta y ordenada."
-            android:background="@color/lighter_red"
-            android:textColor="@color/white"
-            android:padding="12dp"
-            android:textSize="14sp"
-            android:textAlignment="center"
-            android:gravity="center"
-            android:layout_marginBottom="16dp"
-            android:drawableStart="@drawable/ic_warning"
-            android:drawablePadding="8dp"
-            android:drawableTint="@color/white" />
+            android:orientation="vertical"
+            android:padding="16dp">
 
-
-        <!-- First Name -->
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilFirstName"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:startIconDrawable="@drawable/ic_person"
-            app:startIconTint="@color/primary"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etFirstName"
+            <!-- Mensaje de advertencia -->
+            <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Nombre" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilLastName"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:startIconDrawable="@drawable/ic_person"
-            app:startIconTint="@color/primary"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etLastName"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Apellido" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilPhoneNumber"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:startIconDrawable="@drawable/ic_phone"
-            app:startIconTint="@color/primary"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etPhoneNumber"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Teléfono"
-                android:inputType="phone" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <!-- Address -->
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilAddress"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:startIconDrawable="@drawable/ic_has_coordinates"
-        app:startIconTint="@color/primary"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etAddress"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Dirección" />
-    </com.google.android.material.textfield.TextInputLayout>
-
-        <!-- Phone Number -->
-
-
-        <!-- Departament (Spinner) -->
-        <LinearLayout
-            android:background="@drawable/spinner_background"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginTop="5dp"
-            android:backgroundTint="@color/black"
-            android:layout_marginBottom="5dp"
-           >
-
-        <!-- Ícono -->
-        <ImageView
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@drawable/ic_has_coordinates"
-            android:layout_marginEnd="8dp"
-            app:tint="@color/primary" />
-
-        <!-- Spinner -->
-        <Spinner
-            android:id="@+id/spinnerDepartament"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-
-            android:background="@drawable/spinner_background"
-         android:padding="12dp"
-        android:spinnerMode="dropdown" />
-
-
-    </LinearLayout>
-
-        <!-- Township (Spinner) -->
-        <LinearLayout
-            android:id="@+id/linearLayoutMunicipio"
-            android:background="@drawable/spinner_background"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginBottom="5dp"
-           >
-
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/ic_has_coordinates"
-                android:layout_marginEnd="8dp"
-                app:tint="@color/primary" />
-
-            <Spinner
-                android:id="@+id/spinnerTownship"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:background="@drawable/spinner_background"
-            android:padding="10dp"
-            android:spinnerMode="dropdown" />
-        </LinearLayout>
-
-        <!-- Type Price ID (Spinner) -->
-        <LinearLayout
-            android:background="@drawable/spinner_background"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-             >
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/ic_price"
-                android:layout_marginEnd="8dp"
-                app:tint="@color/primary" />
-
-            <Spinner
-                android:id="@+id/spinnerTypePrice"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:background="@drawable/spinner_background"
+                android:text="Por favor, llene los campos con la información correcta y ordenada."
+                android:background="@color/lighter_red"
+                android:textColor="@color/white"
                 android:padding="12dp"
-                android:spinnerMode="dropdown" />
+                android:textSize="14sp"
+                android:textAlignment="center"
+                android:gravity="center"
+                android:layout_marginBottom="16dp"
+                android:drawableStart="@drawable/ic_warning"
+                android:drawablePadding="8dp"
+                android:drawableTint="@color/white" />
+
+
+            <!-- First Name -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilFirstName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:startIconDrawable="@drawable/ic_person"
+                app:startIconTint="@color/primary"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etFirstName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Nombre" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilLastName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:startIconDrawable="@drawable/ic_person"
+                app:startIconTint="@color/primary"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etLastName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Apellido" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilPhoneNumber"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:startIconDrawable="@drawable/ic_phone"
+                app:startIconTint="@color/primary"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etPhoneNumber"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Teléfono"
+                    android:inputType="phone" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Address -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilAddress"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:startIconDrawable="@drawable/ic_has_coordinates"
+                app:startIconTint="@color/primary"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etAddress"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Dirección" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Phone Number -->
+
+
+            <!-- Departament (Spinner) -->
+            <LinearLayout
+                android:background="@drawable/spinner_background"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="5dp"
+                android:backgroundTint="@color/black"
+                android:layout_marginBottom="5dp"
+                >
+
+                <!-- Ícono -->
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_has_coordinates"
+                    android:layout_marginEnd="8dp"
+                    app:tint="@color/primary" />
+
+                <!-- Spinner -->
+                <Spinner
+                    android:id="@+id/spinnerDepartament"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+
+                    android:background="@drawable/spinner_background"
+                    android:padding="12dp"
+                    android:spinnerMode="dropdown" />
+
+
+            </LinearLayout>
+
+            <!-- Township (Spinner) -->
+            <LinearLayout
+                android:id="@+id/linearLayoutMunicipio"
+                android:background="@drawable/spinner_background"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="5dp"
+                >
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_has_coordinates"
+                    android:layout_marginEnd="8dp"
+                    app:tint="@color/primary" />
+
+                <Spinner
+                    android:id="@+id/spinnerTownship"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@drawable/spinner_background"
+                    android:padding="10dp"
+                    android:spinnerMode="dropdown" />
+            </LinearLayout>
+
+            <!-- Type Price ID (Spinner) -->
+            <LinearLayout
+                android:background="@drawable/spinner_background"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                >
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_price"
+                    android:layout_marginEnd="8dp"
+                    app:tint="@color/primary" />
+
+                <Spinner
+                    android:id="@+id/spinnerTypePrice"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@drawable/spinner_background"
+                    android:padding="12dp"
+                    android:spinnerMode="dropdown" />
+            </LinearLayout>
+
+            <!-- Latitud -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:startIconDrawable="@drawable/ic_gps"
+                app:startIconTint="@color/primary"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etLatitude"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Latitud"
+                    android:inputType="numberDecimal"
+                    android:focusable="false"
+                    android:clickable="false" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Longitud -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:startIconDrawable="@drawable/ic_gps"
+                app:startIconTint="@color/primary"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etLongitude"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Longitud"
+                    android:inputType="numberDecimal"
+                    android:focusable="false"
+                    android:clickable="false" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Botón para capturar coordenadas -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnCaptureCoordinates"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Capturar Coordenadas"
+                android:layout_marginTop="16dp"
+                app:icon="@drawable/ic_gps"
+                app:iconGravity="start"
+                app:backgroundTint="@color/primary"
+                android:textColor="@color/white"
+                style="@style/Widget.MaterialComponents.Button" />
+
+            <!-- Botón para enviar -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSubmit"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Guardar"
+                android:layout_marginTop="16dp"
+                app:icon="@drawable/ic_save"
+                app:iconGravity="start"
+                app:backgroundTint="@color/primary"
+                android:textColor="@color/white"
+                style="@style/Widget.MaterialComponents.Button" />
+
         </LinearLayout>
-
-        <!-- Latitud -->
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:startIconDrawable="@drawable/ic_gps"
-            app:startIconTint="@color/primary"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etLatitude"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Latitud"
-                android:inputType="numberDecimal"
-                android:focusable="false"
-                android:clickable="false" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <!-- Longitud -->
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:startIconDrawable="@drawable/ic_gps"
-            app:startIconTint="@color/primary"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etLongitude"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Longitud"
-                android:inputType="numberDecimal"
-                android:focusable="false"
-                android:clickable="false" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <!-- Botón para capturar coordenadas -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnCaptureCoordinates"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Capturar Coordenadas"
-            android:layout_marginTop="16dp"
-            app:icon="@drawable/ic_gps"
-            app:iconGravity="start"
-            app:backgroundTint="@color/primary"
-            android:textColor="@color/white"
-            style="@style/Widget.MaterialComponents.Button" />
-
-        <!-- Botón para enviar -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnSubmit"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Guardar"
-            android:layout_marginTop="16dp"
-            app:icon="@drawable/ic_save"
-            app:iconGravity="start"
-            app:backgroundTint="@color/primary"
-            android:textColor="@color/white"
-            style="@style/Widget.MaterialComponents.Button" />
-
-    </LinearLayout>
     </androidx.cardview.widget.CardView>
 
 </ScrollView>

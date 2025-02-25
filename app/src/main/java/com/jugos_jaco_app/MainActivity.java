@@ -18,7 +18,7 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.jugos_jaco_app.databinding.ActivityMainBinding;
-import com.jugos_jaco_app.ui.gallery.GalleryFragment;
+import com.jugos_jaco_app.ui.fragments_client.ClientsFragment;
 
 
 import android.Manifest;
@@ -29,12 +29,9 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.LocationManager;
 import android.os.Build;
-import android.os.Bundle;
 import android.provider.Settings;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
 public class MainActivity extends AppCompatActivity {
@@ -42,6 +39,7 @@ public class MainActivity extends AppCompatActivity {
     private AppBarConfiguration mAppBarConfiguration;
     private ActivityMainBinding binding;
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1001;
+    private static final int REQUEST_ENABLE_GPS = 123;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,7 +55,7 @@ public class MainActivity extends AppCompatActivity {
         // Passing each menu ID as a set of Ids because each
         // menu should be considered as top level destinations.
         mAppBarConfiguration = new AppBarConfiguration.Builder(
-                R.id.nav_ventas, R.id.nav_clientes, R.id.nav_slideshow)
+                R.id.nav_clientes, R.id.nav_ventas, R.id.nav_slideshow)
                 .setOpenableLayout(drawer)
                 .build();
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
@@ -165,8 +163,8 @@ public class MainActivity extends AppCompatActivity {
 
         if (currentFragment != null && currentFragment.getChildFragmentManager().getFragments().size() > 0) {
             Fragment activeFragment = currentFragment.getChildFragmentManager().getFragments().get(0);
-            if (activeFragment instanceof GalleryFragment) {
-                ((GalleryFragment) activeFragment).filterClients(query);
+            if (activeFragment instanceof ClientsFragment) {
+                ((ClientsFragment) activeFragment).filterClients(query);
             }
         }
     }
@@ -177,5 +175,19 @@ public class MainActivity extends AppCompatActivity {
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
         return NavigationUI.navigateUp(navController, mAppBarConfiguration)
                 || super.onSupportNavigateUp();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_ENABLE_GPS) {
+            LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+            if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                // El GPS fue activado, intentar abrir el mapa nuevamente
+                // Puedes usar un callback o EventBus para notificar al adaptador
+            } else {
+                Toast.makeText(this, "Se requiere GPS para ver la ubicación", Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 }

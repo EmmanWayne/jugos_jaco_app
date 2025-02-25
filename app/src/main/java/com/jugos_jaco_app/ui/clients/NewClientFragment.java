@@ -12,6 +12,23 @@ import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.Manifest;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentSender;
+import android.content.pm.PackageManager;
+import android.location.LocationManager;
+import android.provider.Settings;
+import androidx.core.content.ContextCompat;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.LocationSettingsRequest;
+import com.google.android.gms.location.LocationSettingsResponse;
+import com.google.android.gms.location.Priority;
+import com.google.android.gms.tasks.Task;
+import android.app.AlertDialog;
+import androidx.annotation.NonNull;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
@@ -23,6 +40,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import android.net.Uri;
 
 public class NewClientFragment extends Fragment {
 
@@ -33,6 +51,11 @@ public class NewClientFragment extends Fragment {
 
     private Map<String, List<String>> municipiosPorDepartamento = new HashMap<>();
     private List<String> tiposPrecio = new ArrayList<>();
+
+    private FusedLocationProviderClient fusedLocationClient;
+    private static final int REQUEST_ENABLE_GPS = 123;
+    private static final int LOCATION_PERMISSION_REQUEST_CODE = 124;
+    private MaterialButton btnCaptureCoordinates;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -49,6 +72,7 @@ public class NewClientFragment extends Fragment {
         linearLayoutMunicipio = view.findViewById(R.id.linearLayoutMunicipio); // Inicializar LinearLayout
 
         MaterialButton btnSubmit = view.findViewById(R.id.btnSubmit);
+        btnCaptureCoordinates = view.findViewById(R.id.btnCaptureCoordinates);
 
         // Deshabilitar interacción en latitud y longitud
         etLatitude.setFocusable(false);
@@ -61,6 +85,10 @@ public class NewClientFragment extends Fragment {
         loadTiposPrecio();
         setupDepartamentosSpinner();
         setupTiposPrecioSpinner();
+
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity());
+
+        btnCaptureCoordinates.setOnClickListener(v -> checkLocationAndGetCoordinates());
 
         // Configurar el botón de enviar
         btnSubmit.setOnClickListener(v -> {
@@ -161,7 +189,9 @@ public class NewClientFragment extends Fragment {
             if (isValid) {
                 sendDataToServer(firstName, lastName, address, phoneNumber, departament, township, typePrice, latitude, longitude);
             }
-        });        return view;
+        });
+
+        return view;
     }
 
     private void loadDepartamentos() {
@@ -301,5 +331,134 @@ public class NewClientFragment extends Fragment {
             }
         });
         */
+    }
+
+    private void checkLocationAndGetCoordinates() {
+        LocationManager locationManager = (LocationManager) requireContext().getSystemService(Context.LOCATION_SERVICE);
+        
+        if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+            new AlertDialog.Builder(requireContext())
+                .setTitle("GPS Desactivado")
+                .setMessage("Para obtener las coordenadas necesita activar el GPS. ¿Desea activarlo?")
+                .setPositiveButton("Activar GPS", (dialog, which) -> {
+                    Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                    startActivityForResult(intent, REQUEST_ENABLE_GPS);
+                })
+                .setNegativeButton("Cancelar", null)
+                .create()
+                .show();
+        } else {
+            checkLocationPermission();
+        }
+    }
+
+    private void checkLocationPermission() {
+        if (ContextCompat.checkSelfPermission(requireContext(), 
+                Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(
+                new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 
+                LOCATION_PERMISSION_REQUEST_CODE
+            );
+        } else {
+            getLocation();
+        }
+    }
+
+    private void getLocation() {
+        if (ContextCompat.checkSelfPermission(requireContext(), 
+                Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            
+            btnCaptureCoordinates.setEnabled(false);
+            btnCaptureCoordinates.setText("Obteniendo ubicación...");
+
+            fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
+                .addOnSuccessListener(location -> {
+                    if (location != null) {
+                        String latitude = String.format("%.6f", location.getLatitude());
+                        String longitude = String.format("%.6f", location.getLongitude());
+                        
+                        etLatitude.setText(latitude);
+                        etLongitude.setText(longitude);
+                        
+                        // Abrir el mapa directamente
+                        openLocationInMap(latitude, longitude);
+                        
+                        Toast.makeText(requireContext(), 
+                            "Coordenadas actualizadas con éxito\nPrecisión: " + 
+                            String.format("%.2f", location.getAccuracy()) + " metros", 
+                            Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(requireContext(), 
+                            "No se pudo obtener la ubicación. Intente de nuevo", 
+                            Toast.LENGTH_SHORT).show();
+                    }
+                    btnCaptureCoordinates.setEnabled(true);
+                    btnCaptureCoordinates.setText("Capturar Coordenadas");
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(requireContext(), 
+                        "Error al obtener ubicación: " + e.getMessage(), 
+                        Toast.LENGTH_SHORT).show();
+                    btnCaptureCoordinates.setEnabled(true);
+                    btnCaptureCoordinates.setText("Capturar Coordenadas");
+                });
+        }
+    }
+
+    private void openLocationInMap(String latitude, String longitude) {
+        try {
+            // Crear URI para Google Maps con las coordenadas
+            Uri gmmIntentUri = Uri.parse("geo:" + latitude + "," + longitude + "?q=" + 
+                latitude + "," + longitude + "(Ubicación del Cliente)");
+            
+            // Crear intent para abrir Google Maps
+            Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
+            mapIntent.setPackage("com.google.android.apps.maps");
+
+            // Verificar si Google Maps está instalado
+            if (mapIntent.resolveActivity(requireContext().getPackageManager()) != null) {
+                startActivity(mapIntent);
+            } else {
+                // Si Google Maps no está instalado, abrir en el navegador
+                Uri browserUri = Uri.parse("https://www.google.com/maps?q=" + 
+                    latitude + "," + longitude);
+                Intent browserIntent = new Intent(Intent.ACTION_VIEW, browserUri);
+                startActivity(browserIntent);
+            }
+        } catch (Exception e) {
+            Toast.makeText(requireContext(), 
+                "Error al abrir el mapa", 
+                Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, 
+            @NonNull int[] grantResults) {
+        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                getLocation();
+            } else {
+                Toast.makeText(requireContext(), 
+                    "Se necesita permiso de ubicación para obtener coordenadas", 
+                    Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_ENABLE_GPS) {
+            LocationManager locationManager = 
+                (LocationManager) requireContext().getSystemService(Context.LOCATION_SERVICE);
+            if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                checkLocationPermission();
+            } else {
+                Toast.makeText(requireContext(), 
+                    "Se requiere GPS para obtener coordenadas", 
+                    Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 }

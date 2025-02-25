@@ -19,14 +19,5 @@
             android:padding="5dp"
             android:src="@drawable/ic_placeholder" />
 
-        <ImageView
-            android:id="@+id/ivDelete"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_gravity="top|end"
-            android:src="@drawable/ic_delete"
-            android:padding="4dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/delete_icon" />
     </FrameLayout>
 </androidx.cardview.widget.CardView>

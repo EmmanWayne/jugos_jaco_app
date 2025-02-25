@@ -1,4 +1,4 @@
-package com.jugos_jaco_app.ui.gallery;
+package com.jugos_jaco_app.ui.fragments_client;
 
 public class Client {
     private String firstName;

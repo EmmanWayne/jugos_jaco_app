@@ -32,6 +32,19 @@
                 android:layout_height="?attr/actionBarSize"
                 app:layout_collapseMode="pin"/>
 
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fabEdit"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="16dp"
+                android:layout_gravity="end|bottom"
+                app:srcCompat="@drawable/ic_edit"
+                app:layout_anchor="@id/appBarLayout"
+                app:layout_anchorGravity="bottom|end"
+                app:backgroundTint="@color/white"
+                app:tint="@color/primary"
+                android:contentDescription="Editar cliente"/>
+
         </com.google.android.material.appbar.CollapsingToolbarLayout>
     </com.google.android.material.appbar.AppBarLayout>
 

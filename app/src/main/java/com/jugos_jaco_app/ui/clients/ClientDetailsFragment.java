@@ -35,7 +35,14 @@ import androidx.core.content.ContextCompat;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 
-public class ClientDetailsFragment extends Fragment {
+import com.google.android.material.button.MaterialButton;
+
+import android.content.Context;
+import android.location.LocationManager;
+import android.provider.Settings;
+import android.app.AlertDialog;
+
+public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPhotoListener {
 
     private static final int REQUEST_CODE_PERMISSIONS = 100;
 
@@ -45,7 +52,7 @@ public class ClientDetailsFragment extends Fragment {
     private String clientLongitude;
     private RecyclerView rvPhotos;
     private PhotoAdapter photoAdapter;
-    private List<String> photoPaths = new ArrayList<>();
+    private List<String> photos = new ArrayList<>();
 
     private static final int REQUEST_CODE_CAMERA = 100;
     private static final int REQUEST_CODE_GALLERY = 101;
@@ -66,7 +73,6 @@ public class ClientDetailsFragment extends Fragment {
             // Recuperar las coordenadas como String
             clientLatitude = getArguments().getString("latitude", "0.0");
             clientLongitude = getArguments().getString("longitude", "0.0");
-            Toast.makeText(getContext(), "" + clientLatitude, Toast.LENGTH_SHORT).show();
             // Aquí puedes convertir las coordenadas a double si lo necesitas
             try {
                 double latitude = Double.parseDouble(clientLatitude);
@@ -100,15 +106,20 @@ public class ClientDetailsFragment extends Fragment {
         }
 
         // Configurar el adaptador para el RecyclerView
-        photoAdapter = new PhotoAdapter(photoPaths, position -> {
-            photoPaths.remove(position);
-            photoAdapter.notifyItemRemoved(position);
-        });
+        photoAdapter = new PhotoAdapter(photos, requireContext(), this);
         rvPhotos.setLayoutManager(new GridLayoutManager(getContext(), 3));
         rvPhotos.setAdapter(photoAdapter);
 
         // Evento para el botón que agrega fotos
         btnAddPhoto.setOnClickListener(v -> showPhotoDialog());
+
+        // Configurar el botón de llamada
+        MaterialButton btnCall = view.findViewById(R.id.btnCall);
+        btnCall.setOnClickListener(v -> makePhoneCall());
+
+        // Configurar el botón de ver en mapa
+        MaterialButton btnViewMap = view.findViewById(R.id.btnViewMap);
+        btnViewMap.setOnClickListener(v -> checkLocationAndOpenMap());
 
         return view;
     }
@@ -164,8 +175,8 @@ public class ClientDetailsFragment extends Fragment {
             new ActivityResultContracts.StartActivityForResult(), result -> {
                 if (result.getResultCode() == getActivity().RESULT_OK) {
                     if (photoUri != null) {
-                        photoPaths.add(photoUri.toString()); // Agregar la foto a la lista
-                        photoAdapter.notifyItemInserted(photoPaths.size() - 1);
+                        photos.add(photoUri.toString()); // Agregar la foto a la lista
+                        photoAdapter.updatePhotos(photos);
                     } else {
                         Toast.makeText(getContext(), "No se pudo obtener la foto", Toast.LENGTH_SHORT).show();
                     }
@@ -194,16 +205,16 @@ public class ClientDetailsFragment extends Fragment {
                         for (int i = 0; i < count; i++) {
                             Uri imageUri = result.getData().getClipData().getItemAt(i).getUri();
                             if (imageUri != null) {
-                                photoPaths.add(imageUri.toString()); // Agregar cada foto a la lista
+                                photos.add(imageUri.toString()); // Agregar cada foto a la lista
                             }
                         }
-                        photoAdapter.notifyDataSetChanged();
+                        photoAdapter.updatePhotos(photos);
                     } else if (result.getData().getData() != null) {
                         // Si solo se seleccionó una foto
                         Uri imageUri = result.getData().getData();
                         if (imageUri != null) {
-                            photoPaths.add(imageUri.toString());
-                            photoAdapter.notifyItemInserted(photoPaths.size() - 1);
+                            photos.add(imageUri.toString());
+                            photoAdapter.updatePhotos(photos);
                         }
                     }
                 }
@@ -219,29 +230,245 @@ public class ClientDetailsFragment extends Fragment {
         }
     }
 
+    private ActivityResultLauncher<String[]> multiplePermissionsLauncher = registerForActivityResult(
+            new ActivityResultContracts.RequestMultiplePermissions(),
+            permissions -> {
+                boolean allGranted = true;
+                for (Boolean isGranted : permissions.values()) {
+                    if (!isGranted) {
+                        allGranted = false;
+                        break;
+                    }
+                }
+                if (allGranted) {
+                    Toast.makeText(getContext(), "Permisos concedidos", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(getContext(), "Algunos permisos fueron denegados", Toast.LENGTH_SHORT).show();
+                }
+            });
+
     private void requestPermissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            requestPermissionLauncher.launch(Manifest.permission.CAMERA);
-            requestPermissionLauncher.launch(Manifest.permission.READ_MEDIA_IMAGES);
+            String[] permissions = new String[]{
+                    Manifest.permission.CAMERA,
+                    Manifest.permission.READ_MEDIA_IMAGES
+            };
+            multiplePermissionsLauncher.launch(permissions);
         } else {
-            requestPermissionLauncher.launch(Manifest.permission.CAMERA);
-            requestPermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+            String[] permissions = new String[]{
+                    Manifest.permission.CAMERA,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE
+            };
+            multiplePermissionsLauncher.launch(permissions);
         }
     }
 
     private ActivityResultLauncher<String> requestPermissionLauncher = registerForActivityResult(
-            new ActivityResultContracts.RequestPermission(), isGranted -> {
+            new ActivityResultContracts.RequestPermission(),
+            isGranted -> {
                 if (isGranted) {
-                    // Permiso concedido
                     Toast.makeText(getContext(), "Permiso concedido", Toast.LENGTH_SHORT).show();
                 } else {
-                    // Permiso denegado
                     Toast.makeText(getContext(), "Permiso necesario no concedido", Toast.LENGTH_SHORT).show();
+                }
+            });
+
+    private ActivityResultLauncher<String> callPhonePermissionLauncher = registerForActivityResult(
+            new ActivityResultContracts.RequestPermission(),
+            isGranted -> {
+                if (isGranted) {
+                    startCall();
+                } else {
+                    Toast.makeText(getContext(),
+                            "Se necesita permiso para realizar llamadas",
+                            Toast.LENGTH_SHORT).show();
                 }
             });
 
     private void showFullscreenImage(Uri imageUri) {
         FullscreenImageDialog dialog = new FullscreenImageDialog(requireContext(), imageUri);
         dialog.show();
+    }
+
+    private void makePhoneCall() {
+        if (clientPhone != null && !clientPhone.isEmpty()) {
+            if (ContextCompat.checkSelfPermission(requireContext(),
+                    Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
+                callPhonePermissionLauncher.launch(Manifest.permission.CALL_PHONE);
+            } else {
+                startCall();
+            }
+        } else {
+            Toast.makeText(getContext(), "No hay número de teléfono disponible", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void startCall() {
+        try {
+            Intent intent = new Intent(Intent.ACTION_CALL);
+            intent.setData(Uri.parse("tel:" + clientPhone));
+            startActivity(intent);
+        } catch (SecurityException e) {
+            Toast.makeText(getContext(), "Error al realizar la llamada", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void checkBackgroundLocationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            if (ContextCompat.checkSelfPermission(requireContext(),
+                    Manifest.permission.ACCESS_BACKGROUND_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                new AlertDialog.Builder(requireContext())
+                        .setTitle("Permiso de ubicación")
+                        .setMessage("Para un mejor seguimiento de rutas, necesitamos acceder a tu ubicación todo el tiempo. ¿Deseas permitirlo?")
+                        .setPositiveButton("Configurar", (dialog, which) -> {
+                            requestBackgroundLocationPermission();
+                        })
+                        .setNegativeButton("No", null)
+                        .create()
+                        .show();
+            }
+        }
+    }
+
+    private ActivityResultLauncher<String> backgroundLocationPermissionLauncher = registerForActivityResult(
+            new ActivityResultContracts.RequestPermission(),
+            isGranted -> {
+                if (isGranted) {
+                    Toast.makeText(getContext(), "Permiso de ubicación en segundo plano concedido", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(getContext(), "Permiso de ubicación en segundo plano denegado", Toast.LENGTH_SHORT).show();
+                }
+            });
+
+    private void requestBackgroundLocationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            backgroundLocationPermissionLauncher.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION);
+        }
+    }
+
+    // Agregar un nuevo launcher para los permisos de ubicación
+    private ActivityResultLauncher<String[]> locationPermissionsLauncher = registerForActivityResult(
+            new ActivityResultContracts.RequestMultiplePermissions(),
+            permissions -> {
+                boolean allGranted = true;
+                for (Boolean isGranted : permissions.values()) {
+                    if (!isGranted) {
+                        allGranted = false;
+                        break;
+                    }
+                }
+                if (allGranted) {
+                    // Si se conceden los permisos, verificar GPS y continuar
+                    checkGPSAndProceed();
+                } else {
+                    Toast.makeText(getContext(), "Se necesitan permisos de ubicación", Toast.LENGTH_SHORT).show();
+                }
+            });
+
+    // Modificar el método checkLocationAndOpenMap
+    private void checkLocationAndOpenMap() {
+        if (clientLatitude == null || clientLongitude == null ||
+                clientLatitude.equals("0.0") || clientLongitude.equals("0.0")) {
+            Toast.makeText(getContext(), "No hay coordenadas disponibles para este cliente", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        LocationManager locationManager = (LocationManager) requireContext().getSystemService(Context.LOCATION_SERVICE);
+
+        if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+            // Si el GPS está apagado, mostrar diálogo para activarlo
+            new AlertDialog.Builder(requireContext())
+                    .setTitle("GPS Desactivado")
+                    .setMessage("El GPS está desactivado. ¿Desea activarlo?")
+                    .setPositiveButton("Sí", (dialog, which) -> {
+                        Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                        locationSettingsLauncher.launch(intent);
+                    })
+                    .setNegativeButton("No", (dialog, which) ->
+                            Toast.makeText(getContext(), "Se requiere GPS para ver la ubicación", Toast.LENGTH_SHORT).show())
+                    .create()
+                    .show();
+        } else {
+            // Si el GPS está encendido, abrir directamente Google Maps
+            openGoogleMaps();
+        }
+    }
+
+    // Nuevo método para verificar GPS
+    private void checkGPSAndProceed() {
+        LocationManager locationManager = (LocationManager) requireContext().getSystemService(Context.LOCATION_SERVICE);
+
+        if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+            // Si el GPS está apagado, mostrar diálogo para activarlo
+            new AlertDialog.Builder(requireContext())
+                    .setTitle("GPS Desactivado")
+                    .setMessage("El GPS está desactivado. ¿Desea activarlo?")
+                    .setPositiveButton("Sí", (dialog, which) -> {
+                        Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                        locationSettingsLauncher.launch(intent);
+                    })
+                    .setNegativeButton("No", (dialog, which) ->
+                            Toast.makeText(getContext(), "Se requiere GPS para ver la ubicación", Toast.LENGTH_SHORT).show())
+                    .create()
+                    .show();
+        } else {
+            // Si el GPS está encendido, verificar permiso de ubicación en segundo plano
+            checkBackgroundLocationPermission();
+            openGoogleMaps();
+        }
+    }
+
+    private final ActivityResultLauncher<Intent> locationSettingsLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                LocationManager locationManager = (LocationManager) requireContext().getSystemService(Context.LOCATION_SERVICE);
+                if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                    openGoogleMaps();
+                } else {
+                    Toast.makeText(getContext(), "Se requiere GPS para ver la ubicación", Toast.LENGTH_SHORT).show();
+                }
+            }
+    );
+
+    private void openGoogleMaps() {
+        try {
+            // Crear URI para Google Maps con las coordenadas del cliente
+            Uri gmmIntentUri = Uri.parse("google.navigation:q=" + clientLatitude + "," + clientLongitude);
+
+            // Crear intent para abrir Google Maps
+            Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
+            mapIntent.setPackage("com.google.android.apps.maps");
+
+            // Verificar si Google Maps está instalado
+            if (mapIntent.resolveActivity(requireContext().getPackageManager()) != null) {
+                startActivity(mapIntent);
+            } else {
+                // Si Google Maps no está instalado, abrir en el navegador
+                Uri browserUri = Uri.parse("https://www.google.com/maps/dir/?api=1&destination=" +
+                        clientLatitude + "," + clientLongitude);
+                Intent browserIntent = new Intent(Intent.ACTION_VIEW, browserUri);
+                startActivity(browserIntent);
+            }
+        } catch (Exception e) {
+            Toast.makeText(getContext(), "Error al abrir el mapa", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    public void onPhotoClick(int position) {
+        if (position >= 0 && position < photos.size()) {
+            String photoPath = photos.get(position);
+            // Eliminar el archivo
+            File photoFile = new File(photoPath);
+            if (photoFile.exists()) {
+                photoFile.delete();
+            }
+            // Eliminar de la lista y actualizar el adaptador
+            photos.remove(position);
+            photoAdapter.updatePhotos(photos);
+
+            // Opcional: Mostrar un Toast breve para confirmar la eliminación
+            Toast.makeText(requireContext(), "Foto eliminada", Toast.LENGTH_SHORT).show();
+        }
     }
 }
