@@ -18,6 +18,8 @@ circleimageview = "2.2.0"
 glide = "4.12.0"
 fragmentKtx = "1.8.6"
 playServicesLocation = "21.3.0"
+swiperefreshlayout = "1.1.0"
+
 [libraries]
 glide = { module = "com.github.bumptech.glide:glide", version.ref = "glide" }
 glideCompiler = { module = "com.github.bumptech.glide:compiler", version.ref = "glide" }
@@ -25,6 +27,7 @@ circleimageview = { module = "de.hdodenhof:circleimageview", version.ref = "circ
 fragment-ktx = { group = "androidx.fragment", name = "fragment-ktx", version.ref = "fragmentKtx" }
 photoview = { module = "com.github.chrisbanes:PhotoView", version.ref = "photoview" }
 play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "playServicesLocation" }
+swiperefreshlayout = { module = "androidx.swiperefreshlayout:swiperefreshlayout", version.ref = "swiperefreshlayout" }
 
 volley = { group = "com.android.volley", name = "volley", version.ref = "volley" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }

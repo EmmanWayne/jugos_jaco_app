@@ -36,6 +36,15 @@ import androidx.core.app.ActivityCompat;
 
 public class MainActivity extends AppCompatActivity {
 
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        verificarPermisosUbicacion();
+    }
+
+
+    private AlertDialog gpsAlertDialog;
     private AppBarConfiguration mAppBarConfiguration;
     private ActivityMainBinding binding;
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1001;
@@ -82,7 +91,10 @@ public class MainActivity extends AppCompatActivity {
         boolean isGPSOn = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
 
         if (!isGPSOn) {
-            new AlertDialog.Builder(this)
+            if (gpsAlertDialog != null && gpsAlertDialog.isShowing()) {
+                gpsAlertDialog.cancel();
+            }
+            gpsAlertDialog = new AlertDialog.Builder(this)
                     .setTitle("Activar GPS")
                     .setMessage("Debe activar la ubicación para continuar")
                     .setPositiveButton("Activar", new DialogInterface.OnClickListener() {
@@ -94,7 +106,10 @@ public class MainActivity extends AppCompatActivity {
                     .setNegativeButton("Cancelar", new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
+
                             Toast.makeText(MainActivity.this, "El GPS es necesario para esta función", Toast.LENGTH_SHORT).show();
+                            finish();
+
                         }
                     })
                     .setCancelable(false)
@@ -102,8 +117,7 @@ public class MainActivity extends AppCompatActivity {
         } else {
             startLocationService();
         }
-    }
-    private boolean isLocationServiceRunning() {
+    }    private boolean isLocationServiceRunning() {
         ActivityManager activityManager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
         if (activityManager != null) {
             for (ActivityManager.RunningServiceInfo service : activityManager.getRunningServices(Integer.MAX_VALUE)) {

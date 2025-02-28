@@ -1,8 +1,11 @@
 package com.jugos_jaco_app.ui.clients;
 
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
 import androidx.fragment.app.Fragment;
+
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,6 +23,13 @@ import android.content.pm.PackageManager;
 import android.location.LocationManager;
 import android.provider.Settings;
 import androidx.core.content.ContextCompat;
+
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.Volley;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
@@ -33,7 +43,9 @@ import androidx.annotation.NonNull;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
+import com.jugos_jaco_app.Login;
 import com.jugos_jaco_app.R;
+import com.jugos_jaco_app.ui.utilities.Utilities;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,6 +53,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import android.net.Uri;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 public class NewClientFragment extends Fragment {
 
@@ -65,8 +80,7 @@ public class NewClientFragment extends Fragment {
         // Inicializar vistas
         spinnerDepartament = view.findViewById(R.id.spinnerDepartament);
         spinnerTownship = view.findViewById(R.id.spinnerTownship);
-        spinnerTypePrice = view.findViewById(R.id.spinnerTypePrice);
-        etPhoneNumber = view.findViewById(R.id.etPhoneNumber);
+         etPhoneNumber = view.findViewById(R.id.etPhoneNumber);
         etLatitude = view.findViewById(R.id.etLatitude);
         etLongitude = view.findViewById(R.id.etLongitude);
         linearLayoutMunicipio = view.findViewById(R.id.linearLayoutMunicipio); // Inicializar LinearLayout
@@ -84,7 +98,6 @@ public class NewClientFragment extends Fragment {
         loadDepartamentos();
         loadTiposPrecio();
         setupDepartamentosSpinner();
-        setupTiposPrecioSpinner();
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity());
 
@@ -187,7 +200,8 @@ public class NewClientFragment extends Fragment {
 
             // Si todos los campos son válidos, enviar datos al servidor
             if (isValid) {
-                sendDataToServer(firstName, lastName, address, phoneNumber, departament, township, typePrice, latitude, longitude);
+                storeEmploye(firstName, lastName, address, phoneNumber, departament, township, latitude, longitude);
+                //sendDataToServer(firstName, lastName, address, phoneNumber, departament, township, typePrice, latitude, longitude);
             }
         });
 
@@ -461,4 +475,64 @@ public class NewClientFragment extends Fragment {
             }
         }
     }
+
+    private void storeEmploye(String first_name, String last_name ,String adress ,String phone_number, String departament, String township, String latitude ,String longitude) {
+        // URL del endpoint de inicio de sesión
+        String url = Utilities.URL+"login";
+        // Obtener los valores de los campos
+        // Crear un objeto JSON con los parámetros
+        Map<String, String> params = new HashMap<>();
+        params.put("first_name", first_name);
+        params.put("last_name", last_name);
+        params.put("adress", adress);
+        params.put("phone_number", phone_number);
+        params.put("departamen", departament);
+        params.put("township", township);
+        params.put("latitude", latitude);
+        params.put("longitude", longitude);
+        JSONObject jsonParams = new JSONObject(params);
+        // Crear una solicitud POST con Volley usando JsonObjectRequest
+        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(
+                Request.Method.POST,
+                url,
+                jsonParams,
+                new Response.Listener<JSONObject>() {
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        try {
+                            // Obtener el token del servidor desde la respuesta JSON
+                            String token = response.getString("token");
+                            Toast.makeText(requireContext(), "Cliente registrado.", Toast.LENGTH_SHORT).show();
+
+
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                            Toast.makeText(requireContext(), "Error al procesar la respuesta", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                },
+                new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        // Manejar el error de la solicitud
+                        try {
+                            // Obtener el mensaje de error del cuerpo de la respuesta
+                            String errorMessage = new String(error.networkResponse.data);
+                            JSONObject errorResponse = new JSONObject(errorMessage);
+                            String message = errorResponse.getString("message");
+                            Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            Toast.makeText(requireContext(), "Error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                            Log.d("TAGASIEMPRE",""+error.getMessage());
+                        }
+                    }
+                }
+        );
+
+        // Agregar la solicitud a la cola de Volley
+        RequestQueue requestQueue = Volley.newRequestQueue(requireContext());
+        requestQueue.add(jsonObjectRequest);
+    }
+
 }

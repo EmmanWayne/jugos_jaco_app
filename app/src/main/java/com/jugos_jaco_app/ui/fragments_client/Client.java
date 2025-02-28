@@ -7,15 +7,20 @@ public class Client {
     private String latitude;
     private String longitude;
     private String adress;
+    private String departament;
+    private String township;
 
 
-    public Client(String firstName,String adress, String lastName, String phoneNumber, String latitude, String longitude) {
+
+    public Client(String firstName,  String lastName,String adress, String phoneNumber, String departament, String township, String latitude, String longitude) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.phoneNumber = phoneNumber;
         this.latitude = latitude;
         this.longitude = longitude;
         this.adress = adress;
+        this.departament = departament;
+        this.township = township;
 
     }
 
@@ -40,6 +45,12 @@ public class Client {
 
     public String getLongitude() {
         return longitude;
+    }
+    public String getDepartament() {
+        return departament;
+    }
+    public String getTownship() {
+        return township;
     }
 
     public boolean hasCoordinates() {

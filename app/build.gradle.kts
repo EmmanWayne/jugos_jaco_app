@@ -36,6 +36,7 @@ android {
 
 dependencies {
     implementation(libs.play.services.location) // Usa la referencia desde TOML
+    implementation(libs.swiperefreshlayout)
 
     implementation(libs.fragment.ktx)     // Para FragmentManager y ciclo de vida
     implementation(libs.circleimageview)

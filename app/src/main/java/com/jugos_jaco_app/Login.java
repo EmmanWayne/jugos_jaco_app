@@ -40,6 +40,8 @@ public class Login extends AppCompatActivity {
     private static final String PREFS_NAME = "LoginPrefs";
     private static final String KEY_IS_LOGGED_IN = "isLoggedIn";
     private static final String KEY_TOKEN = "token";
+    private static final String ID_EMPLEADO = "id_empleado";
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -144,12 +146,16 @@ public class Login extends AppCompatActivity {
                         try {
                             // Obtener el token del servidor desde la respuesta JSON
                             String token = response.getString("token");
+                            String id_empleado = response.getString("id_empleado");
+
                             Toast.makeText(Login.this, "Inicio de sesión exitoso", Toast.LENGTH_SHORT).show();
 
                             // Guardar el token y el estado de inicio de sesión en SharedPreferences
                             SharedPreferences.Editor editor = sharedPreferences.edit();
                             editor.putBoolean(KEY_IS_LOGGED_IN, true);
                             editor.putString(KEY_TOKEN, token);
+                            editor.putString(ID_EMPLEADO, id_empleado);
+
                             editor.apply();
 
                             // Redirigir a la actividad principal
