@@ -12,7 +12,7 @@ public class Client {
 
 
 
-    public Client(String firstName,  String lastName,String adress, String phoneNumber, String departament, String township, String latitude, String longitude) {
+    public Client(String firstName,  String lastName,String phoneNumber, String adress, String departament, String township, String latitude, String longitude) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.phoneNumber = phoneNumber;

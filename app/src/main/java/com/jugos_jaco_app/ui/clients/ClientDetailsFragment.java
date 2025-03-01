@@ -58,6 +58,7 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
     private static final int REQUEST_CODE_GALLERY = 101;
     private static final int REQUEST_CODE_GALLERY_MULTIPLE = 102;
     private Uri photoUri;
+    private String adress;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -69,6 +70,7 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
         if (getArguments() != null) {
             clientName = getArguments().getString("firstName") + " " + getArguments().getString("lastName");
             clientPhone = getArguments().getString("phoneNumber");
+            adress = getArguments().getString("adress");
 
             // Recuperar las coordenadas como String
             clientLatitude = getArguments().getString("latitude", "0.0");
@@ -91,12 +93,16 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
 
         // Mostrar los detalles del cliente
         TextView tvName = view.findViewById(R.id.tvClientName);
+        TextView tvadress = view.findViewById(R.id.tvAddress);
+
         TextView tvPhone = view.findViewById(R.id.tvClientPhone);
         TextView tvCoordinates = view.findViewById(R.id.tvCoordinates);
         Button btnAddPhoto = view.findViewById(R.id.btnAddPhoto);
         rvPhotos = view.findViewById(R.id.rvPhotos);
 
         tvName.setText(clientName);
+        tvadress.setText(adress);
+
         tvPhone.setText(clientPhone);
 
         if (clientLatitude != null && clientLongitude != null) {

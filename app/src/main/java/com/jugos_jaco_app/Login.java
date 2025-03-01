@@ -1,9 +1,11 @@
 package com.jugos_jaco_app;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
@@ -23,6 +25,12 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 import com.jugos_jaco_app.ui.utilities.Utilities;
+import com.google.android.material.button.MaterialButton;
+import android.view.View;
+import android.widget.TextView;
+import androidx.core.content.ContextCompat;
+import com.google.android.material.snackbar.Snackbar;
+import com.android.volley.DefaultRetryPolicy;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -33,13 +41,15 @@ public class Login extends AppCompatActivity {
 
     // Declarar los EditText y el botón
     private EditText etIdentity, etPassword;
-    private Button btnLogin;
+    private MaterialButton loginButton;
 
     // SharedPreferences para guardar el token y el estado de inicio de sesión
     private SharedPreferences sharedPreferences;
-    private static final String PREFS_NAME = "LoginPrefs";
+    public static final String PREFS_NAME = "LoginPrefs";
     private static final String KEY_IS_LOGGED_IN = "isLoggedIn";
-    private static final String KEY_TOKEN = "token";
+    public static final String KEY_TOKEN = "token";
+    public static final String TOKEN_TYPE = "token_type";
+
     private static final String ID_EMPLEADO = "id_empleado";
 
 
@@ -69,15 +79,13 @@ public class Login extends AppCompatActivity {
         // Inicializar los EditText y el botón
         etIdentity = findViewById(R.id.etIdentity);
         etPassword = findViewById(R.id.etPassword);
-        btnLogin = findViewById(R.id.btnLogin);
+        loginButton = findViewById(R.id.loginButton);
 
-        // Configurar el clic del botón de inicio de sesión
-        btnLogin.setOnClickListener(new View.OnClickListener() {
+        // Mantener solo el nuevo listener
+        loginButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // Validar los campos antes de hacer la solicitud
-                if (validateFields()) {
-                    // Si todas las validaciones pasan, ejecutar el método para loguearse
+                if (validateInputs()) {
                     loginUser();
                 }
             }
@@ -121,7 +129,10 @@ public class Login extends AppCompatActivity {
     }
 
     // Método para hacer la solicitud de inicio de sesión
+    @SuppressLint("HardwareIds")
     private void loginUser() {
+
+        setLoading(true);
         // URL del endpoint de inicio de sesión
         String url = Utilities.URL+"login";
 
@@ -131,8 +142,10 @@ public class Login extends AppCompatActivity {
 
         // Crear un objeto JSON con los parámetros
         Map<String, String> params = new HashMap<>();
-        params.put("id_modelo", identity);
+        params.put("identity", identity);
         params.put("password", password);
+        params.put("device_name",   Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID));
+
         JSONObject jsonParams = new JSONObject(params);
 
         // Crear una solicitud POST con Volley usando JsonObjectRequest
@@ -146,50 +159,65 @@ public class Login extends AppCompatActivity {
                         try {
                             // Obtener el token del servidor desde la respuesta JSON
                             String token = response.getString("token");
-                            String id_empleado = response.getString("id_empleado");
+                            String id_empleado = response.getString("employee_id");
+                            String token_type = response.getString("token_type");
+                            String message = response.getString("messaje");
 
-                            Toast.makeText(Login.this, "Inicio de sesión exitoso", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(Login.this, message, Toast.LENGTH_SHORT).show();
 
                             // Guardar el token y el estado de inicio de sesión en SharedPreferences
                             SharedPreferences.Editor editor = sharedPreferences.edit();
                             editor.putBoolean(KEY_IS_LOGGED_IN, true);
                             editor.putString(KEY_TOKEN, token);
                             editor.putString(ID_EMPLEADO, id_empleado);
+                            editor.putString(TOKEN_TYPE, token_type);
 
                             editor.apply();
 
                             // Redirigir a la actividad principal
                             redirectToMainActivity();
                         } catch (JSONException e) {
-                            e.printStackTrace();
-                            Toast.makeText(Login.this, "Error al procesar la respuesta", Toast.LENGTH_SHORT).show();
+                            showError("Error al procesar la respuesta");
+                        } finally {
+                            setLoading(false);
                         }
                     }
                 },
                 new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        // Manejar el error de la solicitud
-                        try {
-                            // Obtener el mensaje de error del cuerpo de la respuesta
-                            String errorMessage = new String(error.networkResponse.data);
-                            JSONObject errorResponse = new JSONObject(errorMessage);
-                            String message = errorResponse.getString("message");
-                            Toast.makeText(Login.this, message, Toast.LENGTH_SHORT).show();
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            Toast.makeText(Login.this, "Error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
-                            Log.d("TAGASIEMPRE",""+error.getMessage());
+                        String errorMessage = "Error de conexión";
+                        if (error.networkResponse != null) {
+                            try {
+                                String errorBody = new String(error.networkResponse.data);
+                                JSONObject errorJson = new JSONObject(errorBody);
+                                errorMessage = errorJson.getString("message");
+                            } catch (JSONException e) {
+                                if (error.networkResponse.statusCode == 401) {
+                                    errorMessage = "Usuario o contraseña incorrectos";
+                                }
+                            }
                         }
+                        showError(errorMessage);
+                        setLoading(false);
                     }
+
+
                 }
-        );
+        ) {
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Accept", "application/json");
+                headers.put("Content-Type", "application/json");
+                return headers;
+            }
+        };
 
         // Agregar la solicitud a la cola de Volley
         RequestQueue requestQueue = Volley.newRequestQueue(this);
         requestQueue.add(jsonObjectRequest);
     }
-
     // Método para redirigir a la actividad principal
     private void redirectToMainActivity() {
         Intent intent = new Intent(Login.this, MainActivity.class);
@@ -210,4 +238,53 @@ public class Login extends AppCompatActivity {
             headers.put("Authorization", "Bearer " + token);
         }
     }
+
+    private boolean validateInputs() {
+        String usuario = etIdentity.getText().toString().trim();
+        String password = etPassword.getText().toString().trim();
+
+        if (usuario.isEmpty()) {
+            etIdentity.setError("Ingrese su usuario");
+            return false;
+        }
+
+        if (password.isEmpty()) {
+            etPassword.setError("Ingrese su contraseña");
+            return false;
+        }
+
+        return true;
+    }
+
+
+    private void setLoading(boolean isLoading) {
+        if (isLoading) {
+            loginButton.setEnabled(false);
+            loginButton.setText("Iniciando sesión...");
+            // Opcional: Cambiar el ícono del botón por un progress indicator
+            loginButton.setIcon(ContextCompat.getDrawable(this, android.R.drawable.ic_popup_sync));
+            
+            // Deshabilitar campos de entrada
+            etIdentity.setEnabled(false);
+            etPassword.setEnabled(false);
+        } else {
+            loginButton.setEnabled(true);
+            loginButton.setText("Iniciar Sesión");
+            loginButton.setIcon(null);
+            
+            // Habilitar campos de entrada
+            etIdentity.setEnabled(true);
+            etPassword.setEnabled(true);
+        }
+    }
+
+    private void showError(String message) {
+        // Mostrar error usando Snackbar (más moderno que Toast)
+        Snackbar.make(loginButton, message, Snackbar.LENGTH_LONG)
+                .setBackgroundTint(ContextCompat.getColor(this, R.color.error_color))
+                .setTextColor(ContextCompat.getColor(this, R.color.white))
+                .show();
+    }
+    // Añadir este método helper
+
 }

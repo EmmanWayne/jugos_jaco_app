@@ -1,14 +1,20 @@
 package com.jugos_jaco_app.ui.fragments_client;
 
+import static com.jugos_jaco_app.Login.KEY_TOKEN;
+import static com.jugos_jaco_app.Login.PREFS_NAME;
+import static com.jugos_jaco_app.Login.TOKEN_TYPE;
+
 import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,6 +22,7 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
@@ -24,14 +31,18 @@ import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+import androidx.lifecycle.ViewModelProvider;
 
+import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonArrayRequest;
+import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.jugos_jaco_app.Login;
 import com.jugos_jaco_app.R;
 import com.jugos_jaco_app.ui.utilities.Utilities;
 
@@ -39,17 +50,17 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ClientsFragment extends Fragment {
 
+    private ClientsViewModel viewModel;
     private RecyclerView recyclerView;
     private ClientAdapter clientAdapter;
-    private List<Client> clients;
-    private List<Client> clientsFull;
-    private RequestQueue requestQueue;
     private SwipeRefreshLayout swipeRefreshLayout;
-    private static final String URL_CLIENTS = Utilities.URL +"clientes"; // Reemplaza con tu URL real
+    private static final String URL_CLIENTS = Utilities.URL +"clients/"; // Reemplaza con tu URL real
 
     private ActivityResultLauncher<Intent> locationSettingsLauncher;
     private final ActivityResultLauncher<String> locationPermissionLauncher = registerForActivityResult(
@@ -68,6 +79,12 @@ public class ClientsFragment extends Fragment {
     );
 
     @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        viewModel = new ViewModelProvider(requireActivity()).get(ClientsViewModel.class);
+    }
+
+    @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_clients, container, false);
@@ -81,73 +98,49 @@ public class ClientsFragment extends Fragment {
         // Verificar GPS y permisos
         checkAndRequestLocationPermissions();
 
-        // Inicializar Volley
-        requestQueue = Volley.newRequestQueue(requireContext());
+        // Inicializar vistas
+        setupViews(root);
+        
+        // Observar cambios en la lista de clientes
+        viewModel.getClients().observe(getViewLifecycleOwner(), clients -> {
+            clientAdapter.updateList(clients);
+            swipeRefreshLayout.setRefreshing(false);
+        });
 
-        // Inicializar SwipeRefreshLayout
-        swipeRefreshLayout = root.findViewById(R.id.swipeRefreshLayout);
-        swipeRefreshLayout.setOnRefreshListener(this::loadClientsFromServer);
+        // Observar mensajes de error
+        viewModel.getErrorMessage().observe(getViewLifecycleOwner(), message -> {
+            if (message != null && !message.isEmpty()) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+                swipeRefreshLayout.setRefreshing(false);
+            }
+        });
 
+        // Cargar clientes solo si es necesario
+        viewModel.loadClientsIfNeeded(requireContext());
+
+        return root;
+    }
+
+    private void setupViews(View root) {
         recyclerView = root.findViewById(R.id.recyclerView);
+        swipeRefreshLayout = root.findViewById(R.id.swipeRefreshLayout);
+        
+        // Configurar RecyclerView
+        clientAdapter = new ClientAdapter(new ArrayList<>(), requireContext());
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-
-        clients = new ArrayList<>();
-        clientsFull = new ArrayList<>();
-        clientAdapter = new ClientAdapter(clients, requireContext());
         recyclerView.setAdapter(clientAdapter);
 
+        // Configurar SwipeRefreshLayout
+        swipeRefreshLayout.setOnRefreshListener(() -> {
+            viewModel.forceLoadClients(requireContext());
+        });
+
+        // Configurar FAB
         FloatingActionButton fabCrearCliente = root.findViewById(R.id.fab_crear_cliente);
         fabCrearCliente.setOnClickListener(v -> {
             NavController navController = Navigation.findNavController(v);
             navController.navigate(R.id.nuevoClienteFragment);
         });
-
-        // Cargar clientes del servidor
-        loadClientsFromServer();
-
-        return root;
-    }
-
-    private void loadClientsFromServer() {
-        swipeRefreshLayout.setRefreshing(true);
-
-        JsonArrayRequest request = new JsonArrayRequest(
-                Request.Method.GET,
-                URL_CLIENTS,
-                null,
-                response -> {
-                    clients.clear();
-                    try {
-                        for (int i = 0; i < response.length(); i++) {
-                            JSONObject clientJson = response.getJSONObject(i);
-                            Client client = new Client(
-                                    clientJson.getString("firstName"),
-                                     clientJson.getString("lastName"),
-                                    clientJson.getString("phone_number"),
-                                    clientJson.getString("address"),
-                                    clientJson.getString("departament"),
-                                    clientJson.getString("township"),
-                                     clientJson.optString("latitude", null),
-                                    clientJson.optString("longitude", null)
-                            );
-                            clients.add(client);
-                        }
-                        clientsFull = new ArrayList<>(clients);
-                        clientAdapter.notifyDataSetChanged();
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                        Toast.makeText(getContext(), "Error al procesar los datos del servidor", Toast.LENGTH_SHORT).show();
-                    }
-                    swipeRefreshLayout.setRefreshing(false);
-                },
-                error -> {
-                    Toast.makeText(getContext(), "Error al cargar los clientes: " + error.getMessage(), Toast.LENGTH_SHORT).show();
-                    swipeRefreshLayout.setRefreshing(false);
-                }
-        );
-
-        request.setTag(this);
-        requestQueue.add(request);
     }
 
     private void checkGPSEnabled() {
@@ -209,24 +202,27 @@ public class ClientsFragment extends Fragment {
     }
 
     public void filterClients(String query) {
-        List<Client> filteredList = new ArrayList<>();
-
-        for (Client client : clientsFull) {
-            if (client.getFirstName().toLowerCase().contains(query.toLowerCase()) ||
-                    client.getLastName().toLowerCase().contains(query.toLowerCase())) {
-                filteredList.add(client);
-            }
-        }
-
-        clientAdapter.updateList(filteredList);
+        viewModel.filterClients(query);
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (requestQueue != null) {
-            requestQueue.cancelAll(this);
+        // Ya no necesitamos cancelar las solicitudes aquí porque 
+        // VolleySingleton maneja el ciclo de vida de las solicitudes
+    }
+
+    public static String getAuthorizationHeader(Context context) {
+
+
+        SharedPreferences sharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        String token = sharedPreferences.getString(KEY_TOKEN, null);
+        String tokenType = sharedPreferences.getString(TOKEN_TYPE, "Bearer");
+
+        if (token != null) {
+             return tokenType + " " + token;
         }
+        return null;
     }
 }
 

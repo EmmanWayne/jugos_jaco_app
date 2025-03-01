@@ -524,8 +524,7 @@ public class NewClientFragment extends Fragment {
                         } catch (Exception e) {
                             e.printStackTrace();
                             Toast.makeText(requireContext(), "Error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
-                            Log.d("TAGASIEMPRE",""+error.getMessage());
-                        }
+                         }
                     }
                 }
         );

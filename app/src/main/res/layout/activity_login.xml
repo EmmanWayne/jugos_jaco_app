@@ -90,14 +90,15 @@
 
             <!-- Botón de Login -->
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnLogin"
+                android:id="@+id/loginButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_margin="16dp"
+                android:padding="12dp"
                 android:text="Iniciar Sesión"
-                android:backgroundTint="@color/primary"
-                android:textColor="@color/white"
                 app:cornerRadius="8dp"
-                android:layout_marginTop="20dp"/>
+                android:backgroundTint="@color/primary"
+                android:textColor="@color/white"/>
 
             <!-- Botón de Registro -->
             <TextView
