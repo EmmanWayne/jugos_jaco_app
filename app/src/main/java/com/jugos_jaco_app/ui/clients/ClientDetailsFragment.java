@@ -249,8 +249,7 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                 if (allGranted) {
                     Toast.makeText(getContext(), "Permisos concedidos", Toast.LENGTH_SHORT).show();
                 } else {
-                    Toast.makeText(getContext(), "Algunos permisos fueron denegados", Toast.LENGTH_SHORT).show();
-                }
+                 }
             });
 
     private void requestPermissions() {

@@ -3,6 +3,10 @@ package com.jugos_jaco_app;
 
 
 
+import static com.jugos_jaco_app.Login.KEY_TOKEN;
+import static com.jugos_jaco_app.Login.PREFS_NAME;
+import static com.jugos_jaco_app.Login.TOKEN_TYPE;
+
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Notification;
@@ -22,6 +26,7 @@ import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
 
+import com.android.volley.AuthFailureError;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -33,6 +38,7 @@ import com.android.volley.Request;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.jugos_jaco_app.ui.fragments_client.ClientsFragment;
 import com.jugos_jaco_app.ui.utilities.Utilities;
 import java.util.HashMap;
 import java.util.Map;
@@ -132,13 +138,12 @@ public class LocationService extends Service {
     }
 
     private void sendLocationToServer(double latitude, double longitude) {
-        String url = Utilities.URL + "location"; // Adjust the endpoint as needed
+        String url = Utilities.URL + "employees/"+getIdEmpleado(this)+"/location"; // Adjust the endpoint as needed
 
         // Create JSON object with coordinates
         Map<String, Object> params = new HashMap<>();
         params.put("latitude", latitude);
         params.put("longitude", longitude);
-        params.put("id_modelo", getIdEmpleado(this));
 
 
         JSONObject jsonParams = new JSONObject(params);
@@ -161,9 +166,31 @@ public class LocationService extends Service {
                         (error.getMessage() != null ? error.getMessage() : "Unknown error"));
                 }
             }
-        );
+        ){
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Authorization", getAuthorizationHeader(getApplicationContext()));
+                headers.put("Accept", "application/json");
+                headers.put("Content-Type", "application/json");
+                return headers;
+            }
+        };;
 
         // Add request to queue using VolleySingleton
         VolleySingleton.getInstance(getApplicationContext()).addToRequestQueue(request);
+    }
+
+    public  String getAuthorizationHeader(Context context) {
+
+
+        SharedPreferences sharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        String token = sharedPreferences.getString(KEY_TOKEN, null);
+        String tokenType = sharedPreferences.getString(TOKEN_TYPE, "Bearer");
+
+        if (token != null) {
+            return tokenType + " " + token;
+        }
+        return null;
     }
 }

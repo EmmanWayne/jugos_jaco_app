@@ -24,6 +24,7 @@ import android.location.LocationManager;
 import android.provider.Settings;
 import androidx.core.content.ContextCompat;
 
+import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
@@ -45,6 +46,7 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.jugos_jaco_app.Login;
 import com.jugos_jaco_app.R;
+import com.jugos_jaco_app.ui.fragments_client.ClientsFragment;
 import com.jugos_jaco_app.ui.utilities.Utilities;
 
 import java.util.ArrayList;
@@ -118,9 +120,9 @@ public class NewClientFragment extends Fragment {
             String phoneNumber = etPhoneNumber.getText().toString();
 
             // Verificar si los Spinner tienen un valor seleccionado
-            String departament = "";
+            String department = "";
             if (spinnerDepartament.getSelectedItem() != null) {
-                departament = spinnerDepartament.getSelectedItem().toString();
+                department = spinnerDepartament.getSelectedItem().toString();
             }
 
             String township = "";
@@ -128,10 +130,7 @@ public class NewClientFragment extends Fragment {
                 township = spinnerTownship.getSelectedItem().toString();
             }
 
-            String typePrice = "";
-            if (spinnerTypePrice.getSelectedItem() != null) {
-                typePrice = spinnerTypePrice.getSelectedItem().toString();
-            }
+
 
             String latitude = etLatitude.getText().toString();
             String longitude = etLongitude.getText().toString();
@@ -168,7 +167,7 @@ public class NewClientFragment extends Fragment {
                 isValid = false;
             }
 
-            if (departament.equals("Seleccione") || departament.isEmpty()) {
+            if (department.equals("Seleccione") || department.isEmpty()) {
                 // Mostrar error en el Spinner de departamento
                 TextView errorText = (TextView) spinnerDepartament.getSelectedView();
                 if (errorText != null) {
@@ -188,20 +187,12 @@ public class NewClientFragment extends Fragment {
                 isValid = false;
             }
 
-            if (typePrice.equals("Seleccione") || typePrice.isEmpty()) {
-                // Mostrar error en el Spinner de tipo de precio
-                TextView errorText = (TextView) spinnerTypePrice.getSelectedView();
-                if (errorText != null) {
-                    errorText.setError("Seleccione un tipo de precio");
-                    errorText.setTextColor(Color.RED); // Cambiar el color del texto a rojo
-                }
-                isValid = false;
-            }
+
 
             // Si todos los campos son válidos, enviar datos al servidor
             if (isValid) {
-                storeEmploye(firstName, lastName, address, phoneNumber, departament, township, latitude, longitude);
-                //sendDataToServer(firstName, lastName, address, phoneNumber, departament, township, typePrice, latitude, longitude);
+                storeEmploye(firstName, lastName, address, phoneNumber, department, township, latitude, longitude);
+                //sendDataToServer(firstName, lastName, address, phoneNumber, department, township, typePrice, latitude, longitude);
             }
         });
 
@@ -476,20 +467,21 @@ public class NewClientFragment extends Fragment {
         }
     }
 
-    private void storeEmploye(String first_name, String last_name ,String adress ,String phone_number, String departament, String township, String latitude ,String longitude) {
+    private void storeEmploye(String first_name, String last_name ,String address ,String phone_number, String department, String township, String latitude ,String longitude) {
         // URL del endpoint de inicio de sesión
-        String url = Utilities.URL+"login";
+        String url = Utilities.URL+"clients";
         // Obtener los valores de los campos
         // Crear un objeto JSON con los parámetros
         Map<String, String> params = new HashMap<>();
         params.put("first_name", first_name);
         params.put("last_name", last_name);
-        params.put("adress", adress);
+        params.put("address", address);
         params.put("phone_number", phone_number);
-        params.put("departamen", departament);
+        params.put("department", department);
         params.put("township", township);
         params.put("latitude", latitude);
         params.put("longitude", longitude);
+         
         JSONObject jsonParams = new JSONObject(params);
         // Crear una solicitud POST con Volley usando JsonObjectRequest
         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(
@@ -501,8 +493,8 @@ public class NewClientFragment extends Fragment {
                     public void onResponse(JSONObject response) {
                         try {
                             // Obtener el token del servidor desde la respuesta JSON
-                            String token = response.getString("token");
-                            Toast.makeText(requireContext(), "Cliente registrado.", Toast.LENGTH_SHORT).show();
+                            String message = response.getString("message");
+                            Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
 
 
                         } catch (JSONException e) {
@@ -527,7 +519,16 @@ public class NewClientFragment extends Fragment {
                          }
                     }
                 }
-        );
+        ){
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Authorization", ClientsFragment.getAuthorizationHeader(requireContext()));
+                headers.put("Accept", "application/json");
+                headers.put("Content-Type", "application/json");
+                return headers;
+            }
+        };
 
         // Agregar la solicitud a la cola de Volley
         RequestQueue requestQueue = Volley.newRequestQueue(requireContext());
