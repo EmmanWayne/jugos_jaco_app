@@ -287,4 +287,17 @@ public class Login extends AppCompatActivity {
     }
     // Añadir este método helper
 
+    public static String getAuthorizationHeader(Context context) {
+
+
+        SharedPreferences sharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        String token = sharedPreferences.getString(KEY_TOKEN, null);
+        String tokenType = sharedPreferences.getString(TOKEN_TYPE, "Bearer");
+
+        if (token != null) {
+            return tokenType + " " + token;
+        }
+        return null;
+    }
+
 }

@@ -32,14 +32,12 @@ public class ClientsViewModel extends ViewModel {
     }
 
     public void loadClientsIfNeeded(Context context) {
-        // Solo cargar si no hay datos en caché
         if (!isDataLoaded) {
             loadClients(context);
         }
     }
 
     public void forceLoadClients(Context context) {
-        // Forzar recarga de datos
         loadClients(context);
     }
 

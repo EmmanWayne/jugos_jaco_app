@@ -17,6 +17,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.jugos_jaco_app.R;
 
 import java.io.File;
@@ -59,6 +60,8 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
     private static final int REQUEST_CODE_GALLERY_MULTIPLE = 102;
     private Uri photoUri;
     private String adress;
+    private String department;
+    private String twonship;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -71,7 +74,9 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
             clientName = getArguments().getString("firstName") + " " + getArguments().getString("lastName");
             clientPhone = getArguments().getString("phoneNumber");
             adress = getArguments().getString("adress");
-
+            department = getArguments().getString("department");
+            twonship = getArguments().getString("twonship");
+ 
             // Recuperar las coordenadas como String
             clientLatitude = getArguments().getString("latitude", "0.0");
             clientLongitude = getArguments().getString("longitude", "0.0");
@@ -94,6 +99,7 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
         // Mostrar los detalles del cliente
         TextView tvName = view.findViewById(R.id.tvClientName);
         TextView tvadress = view.findViewById(R.id.tvAddress);
+        FloatingActionButton fabEdit = view.findViewById(R.id.fabEdit);
 
         TextView tvPhone = view.findViewById(R.id.tvClientPhone);
         TextView tvCoordinates = view.findViewById(R.id.tvCoordinates);
@@ -115,6 +121,13 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
         photoAdapter = new PhotoAdapter(photos, requireContext(), this);
         rvPhotos.setLayoutManager(new GridLayoutManager(getContext(), 3));
         rvPhotos.setAdapter(photoAdapter);
+
+        fabEdit.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+            }
+        });
 
         // Evento para el botón que agrega fotos
         btnAddPhoto.setOnClickListener(v -> showPhotoDialog());
@@ -268,15 +281,7 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
         }
     }
 
-    private ActivityResultLauncher<String> requestPermissionLauncher = registerForActivityResult(
-            new ActivityResultContracts.RequestPermission(),
-            isGranted -> {
-                if (isGranted) {
-                    Toast.makeText(getContext(), "Permiso concedido", Toast.LENGTH_SHORT).show();
-                } else {
-                    Toast.makeText(getContext(), "Permiso necesario no concedido", Toast.LENGTH_SHORT).show();
-                }
-            });
+
 
     private ActivityResultLauncher<String> callPhonePermissionLauncher = registerForActivityResult(
             new ActivityResultContracts.RequestPermission(),
@@ -290,10 +295,7 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                 }
             });
 
-    private void showFullscreenImage(Uri imageUri) {
-        FullscreenImageDialog dialog = new FullscreenImageDialog(requireContext(), imageUri);
-        dialog.show();
-    }
+
 
     private void makePhoneCall() {
         if (clientPhone != null && !clientPhone.isEmpty()) {

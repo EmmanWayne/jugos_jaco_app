@@ -5,6 +5,8 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+
+import androidx.annotation.NonNull;
 import androidx.appcompat.widget.SearchView;
 
 import com.google.android.material.navigation.NavigationView;
@@ -33,6 +35,17 @@ import android.provider.Settings;
 import android.widget.Toast;
 
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+
+import android.content.SharedPreferences;
+import com.android.volley.Request;
+import com.android.volley.toolbox.JsonObjectRequest;
+import org.json.JSONObject;
+import com.android.volley.AuthFailureError;
+import com.jugos_jaco_app.ui.utilities.Utilities;
+import com.google.android.material.snackbar.Snackbar;
+import java.util.HashMap;
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -203,5 +216,91 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this, "Se requiere GPS para ver la ubicación", Toast.LENGTH_SHORT).show();
             }
         }
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if (item.getItemId() == R.id.logout) {
+            showLogoutConfirmationDialog();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    private void showLogoutConfirmationDialog() {
+        new AlertDialog.Builder(this)
+            .setTitle("Cerrar Sesión")
+            .setMessage("¿Está seguro que desea cerrar sesión?")
+            .setPositiveButton("Sí", (dialog, which) -> {
+                performLogout();
+            })
+            .setNegativeButton("No", null)
+            .setIcon(R.drawable.ic_logout)
+            .show();
+    }
+
+    private void performLogout() {
+        String url = Utilities.URL + "logout";
+
+        JsonObjectRequest request = new JsonObjectRequest(
+            Request.Method.POST,
+            url,
+            null,
+            response -> {
+                // Éxito en el logout
+                clearSessionAndRedirectToLogin();
+            },
+            error -> {
+                // Incluso si hay error, cerramos sesión localmente
+                if (error.networkResponse != null && error.networkResponse.statusCode == 401) {
+                    clearSessionAndRedirectToLogin();
+                } else {
+                    // Mostrar error pero aún así cerrar sesión
+                    showError("Error al cerrar sesión en el servidor");
+                    clearSessionAndRedirectToLogin();
+                }
+            }
+        ) {
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                Map<String, String> headers = new HashMap<>();
+                String authHeader = Login.getAuthorizationHeader(MainActivity.this);
+                if (authHeader != null) {
+                    headers.put("Authorization", authHeader);
+                }
+                headers.put("Accept", "application/json");
+                return headers;
+            }
+        };
+
+        // Agregar la solicitud a la cola
+        VolleySingleton.getInstance(this).addToRequestQueue(request);
+    }
+
+    private void clearSessionAndRedirectToLogin() {
+        // Limpiar SharedPreferences
+        SharedPreferences sharedPreferences = getSharedPreferences(Login.PREFS_NAME, Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.clear();
+        editor.apply();
+
+        // Detener el servicio de ubicación si está corriendo
+        stopService(new Intent(this, LocationService.class));
+
+        // Redirigir al login
+        Intent intent = new Intent(this, Login.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
+    }
+
+    private void showError(String message) {
+        Snackbar.make(
+            findViewById(android.R.id.content),
+            message,
+            Snackbar.LENGTH_LONG
+        ).setBackgroundTint(ContextCompat.getColor(this, R.color.error_color))
+         .setTextColor(ContextCompat.getColor(this, R.color.white))
+         .show();
     }
 }

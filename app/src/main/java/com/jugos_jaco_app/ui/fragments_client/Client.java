@@ -1,6 +1,8 @@
 package com.jugos_jaco_app.ui.fragments_client;
 
-public class Client {
+import java.io.Serializable;
+
+public class Client implements Serializable {
     private String firstName;
     private String lastName;
     private String phoneNumber;
@@ -46,7 +48,7 @@ public class Client {
     public String getLongitude() {
         return longitude;
     }
-    public String getDepartament() {
+    public String getDepartment() {
         return departament;
     }
     public String getTownship() {

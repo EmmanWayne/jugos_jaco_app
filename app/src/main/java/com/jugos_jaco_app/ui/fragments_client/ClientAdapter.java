@@ -107,6 +107,9 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
             bundle.putString("firstName", client.getFirstName());
             bundle.putString("lastName", client.getLastName());
             bundle.putString("adress", client.getAdress());
+            bundle.putString("department", client.getDepartment());
+            bundle.putString("township", client.getTownship());
+
 
             bundle.putString("phoneNumber", client.getPhoneNumber());
                  if (client.hasCoordinates()) {
