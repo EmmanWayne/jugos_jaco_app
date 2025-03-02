@@ -18,36 +18,34 @@ import android.widget.Toast;
 import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentSender;
-import android.content.pm.PackageManager;
+ import android.content.pm.PackageManager;
 import android.location.LocationManager;
 import android.provider.Settings;
 import androidx.core.content.ContextCompat;
 
 import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
-import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
+
 import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.Volley;
-import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.location.LocationSettingsRequest;
-import com.google.android.gms.location.LocationSettingsResponse;
+ import com.google.android.gms.location.FusedLocationProviderClient;
+ import com.google.android.gms.location.LocationServices;
+
 import com.google.android.gms.location.Priority;
-import com.google.android.gms.tasks.Task;
-import android.app.AlertDialog;
+ import android.app.AlertDialog;
 import androidx.annotation.NonNull;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
-import com.jugos_jaco_app.Login;
-import com.jugos_jaco_app.R;
+ import com.jugos_jaco_app.R;
+import com.jugos_jaco_app.VolleySingleton;
 import com.jugos_jaco_app.ui.fragments_client.ClientsFragment;
 import com.jugos_jaco_app.ui.utilities.Utilities;
+import com.jugos_jaco_app.ui.fragments_client.ClientsViewModel;
+import com.jugos_jaco_app.ui.fragments_client.Client;
+
+import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.Navigation;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -467,11 +465,9 @@ public class NewClientFragment extends Fragment {
         }
     }
 
-    private void storeEmploye(String first_name, String last_name ,String address ,String phone_number, String department, String township, String latitude ,String longitude) {
-        // URL del endpoint de inicio de sesión
-        String url = Utilities.URL+"clients";
-        // Obtener los valores de los campos
-        // Crear un objeto JSON con los parámetros
+    private void storeEmploye(String first_name, String last_name, String address, String phone_number, 
+                             String department, String township, String latitude, String longitude) {
+        String url = Utilities.URL + "clients";
         Map<String, String> params = new HashMap<>();
         params.put("first_name", first_name);
         params.put("last_name", last_name);
@@ -482,44 +478,58 @@ public class NewClientFragment extends Fragment {
         params.put("latitude", latitude);
         params.put("longitude", longitude);
 
-        JSONObject jsonParams = new JSONObject(params);
-        // Crear una solicitud POST con Volley usando JsonObjectRequest
         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(
                 Request.Method.POST,
                 url,
-                jsonParams,
-                new Response.Listener<JSONObject>() {
-                    @Override
-                    public void onResponse(JSONObject response) {
-                        try {
-                            // Obtener el token del servidor desde la respuesta JSON
-                            String message = response.getString("token");
-                            Toast.makeText(requireContext(), "Cliente registrado.", Toast.LENGTH_SHORT).show();
+                new JSONObject(params),
+                response -> {
+                    try {
+                        String message = response.getString("message");
+                        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
 
+                        // Obtener el objeto client de la respuesta
+                        JSONObject clientJson = response.getJSONObject("client");
+                        
+                        // Crear un nuevo objeto Client con los datos
+                        Client newClient = new Client(
+                                clientJson.getString("id"),
+                                clientJson.getString("first_name"),
+                                clientJson.getString("last_name"),
+                                clientJson.getString("phone_number"),
+                                clientJson.getString("address"),
+                                clientJson.getString("department"),
+                                clientJson.getString("township"),
+                                clientJson.getJSONObject("location").getString("latitude"),
+                                clientJson.getJSONObject("location").getString("longitude"),
+                                clientJson.isNull("type_price") ? "" : 
+                                    clientJson.getJSONObject("type_price").getString("name")
+                        );
 
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                            Toast.makeText(requireContext(), "Error al procesar la respuesta", Toast.LENGTH_SHORT).show();
-                        }
+                        // Actualizar el ViewModel con el nuevo cliente
+                        ClientsViewModel viewModel = new ViewModelProvider(requireActivity())
+                                .get(ClientsViewModel.class);
+                        viewModel.addNewClient(newClient);
+
+                        // Navegar de vuelta a ClientsFragment
+                        Navigation.findNavController(requireView()).navigateUp();
+
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        Toast.makeText(requireContext(), "Error al procesar la respuesta", Toast.LENGTH_SHORT).show();
                     }
                 },
-                new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        // Manejar el error de la solicitud
-                        try {
-                            // Obtener el mensaje de error del cuerpo de la respuesta
-                            String errorMessage = new String(error.networkResponse.data);
-                            JSONObject errorResponse = new JSONObject(errorMessage);
-                            String message = errorResponse.getString("message");
-                            Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            Toast.makeText(requireContext(), "Error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
-                        }
+                error -> {
+                    try {
+                        String errorMessage = new String(error.networkResponse.data);
+                        JSONObject errorResponse = new JSONObject(errorMessage);
+                        String message = errorResponse.getString("message");
+                        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        Toast.makeText(requireContext(), "Error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 }
-        ){
+        ) {
             @Override
             public Map<String, String> getHeaders() throws AuthFailureError {
                 Map<String, String> headers = new HashMap<>();
@@ -530,9 +540,7 @@ public class NewClientFragment extends Fragment {
             }
         };
 
-        // Agregar la solicitud a la cola de Volley
-        RequestQueue requestQueue = Volley.newRequestQueue(requireContext());
-        requestQueue.add(jsonObjectRequest);
+        VolleySingleton.getInstance(requireContext()).addToRequestQueue(jsonObjectRequest);
     }
 
 }

@@ -46,6 +46,8 @@ import android.app.AlertDialog;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 
+import android.util.Log;
+
 public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPhotoListener {
 
     private static final int REQUEST_CODE_PERMISSIONS = 100;
@@ -144,22 +146,25 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
         fabEdit.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // Crear bundle con todos los datos del cliente
                 Bundle bundle = new Bundle();
                 bundle.putString("first_name", clientFirstName);
-                bundle.putString("last_name", clientName);
+                bundle.putString("last_name", clientLastName);
                 bundle.putString("phone_number", clientPhone);
                 bundle.putString("address", adress);
                 bundle.putString("department", department);
                 bundle.putString("township", township);
                 bundle.putString("latitude", clientLatitude);
                 bundle.putString("longitude", clientLongitude);
-                bundle.putBoolean("is_editing", true); // Flag para indicar que estamos editando
-                bundle.putString("client_id", id); // Asegúrate de tener el método getId()
+                 bundle.putString("client_id", id);
+               // bundle.putString("type_price", typePrice);
 
-                // Navegar a NewClientFragment con los datos
-                //NavController navController = Navigation.findNavController(v);
-               // navController.navigate(R.id.action_clientDetailsFragment_to_newClientFragment, bundle);
+                try {
+                    NavController navController = Navigation.findNavController(v);
+                    navController.navigate(R.id.action_clientDetailsFragment_to_editClientFragment, bundle);
+                } catch (Exception e) {
+                    Log.e("Navigation", "Error navigating to NewClientFragment: " + e.getMessage());
+                    Toast.makeText(requireContext(), "Error al navegar", Toast.LENGTH_SHORT).show();
+                }
             }
         });
 

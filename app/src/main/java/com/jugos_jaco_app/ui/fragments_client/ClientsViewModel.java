@@ -130,4 +130,34 @@ public class ClientsViewModel extends ViewModel {
         }
         clientList.setValue(filteredList);
     }
+
+    public void addNewClient(Client newClient) {
+        List<Client> currentClients = clientList.getValue();
+        if (currentClients != null) {
+            currentClients.add(newClient);
+            cachedClients.add(newClient);
+            clientList.setValue(currentClients);
+        }
+    }
+
+    public void updateClient(Client updatedClient) {
+        List<Client> currentClients = clientList.getValue();
+        if (currentClients != null) {
+            // Encontrar y actualizar el cliente en la lista
+            for (int i = 0; i < currentClients.size(); i++) {
+                if (currentClients.get(i).getId().equals(updatedClient.getId())) {
+                    currentClients.set(i, updatedClient);
+                    break;
+                }
+            }
+            // Actualizar también la lista cacheada
+            for (int i = 0; i < cachedClients.size(); i++) {
+                if (cachedClients.get(i).getId().equals(updatedClient.getId())) {
+                    cachedClients.set(i, updatedClient);
+                    break;
+                }
+            }
+            clientList.setValue(currentClients);
+        }
+    }
 }

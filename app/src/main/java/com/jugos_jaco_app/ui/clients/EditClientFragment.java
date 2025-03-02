@@ -1,0 +1,466 @@
+package com.jugos_jaco_app.ui.clients;
+
+import android.Manifest;
+import android.app.AlertDialog;
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.location.LocationManager;
+import android.net.Uri;
+import android.os.Bundle;
+
+import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
+import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.Navigation;
+
+import android.provider.Settings;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.LinearLayout;
+import android.widget.Spinner;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import com.android.volley.AuthFailureError;
+import com.android.volley.Request;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.Priority;
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
+import com.jugos_jaco_app.R;
+import com.jugos_jaco_app.VolleySingleton;
+import com.jugos_jaco_app.ui.fragments_client.Client;
+import com.jugos_jaco_app.ui.fragments_client.ClientsFragment;
+import com.jugos_jaco_app.ui.fragments_client.ClientsViewModel;
+import com.jugos_jaco_app.ui.utilities.Utilities;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * A simple {@link Fragment} subclass.
+  * create an instance of this fragment.
+ */
+public class EditClientFragment extends Fragment {
+    private Spinner spinnerDepartament, spinnerTownship, spinnerTypePrice;
+    private TextInputEditText etFirstName, etLastName, etPhoneNumber, etAddress, etLatitude, etLongitude;
+    private MaterialButton btnSubmit, btnCaptureCoordinates;
+    private String clientId;
+    private List<String> departamentos = new ArrayList<>();
+    private List<String> tiposPrecio = new ArrayList<>();
+    private Map<String, List<String>> municipiosPorDepartamento = new HashMap<>();
+    private FusedLocationProviderClient fusedLocationClient;
+    private static final int REQUEST_ENABLE_GPS = 123;
+    private static final int LOCATION_PERMISSION_REQUEST_CODE = 124;
+    private LinearLayout linearLayoutMunicipio; // Referencia al LinearLayout de municipios
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.fragment_edit_client, container, false);
+        
+        initializeViews(view);
+        loadDepartamentos(); // Primero cargar los datos
+        loadDataFromArguments(); // Después cargar y configurar los valores
+        
+        btnSubmit.setOnClickListener(v -> {
+            if (validateFields()) {
+                updateClient();
+            }
+        });
+
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity());
+        btnCaptureCoordinates.setOnClickListener(v -> checkLocationAndGetCoordinates());
+
+        return view;
+    }
+
+    private void initializeViews(View view) {
+        etFirstName = view.findViewById(R.id.etFirstName);
+        etLastName = view.findViewById(R.id.etLastName);
+        etPhoneNumber = view.findViewById(R.id.etPhoneNumber);
+        etAddress = view.findViewById(R.id.etAddress);
+        etLatitude = view.findViewById(R.id.etLatitude);
+        etLongitude = view.findViewById(R.id.etLongitude);
+        spinnerDepartament = view.findViewById(R.id.spinnerDepartament);
+        spinnerTownship = view.findViewById(R.id.spinnerTownship);
+         btnSubmit = view.findViewById(R.id.btnSubmit);
+        btnCaptureCoordinates = view.findViewById(R.id.btnCaptureCoordinates);
+        linearLayoutMunicipio = view.findViewById(R.id.linearLayoutMunicipio); // Inicializar LinearLayout
+
+        btnSubmit.setText("Actualizar Cliente");
+    }
+
+    private void loadDataFromArguments() {
+        if (getArguments() != null) {
+            etFirstName.setText(getArguments().getString("first_name"));
+            etLastName.setText(getArguments().getString("last_name"));
+            etPhoneNumber.setText(getArguments().getString("phone_number"));
+            etAddress.setText(getArguments().getString("address"));
+            etLatitude.setText(getArguments().getString("latitude"));
+            etLongitude.setText(getArguments().getString("longitude"));
+            clientId = getArguments().getString("client_id");
+
+            String department = getArguments().getString("department");
+            String township = getArguments().getString("township");
+
+            setupSpinnersWithValues(department, township);
+        }
+    }
+
+    private void setupSpinnersWithValues(String department, String township) {
+        // Configurar adapter del departamento
+        ArrayAdapter<String> departamentosAdapter = new ArrayAdapter<>(
+                requireContext(),
+                android.R.layout.simple_spinner_item,
+                departamentos
+        );
+        departamentosAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerDepartament.setAdapter(departamentosAdapter);
+
+        // Configurar listener del departamento
+        spinnerDepartament.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            boolean isInitialSelection = true;
+
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                String selectedDepartment = parent.getItemAtPosition(position).toString();
+                if (!selectedDepartment.equals("Seleccione")) {
+                    loadMunicipios(selectedDepartment);
+                    linearLayoutMunicipio.setVisibility(View.VISIBLE);
+
+                    // Solo seleccionar el municipio en la carga inicial
+                    if (isInitialSelection && township != null && !township.isEmpty()) {
+                        List<String> municipios = municipiosPorDepartamento.get(selectedDepartment);
+                        if (municipios != null) {
+                            int townshipPosition = municipios.indexOf(township);
+                            if (townshipPosition != -1) {
+                                spinnerTownship.setSelection(townshipPosition);
+                            }
+                        }
+                        isInitialSelection = false;
+                    }
+                } else {
+                    linearLayoutMunicipio.setVisibility(View.GONE);
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
+        });
+
+        // Seleccionar el departamento
+        if (department != null && !department.isEmpty()) {
+            int departmentPosition = departamentos.indexOf(department);
+            if (departmentPosition != -1) {
+                spinnerDepartament.setSelection(departmentPosition);
+            }
+        }
+    }
+
+    private void loadMunicipios(String departament) {
+        List<String> municipios = municipiosPorDepartamento.get(departament);
+        if (municipios != null) {
+            ArrayAdapter<String> municipiosAdapter = new ArrayAdapter<>(
+                    requireContext(),
+                    android.R.layout.simple_spinner_item,
+                    municipios
+            );
+            municipiosAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            spinnerTownship.setAdapter(municipiosAdapter);
+        }
+    }
+
+    private void checkLocationAndGetCoordinates() {
+        LocationManager locationManager = (LocationManager) requireContext().getSystemService(Context.LOCATION_SERVICE);
+
+        if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+            new AlertDialog.Builder(requireContext())
+                    .setTitle("GPS Desactivado")
+                    .setMessage("Para obtener las coordenadas necesita activar el GPS. ¿Desea activarlo?")
+                    .setPositiveButton("Activar GPS", (dialog, which) -> {
+                        Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                        startActivityForResult(intent, REQUEST_ENABLE_GPS);
+                    })
+                    .setNegativeButton("Cancelar", null)
+                    .create()
+                    .show();
+        } else {
+            checkLocationPermission();
+        }
+    }
+
+    private void checkLocationPermission() {
+        if (ContextCompat.checkSelfPermission(requireContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    LOCATION_PERMISSION_REQUEST_CODE
+            );
+        } else {
+            getLocation();
+        }
+    }
+
+    private void getLocation() {
+        if (ContextCompat.checkSelfPermission(requireContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+
+            btnCaptureCoordinates.setEnabled(false);
+            btnCaptureCoordinates.setText("Obteniendo ubicación...");
+
+            fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
+                    .addOnSuccessListener(location -> {
+                        if (location != null) {
+                            String latitude = String.format("%.6f", location.getLatitude());
+                            String longitude = String.format("%.6f", location.getLongitude());
+
+                            etLatitude.setText(latitude);
+                            etLongitude.setText(longitude);
+
+                            // Abrir el mapa directamente
+                            openLocationInMap(latitude, longitude);
+
+                            Toast.makeText(requireContext(),
+                                    "Coordenadas actualizadas con éxito\nPrecisión: " +
+                                            String.format("%.2f", location.getAccuracy()) + " metros",
+                                    Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(requireContext(),
+                                    "No se pudo obtener la ubicación. Intente de nuevo",
+                                    Toast.LENGTH_SHORT).show();
+                        }
+                        btnCaptureCoordinates.setEnabled(true);
+                        btnCaptureCoordinates.setText("Capturar Coordenadas");
+                    })
+                    .addOnFailureListener(e -> {
+                        Toast.makeText(requireContext(),
+                                "Error al obtener ubicación: " + e.getMessage(),
+                                Toast.LENGTH_SHORT).show();
+                        btnCaptureCoordinates.setEnabled(true);
+                        btnCaptureCoordinates.setText("Capturar Coordenadas");
+                    });
+        }
+    }
+
+    private void openLocationInMap(String latitude, String longitude) {
+        try {
+            // Crear URI para Google Maps con las coordenadas
+            Uri gmmIntentUri = Uri.parse("geo:" + latitude + "," + longitude + "?q=" +
+                    latitude + "," + longitude + "(Ubicación del Cliente)");
+
+            // Crear intent para abrir Google Maps
+            Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
+            mapIntent.setPackage("com.google.android.apps.maps");
+
+            // Verificar si Google Maps está instalado
+            if (mapIntent.resolveActivity(requireContext().getPackageManager()) != null) {
+                startActivity(mapIntent);
+            } else {
+                // Si Google Maps no está instalado, abrir en el navegador
+                Uri browserUri = Uri.parse("https://www.google.com/maps?q=" +
+                        latitude + "," + longitude);
+                Intent browserIntent = new Intent(Intent.ACTION_VIEW, browserUri);
+                startActivity(browserIntent);
+            }
+        } catch (Exception e) {
+            Toast.makeText(requireContext(),
+                    "Error al abrir el mapa",
+                    Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                getLocation();
+            } else {
+                Toast.makeText(requireContext(),
+                        "Se necesita permiso de ubicación para obtener coordenadas",
+                        Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_ENABLE_GPS) {
+            LocationManager locationManager =
+                    (LocationManager) requireContext().getSystemService(Context.LOCATION_SERVICE);
+            if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                checkLocationPermission();
+            } else {
+                Toast.makeText(requireContext(),
+                        "Se requiere GPS para obtener coordenadas",
+                        Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    private void updateClient() {
+        String url = Utilities.URL + "clients/" + clientId;
+
+        Map<String, String> params = new HashMap<>();
+        params.put("first_name", etFirstName.getText().toString());
+        params.put("last_name", etLastName.getText().toString());
+        params.put("phone_number", etPhoneNumber.getText().toString());
+        params.put("address", etAddress.getText().toString());
+        params.put("department", spinnerDepartament.getSelectedItem().toString());
+        params.put("township", spinnerTownship.getSelectedItem().toString());
+         params.put("latitude", etLatitude.getText().toString());
+        params.put("longitude", etLongitude.getText().toString());
+
+        JsonObjectRequest request = new JsonObjectRequest(
+                Request.Method.PUT,
+                url,
+                new JSONObject(params),
+                response -> {
+                    try {
+                        String message = response.getString("message");
+                        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+
+                        // Obtener el cliente actualizado de la respuesta
+                        JSONObject clientJson = response.getJSONObject("client");
+                        Client updatedClient = new Client(
+                                clientJson.getString("id"),
+                                clientJson.getString("first_name"),
+                                clientJson.getString("last_name"),
+                                clientJson.getString("phone_number"),
+                                clientJson.getString("address"),
+                                clientJson.getString("department"),
+                                clientJson.getString("township"),
+                                clientJson.getJSONObject("location").getString("latitude"),
+                                clientJson.getJSONObject("location").getString("longitude"),
+                                clientJson.isNull("type_price") ? "" : 
+                                    clientJson.getJSONObject("type_price").getString("name")
+                        );
+
+                        // Actualizar el ViewModel
+                        ClientsViewModel viewModel = new ViewModelProvider(requireActivity())
+                                .get(ClientsViewModel.class);
+                        viewModel.updateClient(updatedClient);
+
+                        // Navegar hacia atrás
+                        Navigation.findNavController(requireView()).navigateUp();
+
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        Toast.makeText(requireContext(), "Error al procesar la respuesta", Toast.LENGTH_SHORT).show();
+                    }
+                },
+                error -> {
+                    try {
+                        String errorMessage = new String(error.networkResponse.data);
+                        JSONObject errorResponse = new JSONObject(errorMessage);
+                        String message = errorResponse.getString("message");
+                        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        Toast.makeText(requireContext(), "Error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                }
+        ) {
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Authorization", ClientsFragment.getAuthorizationHeader(requireContext()));
+                headers.put("Accept", "application/json");
+                headers.put("Content-Type", "application/json");
+                return headers;
+            }
+        };
+
+        VolleySingleton.getInstance(requireContext()).addToRequestQueue(request);
+    }
+
+    private boolean validateFields() {
+        // Implementa la lógica para validar los campos del formulario
+        // Puedes agregar aquí la validación de cada campo
+        return true; // Por defecto, asumimos que los campos son válidos
+    }
+
+    private void loadDepartamentos() {
+        // Lista de los 18 departamentos de Honduras
+        departamentos = Arrays.asList(
+                "Seleccione",
+                "Atlántida", "Choluteca", "Colón", "Comayagua", "Copán", "Cortés",
+                "El Paraíso", "Francisco Morazán", "Gracias a Dios", "Intibucá",
+                "Islas de la Bahía", "La Paz", "Lempira", "Ocotepeque", "Olancho",
+                "Santa Bárbara", "Valle", "Yoro"
+        );
+
+        // Municipios por departamento
+        municipiosPorDepartamento = new HashMap<>();
+        municipiosPorDepartamento.put("Atlántida", Arrays.asList(
+                "La Ceiba", "Tela", "Jutiapa", "El Porvenir", "Esparta", "Arizona", "San Francisco"
+        ));
+        municipiosPorDepartamento.put("Choluteca", Arrays.asList(
+                "Choluteca", "Pespire", "Nacaome", "San Marcos de Colón", "Duyure", "El Triunfo", "Concepción de María"
+        ));
+        municipiosPorDepartamento.put("Colón", Arrays.asList(
+                "Trujillo", "Balfate", "Sonaguera", "Tocoa", "Bonito Oriental", "Santa Fe", "Iriona"
+        ));
+        municipiosPorDepartamento.put("Comayagua", Arrays.asList(
+                "Comayagua", "Siguatepeque", "La Libertad", "San Jerónimo", "Esquías", "Humuya", "Ojos de Agua"
+        ));
+        municipiosPorDepartamento.put("Copán", Arrays.asList(
+                "Santa Rosa de Copán", "Copán Ruinas", "Dulce Nombre", "San Agustín", "Concepción", "San Antonio", "Trinidad"
+        ));
+        municipiosPorDepartamento.put("Cortés", Arrays.asList(
+                "San Pedro Sula", "Puerto Cortés", "Villanueva", "Choloma", "La Lima", "Omoa", "Pimienta"
+        ));
+        municipiosPorDepartamento.put("El Paraíso", Arrays.asList(
+                "Yuscarán", "Danlí", "El Paraíso", "Texiguat", "Villa de San Francisco", "Morocelí", "Trojes"
+        ));
+        municipiosPorDepartamento.put("Francisco Morazán", Arrays.asList(
+                "Tegucigalpa", "Comayagüela", "Valle de Ángeles", "Santa Lucía", "San Juancito", "Talanga", "Orica"
+        ));
+        municipiosPorDepartamento.put("Gracias a Dios", Arrays.asList(
+                "Puerto Lempira", "Brus Laguna", "Ahuas", "Juan Francisco Bulnes", "Villeda Morales", "Wampusirpi", "Palacios"
+        ));
+        municipiosPorDepartamento.put("Intibucá", Arrays.asList(
+                "La Esperanza", "Intibucá", "Yamaranguila", "San Juan", "San Marcos de la Sierra", "Magdalena", "Camasca"
+        ));
+        municipiosPorDepartamento.put("Islas de la Bahía", Arrays.asList(
+                "Roatán", "Guanaja", "Utila", "José Santos Guardiola", "Santa Elena", "Santa Fe", "Juan Francisco"
+        ));
+        municipiosPorDepartamento.put("La Paz", Arrays.asList(
+                "La Paz", "Marcala", "Cabañas", "San Pedro de Tutule", "Santa María", "San José", "Opatoro"
+        ));
+        municipiosPorDepartamento.put("Lempira", Arrays.asList(
+                "Gracias", "Lepaera", "Erandique", "San Manuel Colohete", "San Rafael", "La Campa", "Talgua"
+        ));
+        municipiosPorDepartamento.put("Ocotepeque", Arrays.asList(
+                "Ocotepeque", "Sensenti", "San Marcos", "La Encarnación", "San Francisco del Valle", "Concepción", "Dolores Merendón"
+        ));
+        municipiosPorDepartamento.put("Olancho", Arrays.asList(
+                "Juticalpa", "Catacamas", "Campamento", "San Esteban", "Gualaco", "Guata", "Dulce Nombre de Culmí"
+        ));
+        municipiosPorDepartamento.put("Santa Bárbara", Arrays.asList(
+                "Santa Bárbara", "Quimistán", "Ilama", "San Luis", "San José de Colinas", "Naranjito", "Gualala"
+        ));
+        municipiosPorDepartamento.put("Valle", Arrays.asList(
+                "Nacaome", "San Lorenzo", "Langue", "Amapala", "Goascorán", "Alianza", "Aramecina"
+        ));
+        municipiosPorDepartamento.put("Yoro", Arrays.asList(
+                "Yoro", "El Progreso", "Olanchito", "Morazán", "Victoria", "Jocón", "Santa Rita"
+        ));
+    }
+}

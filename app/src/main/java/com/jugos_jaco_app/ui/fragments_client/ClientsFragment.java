@@ -123,7 +123,7 @@ public class ClientsFragment extends Fragment {
         FloatingActionButton fabCrearCliente = root.findViewById(R.id.fab_crear_cliente);
         fabCrearCliente.setOnClickListener(v -> {
             NavController navController = Navigation.findNavController(v);
-            navController.navigate(R.id.nuevoClienteFragment);
+            navController.navigate(R.id.newClientFragment);
         });
     }
 

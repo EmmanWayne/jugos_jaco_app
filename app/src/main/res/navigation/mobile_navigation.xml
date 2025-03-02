@@ -15,7 +15,7 @@
         <!-- Acción para navegar a NuevoClienteFragment -->
         <action
             android:id="@+id/action_home_to_nuevoClienteFragment"
-            app:destination="@id/nuevoClienteFragment" />
+            app:destination="@id/newClientFragment" />
     </fragment>
 
     <!-- GalleryFragment -->
@@ -27,8 +27,8 @@
 
         <!-- Acción para navegar a NuevoClienteFragment -->
         <action
-            android:id="@+id/action_gallery_to_nuevoClienteFragment"
-            app:destination="@id/nuevoClienteFragment" />
+            android:id="@+id/action_to_newClienteFragment"
+            app:destination="@id/newClientFragment" />
     </fragment>
 
     <!-- SlideshowFragment -->
@@ -39,11 +39,7 @@
         tools:layout="@layout/fragment_slideshow" />
 
     <!-- NuevoClienteFragment -->
-    <fragment
-        android:id="@+id/nuevoClienteFragment"
-        android:name="com.jugos_jaco_app.ui.clients.NewClientFragment"
-        android:label="Nuevo Cliente"
-        tools:layout="@layout/fragment_new_client" />
+
 
     <fragment
         android:id="@+id/clientDetailsFragment"
@@ -81,7 +77,28 @@
         <action
             android:id="@+id/action_gallery_to_clientDetailsFragment"
             app:destination="@id/clientDetailsFragment" />
+
+        <action
+            android:id="@+id/action_clientDetailsFragment_to_newClientFragment"
+            app:destination="@id/newClientFragment"
+             />
+
+        <action
+            android:id="@+id/action_clientDetailsFragment_to_editClientFragment"
+            app:destination="@id/editClientFragment"
+            />
     </fragment>
 
+    <fragment
+        android:id="@+id/newClientFragment"
+        android:name="com.jugos_jaco_app.ui.clients.NewClientFragment"
+        android:label="Nuevo Cliente"
+        tools:layout="@layout/fragment_new_client" />
+
+    <fragment
+        android:id="@+id/editClientFragment"
+        android:name="com.jugos_jaco_app.ui.clients.EditClientFragment"
+        android:label="Editar Cliente"
+        tools:layout="@layout/fragment_edit_client" />
 
 </navigation>
