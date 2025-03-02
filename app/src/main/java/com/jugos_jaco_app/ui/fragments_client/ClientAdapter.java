@@ -109,6 +109,9 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
             bundle.putString("adress", client.getAdress());
             bundle.putString("department", client.getDepartment());
             bundle.putString("township", client.getTownship());
+            bundle.putString("id", client.getId());
+            bundle.putString("typePrice", client.getTypePrice());
+
 
 
             bundle.putString("phoneNumber", client.getPhoneNumber());
@@ -123,7 +126,6 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
                      navController.navigate(R.id.clientDetailsFragment, bundle);
 
                  }catch (Exception e){
-                     Log.i("TAGASIEMPRE",e.toString());
 
                  }
          });

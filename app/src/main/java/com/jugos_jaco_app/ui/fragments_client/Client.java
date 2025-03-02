@@ -11,10 +11,14 @@ public class Client implements Serializable {
     private String adress;
     private String departament;
     private String township;
+    private String id;
+    private String typePrice;
 
 
 
-    public Client(String firstName,  String lastName,String phoneNumber, String adress, String departament, String township, String latitude, String longitude) {
+
+    public Client(String id,String firstName,  String lastName,String phoneNumber, String adress, String departament, String township, String latitude, String longitude,String typePrice) {
+        this.id = id;
         this.firstName = firstName;
         this.lastName = lastName;
         this.phoneNumber = phoneNumber;
@@ -23,7 +27,14 @@ public class Client implements Serializable {
         this.adress = adress;
         this.departament = departament;
         this.township = township;
+        this.typePrice = typePrice;
+    }
 
+    public String getId() {
+        return id;
+    }
+    public String getTypePrice() {
+        return typePrice;
     }
 
     public String getFirstName() {

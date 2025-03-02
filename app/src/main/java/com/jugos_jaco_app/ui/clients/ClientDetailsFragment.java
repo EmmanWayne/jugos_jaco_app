@@ -31,7 +31,7 @@ import java.util.Locale;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Build;
-import androidx.core.app.ActivityCompat;
+
 import androidx.core.content.ContextCompat;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -42,6 +42,9 @@ import android.content.Context;
 import android.location.LocationManager;
 import android.provider.Settings;
 import android.app.AlertDialog;
+
+import androidx.navigation.NavController;
+import androidx.navigation.Navigation;
 
 public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPhotoListener {
 
@@ -61,7 +64,11 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
     private Uri photoUri;
     private String adress;
     private String department;
-    private String twonship;
+    private String township;
+    private String clientFirstName;
+    private String clientLastName;
+    private String id;
+    private String typePrice;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -72,11 +79,17 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
         }
         if (getArguments() != null) {
             clientName = getArguments().getString("firstName") + " " + getArguments().getString("lastName");
+            clientFirstName = getArguments().getString("firstName") ;
+             clientLastName = getArguments().getString("lastName");
+            id = getArguments().getString("id");
+            typePrice = getArguments().getString("typePrice");
+
             clientPhone = getArguments().getString("phoneNumber");
             adress = getArguments().getString("adress");
             department = getArguments().getString("department");
-            twonship = getArguments().getString("twonship");
- 
+            township = getArguments().getString("township");
+
+
             // Recuperar las coordenadas como String
             clientLatitude = getArguments().getString("latitude", "0.0");
             clientLongitude = getArguments().getString("longitude", "0.0");
@@ -103,13 +116,19 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
 
         TextView tvPhone = view.findViewById(R.id.tvClientPhone);
         TextView tvCoordinates = view.findViewById(R.id.tvCoordinates);
+        TextView tvdepartment = view.findViewById(R.id.tvDepartment);
+        TextView tvtownship = view.findViewById(R.id.tvTownship);
+        TextView tvTypePrice = view.findViewById(R.id.tvTypePrice);
+
         Button btnAddPhoto = view.findViewById(R.id.btnAddPhoto);
         rvPhotos = view.findViewById(R.id.rvPhotos);
 
         tvName.setText(clientName);
+        tvtownship.setText(township);
         tvadress.setText(adress);
-
+         tvdepartment.setText(department);
         tvPhone.setText(clientPhone);
+        tvTypePrice.setText(typePrice);
 
         if (clientLatitude != null && clientLongitude != null) {
             tvCoordinates.setText("Latitud: " + clientLatitude + ", Longitud: " + clientLongitude);
@@ -125,7 +144,22 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
         fabEdit.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                // Crear bundle con todos los datos del cliente
+                Bundle bundle = new Bundle();
+                bundle.putString("first_name", clientFirstName);
+                bundle.putString("last_name", clientName);
+                bundle.putString("phone_number", clientPhone);
+                bundle.putString("address", adress);
+                bundle.putString("department", department);
+                bundle.putString("township", township);
+                bundle.putString("latitude", clientLatitude);
+                bundle.putString("longitude", clientLongitude);
+                bundle.putBoolean("is_editing", true); // Flag para indicar que estamos editando
+                bundle.putString("client_id", id); // Asegúrate de tener el método getId()
 
+                // Navegar a NewClientFragment con los datos
+                //NavController navController = Navigation.findNavController(v);
+               // navController.navigate(R.id.action_clientDetailsFragment_to_newClientFragment, bundle);
             }
         });
 

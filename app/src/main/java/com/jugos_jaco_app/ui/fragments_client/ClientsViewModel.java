@@ -1,6 +1,11 @@
 package com.jugos_jaco_app.ui.fragments_client;
 
+import static java.security.AccessController.getContext;
+
 import android.content.Context;
+import android.util.Log;
+import android.widget.Toast;
+
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
@@ -57,22 +62,28 @@ public class ClientsViewModel extends ViewModel {
                         for (int i = 0; i < clientsJson.length(); i++) {
                             JSONObject clientJson = clientsJson.getJSONObject(i);
                             Client client = new Client(
+                                    clientJson.getString("id"),
                                     clientJson.getString("first_name"),
                                     clientJson.getString("last_name"),
                                     clientJson.getString("phone_number"),
                                     clientJson.getString("address"),
                                     clientJson.getString("department"),
                                     clientJson.getString("township"),
-                                    clientJson.getJSONObject("location").getString("latitude"),
-                                    clientJson.getJSONObject("location").getString("longitude")
-                            );
+                                     clientJson.getJSONObject("location").getString("latitude"),
+                                    clientJson.getJSONObject("location").getString("longitude"),
+                                    clientJson.optJSONObject("type_price") != null ? clientJson.getJSONObject("type_price").optString("name", "") : ""
+
+                                    );
+
                             clients.add(client);
                         }
+
                         cachedClients = new ArrayList<>(clients);
                         clientList.setValue(clients);
                         isDataLoaded = true;
                     } catch (JSONException e) {
                         e.printStackTrace();
+                        Log.e("TAGASIEMPRE", e.toString());
                         errorMessage.setValue("Error al procesar los datos");
                     }
                 },

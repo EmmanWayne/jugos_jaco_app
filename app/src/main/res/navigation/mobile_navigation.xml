@@ -64,6 +64,12 @@
             android:name="adress"
             app:argType="string" />
         <argument
+            android:name="department"
+            app:argType="string" />
+        <argument
+            android:name="township"
+            app:argType="string" />
+        <argument
             android:name="latitude"
             app:argType="string"
           />
