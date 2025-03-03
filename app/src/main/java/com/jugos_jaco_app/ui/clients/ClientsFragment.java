@@ -1,4 +1,4 @@
-package com.jugos_jaco_app.ui.fragments_client;
+package com.jugos_jaco_app.ui.clients;
 
 import static com.jugos_jaco_app.Login.KEY_TOKEN;
 import static com.jugos_jaco_app.Login.PREFS_NAME;

@@ -37,10 +37,7 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
  import com.jugos_jaco_app.R;
 import com.jugos_jaco_app.ui.utilities.VolleySingleton;
-import com.jugos_jaco_app.ui.fragments_client.ClientsFragment;
 import com.jugos_jaco_app.ui.utilities.Utilities;
-import com.jugos_jaco_app.ui.fragments_client.ClientsViewModel;
-import com.jugos_jaco_app.ui.fragments_client.Client;
 
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;

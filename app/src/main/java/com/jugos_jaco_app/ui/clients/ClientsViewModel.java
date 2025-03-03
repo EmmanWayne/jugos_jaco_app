@@ -1,4 +1,4 @@
-package com.jugos_jaco_app.ui.fragments_client;
+package com.jugos_jaco_app.ui.clients;
 
 import android.content.Context;
 import android.util.Log;

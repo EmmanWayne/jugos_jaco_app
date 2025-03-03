@@ -37,9 +37,6 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.jugos_jaco_app.R;
 import com.jugos_jaco_app.ui.utilities.VolleySingleton;
-import com.jugos_jaco_app.ui.fragments_client.Client;
-import com.jugos_jaco_app.ui.fragments_client.ClientsFragment;
-import com.jugos_jaco_app.ui.fragments_client.ClientsViewModel;
 import com.jugos_jaco_app.ui.utilities.LocationData;
 import com.jugos_jaco_app.ui.utilities.Utilities;
 

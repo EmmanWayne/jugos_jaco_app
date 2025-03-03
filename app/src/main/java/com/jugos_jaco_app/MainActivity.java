@@ -20,7 +20,7 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.jugos_jaco_app.databinding.ActivityMainBinding;
-import com.jugos_jaco_app.ui.fragments_client.ClientsFragment;
+import com.jugos_jaco_app.ui.clients.ClientsFragment;
 
 
 import android.Manifest;

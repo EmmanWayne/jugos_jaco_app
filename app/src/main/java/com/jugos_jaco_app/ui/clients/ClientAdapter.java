@@ -1,4 +1,4 @@
-package com.jugos_jaco_app.ui.fragments_client;
+package com.jugos_jaco_app.ui.clients;
 
 import android.app.Activity;
 import android.content.Context;
@@ -8,7 +8,6 @@ import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,6 +22,7 @@ import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.RecyclerView;
 import com.jugos_jaco_app.R;
+
 import java.util.List;
 import android.Manifest;
 
