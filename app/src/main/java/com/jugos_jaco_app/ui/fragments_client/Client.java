@@ -67,6 +67,21 @@ public class Client implements Serializable {
     }
 
     public boolean hasCoordinates() {
-        return latitude != null && longitude != null;
+        try {
+            // Verificar que latitude y longitude no sean null y no estén vacíos
+            if (latitude == null || longitude == null 
+                || latitude.isEmpty() || longitude.isEmpty()) {
+                return false;
+            }
+            
+            // Intentar convertir a double para validar que sean números válidos
+            double lat = Double.parseDouble(latitude);
+            double lon = Double.parseDouble(longitude);
+            
+            // Verificar que no sean 0,0 (coordenadas inválidas)
+            return !(lat == 0.0 && lon == 0.0);
+        } catch (NumberFormatException e) {
+            return false;
+        }
     }
 }

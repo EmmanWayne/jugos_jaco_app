@@ -317,7 +317,6 @@ public class EditClientFragment extends Fragment {
 
     private void updateClient() {
         String url = Utilities.URL + "clients/" + clientId;
-
         Map<String, String> params = new HashMap<>();
         params.put("first_name", etFirstName.getText().toString());
         params.put("last_name", etLastName.getText().toString());
@@ -325,42 +324,50 @@ public class EditClientFragment extends Fragment {
         params.put("address", etAddress.getText().toString());
         params.put("department", spinnerDepartament.getSelectedItem().toString());
         params.put("township", spinnerTownship.getSelectedItem().toString());
-         params.put("latitude", etLatitude.getText().toString());
+        params.put("latitude", etLatitude.getText().toString());
         params.put("longitude", etLongitude.getText().toString());
-
         JsonObjectRequest request = new JsonObjectRequest(
                 Request.Method.PUT,
                 url,
                 new JSONObject(params),
                 response -> {
                     try {
+                        // Obtener el mensaje
                         String message = response.getString("message");
                         Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
-
-                        // Obtener el cliente actualizado de la respuesta
-                        JSONObject clientJson = response.getJSONObject("client");
-                        Client updatedClient = new Client(
-                                clientJson.getString("id"),
-                                clientJson.getString("first_name"),
-                                clientJson.getString("last_name"),
-                                clientJson.getString("phone_number"),
-                                clientJson.getString("address"),
-                                clientJson.getString("department"),
-                                clientJson.getString("township"),
-                                clientJson.getJSONObject("location").getString("latitude"),
-                                clientJson.getJSONObject("location").getString("longitude"),
-                                clientJson.isNull("type_price") ? "" : 
-                                    clientJson.getJSONObject("type_price").getString("name")
-                        );
-
-                        // Actualizar el ViewModel
-                        ClientsViewModel viewModel = new ViewModelProvider(requireActivity())
-                                .get(ClientsViewModel.class);
-                        viewModel.updateClient(updatedClient);
-
-                        // Navegar hacia atrás
-                        Navigation.findNavController(requireView()).navigateUp();
-
+                        // Verificar si la respuesta contiene la clave "data"
+                        if (response.has("data")) {
+                            // Obtener el objeto "data"
+                            JSONObject dataJson = response.getJSONObject("data");
+                            // Obtener el objeto location
+                            JSONObject locationJson = dataJson.getJSONObject("location");
+                            // Obtener type_price
+                            String typePrice = "";
+                            if (dataJson.has("type_price") && !dataJson.isNull("type_price")) {
+                                typePrice = dataJson.getString("type_price");
+                            }
+                            // Crear un nuevo objeto Client con los datos
+                            Client updatedClient = new Client(
+                                    String.valueOf(dataJson.getInt("id")),
+                                    dataJson.getString("first_name"),
+                                    dataJson.getString("last_name"),
+                                    dataJson.getString("phone_number"),
+                                    dataJson.getString("address"),
+                                    dataJson.getString("department"),
+                                    dataJson.getString("township"),
+                                    locationJson.getString("latitude"),
+                                    locationJson.getString("longitude"),
+                                    typePrice
+                            );
+                            // Actualizar el ViewModel
+                            ClientsViewModel viewModel = new ViewModelProvider(requireActivity())
+                                    .get(ClientsViewModel.class);
+                            viewModel.updateClient(updatedClient);
+                            // Navegar hacia atrás
+                            Navigation.findNavController(requireView()).navigateUp();
+                        } else {
+                            Toast.makeText(requireContext(), "Respuesta del servidor incompleta", Toast.LENGTH_SHORT).show();
+                        }
                     } catch (JSONException e) {
                         e.printStackTrace();
                         Toast.makeText(requireContext(), "Error al procesar la respuesta", Toast.LENGTH_SHORT).show();
@@ -370,8 +377,12 @@ public class EditClientFragment extends Fragment {
                     try {
                         String errorMessage = new String(error.networkResponse.data);
                         JSONObject errorResponse = new JSONObject(errorMessage);
-                        String message = errorResponse.getString("message");
-                        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+                        if(errorResponse.has("message")){
+                            String message = errorResponse.getString("message");
+                            Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+                        }else{
+                            Toast.makeText(requireContext(), "Error inesperado", Toast.LENGTH_SHORT).show();
+                        }
                     } catch (Exception e) {
                         e.printStackTrace();
                         Toast.makeText(requireContext(), "Error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
@@ -390,7 +401,6 @@ public class EditClientFragment extends Fragment {
 
         VolleySingleton.getInstance(requireContext()).addToRequestQueue(request);
     }
-
     private boolean validateFields() {
         boolean isValid = true;
 

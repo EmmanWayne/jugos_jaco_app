@@ -64,6 +64,8 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
 
         holder.ivCoordinatesIcon.setOnClickListener(v -> {
             if (client.hasCoordinates()) {
+                Toast.makeText(context, ""+client.getLatitude()+" "+client.getLongitude(), Toast.LENGTH_SHORT).show();
+
                 checkLocationAndOpenMap(client);
             } else {
                 Toast.makeText(context, "No hay coordenadas disponibles", Toast.LENGTH_SHORT).show();
@@ -189,7 +191,8 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
             if (mapIntent.resolveActivity(context.getPackageManager()) != null) {
                 context.startActivity(mapIntent);
             } else {
-                // Si Google Maps no está instalado, abrir en el navegador
+
+                 // Si Google Maps no está instalado, abrir en el navegador
                 Uri browserUri = Uri.parse("https://www.google.com/maps/dir/?api=1&destination=" + 
                     client.getLatitude() + "," + client.getLongitude());
                 Intent browserIntent = new Intent(Intent.ACTION_VIEW, browserUri);

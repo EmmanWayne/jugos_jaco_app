@@ -56,24 +56,28 @@ public class ClientsViewModel extends ViewModel {
                 response -> {
                     try {
                         List<Client> clients = new ArrayList<>();
-                        JSONObject responseJson = new JSONObject(response.toString());
-                        JSONArray clientsJson = responseJson.getJSONArray("clients");
-
+                        // Obtener el array "data" directamente del objeto response
+                        JSONArray clientsJson = response.getJSONArray("data");
                         for (int i = 0; i < clientsJson.length(); i++) {
                             JSONObject clientJson = clientsJson.getJSONObject(i);
+                            JSONObject locationJson = clientJson.getJSONObject("location");
+                            String typePrice = "";
+                            if (clientJson.has("type_price") && !clientJson.isNull("type_price")) {
+                                typePrice = clientJson.getString("type_price");
+                            }
+
                             Client client = new Client(
-                                    clientJson.getString("id"),
+                                    String.valueOf(clientJson.getInt("id")), // Convertir id a String
                                     clientJson.getString("first_name"),
                                     clientJson.getString("last_name"),
                                     clientJson.getString("phone_number"),
                                     clientJson.getString("address"),
                                     clientJson.getString("department"),
                                     clientJson.getString("township"),
-                                     clientJson.getJSONObject("location").getString("latitude"),
-                                    clientJson.getJSONObject("location").getString("longitude"),
-                                    clientJson.optJSONObject("type_price") != null ? clientJson.getJSONObject("type_price").optString("name", "") : ""
-
-                                    );
+                                    locationJson.getString("latitude"),
+                                    locationJson.getString("longitude"),
+                                    typePrice
+                            );
 
                             clients.add(client);
                         }
@@ -93,7 +97,11 @@ public class ClientsViewModel extends ViewModel {
                         try {
                             String errorBody = new String(error.networkResponse.data);
                             JSONObject errorJson = new JSONObject(errorBody);
-                            message = errorJson.getString("message");
+                            if(errorJson.has("message")){
+                                message = errorJson.getString("message");
+                            }else{
+                                message = "Error inesperado";
+                            }
                         } catch (JSONException e) {
                             if (error.networkResponse.statusCode == 401) {
                                 message = "Sesión expirada";
@@ -114,7 +122,6 @@ public class ClientsViewModel extends ViewModel {
 
         VolleySingleton.getInstance(context).addToRequestQueue(request);
     }
-
     public void filterClients(String query) {
         if (query.isEmpty()) {
             clientList.setValue(cachedClients);

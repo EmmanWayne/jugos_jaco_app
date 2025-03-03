@@ -131,10 +131,9 @@ public class Login extends AppCompatActivity {
     // Método para hacer la solicitud de inicio de sesión
     @SuppressLint("HardwareIds")
     private void loginUser() {
-
         setLoading(true);
         // URL del endpoint de inicio de sesión
-        String url = Utilities.URL+"login";
+        String url = Utilities.URL + "login";
 
         // Obtener los valores de los campos
         final String identity = etIdentity.getText().toString().trim();
@@ -144,7 +143,7 @@ public class Login extends AppCompatActivity {
         Map<String, String> params = new HashMap<>();
         params.put("identity", identity);
         params.put("password", password);
-        params.put("device_name",   Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID));
+        params.put("device_name", Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID));
 
         JSONObject jsonParams = new JSONObject(params);
 
@@ -157,27 +156,39 @@ public class Login extends AppCompatActivity {
                     @Override
                     public void onResponse(JSONObject response) {
                         try {
-                            // Obtener el token del servidor desde la respuesta JSON
-                            String token = response.getString("token");
-                            String id_empleado = response.getString("employee_id");
-                            String token_type = response.getString("token_type");
-                            String message = response.getString("messaje");
+                            // Verificar si la respuesta contiene la clave "data"
+                            if (response.has("data")) {
+                                // Obtener el objeto "data"
+                                JSONObject data = response.getJSONObject("data");
 
-                            Toast.makeText(Login.this, message, Toast.LENGTH_SHORT).show();
+                                // Obtener los datos del objeto "data"
+                                String token = data.getString("token");
+                                String id_empleado = data.getString("employee_id");
+                                String token_type = data.getString("token_type");
 
-                            // Guardar el token y el estado de inicio de sesión en SharedPreferences
-                            SharedPreferences.Editor editor = sharedPreferences.edit();
-                            editor.putBoolean(KEY_IS_LOGGED_IN, true);
-                            editor.putString(KEY_TOKEN, token);
-                            editor.putString(ID_EMPLEADO, id_empleado);
-                            editor.putString(TOKEN_TYPE, token_type);
+                                // Obtener el mensaje que está fuera del objeto "data"
+                                String message = response.getString("message");
 
-                            editor.apply();
+                                Toast.makeText(Login.this, message, Toast.LENGTH_SHORT).show();
 
-                            // Redirigir a la actividad principal
-                            redirectToMainActivity();
+                                // Guardar el token y el estado de inicio de sesión en SharedPreferences
+                                SharedPreferences.Editor editor = sharedPreferences.edit();
+                                editor.putBoolean(KEY_IS_LOGGED_IN, true);
+                                editor.putString(KEY_TOKEN, token);
+                                editor.putString(ID_EMPLEADO, id_empleado);
+                                editor.putString(TOKEN_TYPE, token_type);
+
+                                editor.apply();
+
+                                // Redirigir a la actividad principal
+                                redirectToMainActivity();
+                            } else {
+                                // Manejar el caso en que no exista la clave "data"
+                                showError("Respuesta del servidor incompleta");
+                            }
                         } catch (JSONException e) {
-                            showError("Error al procesar la respuesta");
+                            showError("Error al procesar la respuesta: " + e.getMessage());
+                            e.printStackTrace(); // Imprime el error en el log para depuración
                         } finally {
                             setLoading(false);
                         }
@@ -191,7 +202,11 @@ public class Login extends AppCompatActivity {
                             try {
                                 String errorBody = new String(error.networkResponse.data);
                                 JSONObject errorJson = new JSONObject(errorBody);
-                                errorMessage = errorJson.getString("message");
+                                if(errorJson.has("message")){
+                                    errorMessage = errorJson.getString("message");
+                                }else{
+                                    errorMessage = "Error inesperado";
+                                }
                             } catch (JSONException e) {
                                 if (error.networkResponse.statusCode == 401) {
                                     errorMessage = "Usuario o contraseña incorrectos";
@@ -201,8 +216,6 @@ public class Login extends AppCompatActivity {
                         showError(errorMessage);
                         setLoading(false);
                     }
-
-
                 }
         ) {
             @Override
@@ -217,8 +230,7 @@ public class Login extends AppCompatActivity {
         // Agregar la solicitud a la cola de Volley
         RequestQueue requestQueue = Volley.newRequestQueue(this);
         requestQueue.add(jsonObjectRequest);
-    }
-    // Método para redirigir a la actividad principal
+    }    // Método para redirigir a la actividad principal
     private void redirectToMainActivity() {
         Intent intent = new Intent(Login.this, MainActivity.class);
         startActivity(intent);

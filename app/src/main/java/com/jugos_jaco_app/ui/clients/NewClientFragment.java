@@ -376,8 +376,8 @@ public class NewClientFragment extends Fragment {
         }
     }
 
-    private void storeEmploye(String first_name, String last_name, String address, String phone_number, 
-                             String department, String township, String latitude, String longitude) {
+    private void storeEmploye(String first_name, String last_name, String address, String phone_number,
+                              String department, String township, String latitude, String longitude) {
         String url = Utilities.URL + "clients";
         Map<String, String> params = new HashMap<>();
         params.put("first_name", first_name);
@@ -395,35 +395,48 @@ public class NewClientFragment extends Fragment {
                 new JSONObject(params),
                 response -> {
                     try {
+                        // Obtener el mensaje
                         String message = response.getString("message");
                         Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
 
-                        // Obtener el objeto client de la respuesta
-                        JSONObject clientJson = response.getJSONObject("client");
-                        
-                        // Crear un nuevo objeto Client con los datos
-                        Client newClient = new Client(
-                                clientJson.getString("id"),
-                                clientJson.getString("first_name"),
-                                clientJson.getString("last_name"),
-                                clientJson.getString("phone_number"),
-                                clientJson.getString("address"),
-                                clientJson.getString("department"),
-                                clientJson.getString("township"),
-                                clientJson.getJSONObject("location").getString("latitude"),
-                                clientJson.getJSONObject("location").getString("longitude"),
-                                clientJson.isNull("type_price") ? "" : 
-                                    clientJson.getJSONObject("type_price").getString("name")
-                        );
+                        // Verificar si la respuesta contiene la clave "data"
+                        if (response.has("data")) {
+                            // Obtener el objeto "data"
+                            JSONObject dataJson = response.getJSONObject("data");
 
-                        // Actualizar el ViewModel con el nuevo cliente
-                        ClientsViewModel viewModel = new ViewModelProvider(requireActivity())
-                                .get(ClientsViewModel.class);
-                        viewModel.addNewClient(newClient);
+                            // Obtener el objeto location
+                            JSONObject locationJson = dataJson.getJSONObject("location");
 
-                        // Navegar de vuelta a ClientsFragment
-                        Navigation.findNavController(requireView()).navigateUp();
+                            // Obtener type_price, manejando el caso de null
+                            String typePrice = "";
+                            if (dataJson.has("type_price") && !dataJson.isNull("type_price")) {
+                                typePrice = dataJson.getString("type_price");
+                            }
 
+                            // Crear un nuevo objeto Client con los datos
+                            Client newClient = new Client(
+                                    String.valueOf(dataJson.getInt("id")),
+                                    dataJson.getString("first_name"),
+                                    dataJson.getString("last_name"),
+                                    dataJson.getString("phone_number"),
+                                    dataJson.getString("address"),
+                                    dataJson.getString("department"),
+                                    dataJson.getString("township"),
+                                    locationJson.getString("latitude"),
+                                    locationJson.getString("longitude"),
+                                    typePrice
+                            );
+
+                            // Actualizar el ViewModel con el nuevo cliente
+                            ClientsViewModel viewModel = new ViewModelProvider(requireActivity())
+                                    .get(ClientsViewModel.class);
+                            viewModel.addNewClient(newClient);
+
+                            // Navegar de vuelta a ClientsFragment
+                            Navigation.findNavController(requireView()).navigateUp();
+                        } else {
+                            Toast.makeText(requireContext(), "Respuesta del servidor incompleta", Toast.LENGTH_SHORT).show();
+                        }
                     } catch (JSONException e) {
                         e.printStackTrace();
                         Toast.makeText(requireContext(), "Error al procesar la respuesta", Toast.LENGTH_SHORT).show();
@@ -433,8 +446,12 @@ public class NewClientFragment extends Fragment {
                     try {
                         String errorMessage = new String(error.networkResponse.data);
                         JSONObject errorResponse = new JSONObject(errorMessage);
-                        String message = errorResponse.getString("message");
-                        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+                        if(errorResponse.has("message")){
+                            String message = errorResponse.getString("message");
+                            Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+                        }else{
+                            Toast.makeText(requireContext(), "Error inesperado", Toast.LENGTH_SHORT).show();
+                        }
                     } catch (Exception e) {
                         e.printStackTrace();
                         Toast.makeText(requireContext(), "Error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
