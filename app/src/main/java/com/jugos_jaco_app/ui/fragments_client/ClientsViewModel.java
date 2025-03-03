@@ -1,10 +1,7 @@
 package com.jugos_jaco_app.ui.fragments_client;
 
-import static java.security.AccessController.getContext;
-
 import android.content.Context;
 import android.util.Log;
-import android.widget.Toast;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -12,7 +9,7 @@ import androidx.lifecycle.ViewModel;
 import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
 import com.android.volley.toolbox.JsonObjectRequest;
-import com.jugos_jaco_app.VolleySingleton;
+import com.jugos_jaco_app.ui.utilities.VolleySingleton;
 import com.jugos_jaco_app.ui.utilities.Utilities;
 import org.json.JSONArray;
 import org.json.JSONException;

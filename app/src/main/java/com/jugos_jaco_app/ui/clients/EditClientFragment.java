@@ -35,9 +35,8 @@ import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.Priority;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
-import com.google.android.material.textfield.TextInputLayout;
 import com.jugos_jaco_app.R;
-import com.jugos_jaco_app.VolleySingleton;
+import com.jugos_jaco_app.ui.utilities.VolleySingleton;
 import com.jugos_jaco_app.ui.fragments_client.Client;
 import com.jugos_jaco_app.ui.fragments_client.ClientsFragment;
 import com.jugos_jaco_app.ui.fragments_client.ClientsViewModel;
@@ -48,7 +47,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

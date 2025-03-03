@@ -1,11 +1,9 @@
 package com.jugos_jaco_app.ui.clients;
 
-import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
 import androidx.fragment.app.Fragment;
 
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -38,7 +36,7 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
  import com.jugos_jaco_app.R;
-import com.jugos_jaco_app.VolleySingleton;
+import com.jugos_jaco_app.ui.utilities.VolleySingleton;
 import com.jugos_jaco_app.ui.fragments_client.ClientsFragment;
 import com.jugos_jaco_app.ui.utilities.Utilities;
 import com.jugos_jaco_app.ui.fragments_client.ClientsViewModel;
@@ -48,7 +46,6 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

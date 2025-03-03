@@ -1,4 +1,4 @@
-package com.jugos_jaco_app;
+package com.jugos_jaco_app.ui.utilities;
 
 
 
@@ -8,7 +8,6 @@ import static com.jugos_jaco_app.Login.PREFS_NAME;
 import static com.jugos_jaco_app.Login.TOKEN_TYPE;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -36,8 +35,8 @@ import com.android.volley.Request;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
-import com.jugos_jaco_app.ui.fragments_client.ClientsFragment;
-import com.jugos_jaco_app.ui.utilities.Utilities;
+import com.jugos_jaco_app.R;
+
 import java.util.HashMap;
 import java.util.Map;
 

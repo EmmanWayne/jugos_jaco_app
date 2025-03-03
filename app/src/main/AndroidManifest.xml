@@ -71,7 +71,7 @@
         </provider>
 
         <service
-            android:name=".LocationService"
+            android:name=".ui.utilities.LocationService"
             android:foregroundServiceType="location"
             android:enabled="true"
             android:exported="false"/>

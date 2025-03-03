@@ -40,10 +40,12 @@ import androidx.core.content.ContextCompat;
 import android.content.SharedPreferences;
 import com.android.volley.Request;
 import com.android.volley.toolbox.JsonObjectRequest;
-import org.json.JSONObject;
 import com.android.volley.AuthFailureError;
+import com.jugos_jaco_app.ui.utilities.LocationService;
 import com.jugos_jaco_app.ui.utilities.Utilities;
 import com.google.android.material.snackbar.Snackbar;
+import com.jugos_jaco_app.ui.utilities.VolleySingleton;
+
 import java.util.HashMap;
 import java.util.Map;
 
