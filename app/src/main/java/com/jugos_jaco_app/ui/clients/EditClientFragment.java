@@ -41,6 +41,7 @@ import com.jugos_jaco_app.VolleySingleton;
 import com.jugos_jaco_app.ui.fragments_client.Client;
 import com.jugos_jaco_app.ui.fragments_client.ClientsFragment;
 import com.jugos_jaco_app.ui.fragments_client.ClientsViewModel;
+import com.jugos_jaco_app.ui.utilities.LocationData;
 import com.jugos_jaco_app.ui.utilities.Utilities;
 
 import org.json.JSONException;
@@ -391,76 +392,94 @@ public class EditClientFragment extends Fragment {
     }
 
     private boolean validateFields() {
-        // Implementa la lógica para validar los campos del formulario
-        // Puedes agregar aquí la validación de cada campo
-        return true; // Por defecto, asumimos que los campos son válidos
+        boolean isValid = true;
+
+        // Validar nombre
+        String firstName = etFirstName.getText().toString().trim();
+        if (firstName.isEmpty()) {
+            etFirstName.setError("El nombre es requerido");
+            isValid = false;
+        }
+
+        // Validar apellido
+        String lastName = etLastName.getText().toString().trim();
+        if (lastName.isEmpty()) {
+            etLastName.setError("El apellido es requerido");
+            isValid = false;
+        }
+
+        // Validar teléfono
+        String phoneNumber = etPhoneNumber.getText().toString().trim();
+        if (phoneNumber.isEmpty()) {
+            etPhoneNumber.setError("El teléfono es requerido");
+            isValid = false;
+        } else if (phoneNumber.length() < 8) {
+            etPhoneNumber.setError("El teléfono debe tener al menos 8 dígitos");
+            isValid = false;
+        }
+
+        // Validar dirección
+        String address = etAddress.getText().toString().trim();
+        if (address.isEmpty()) {
+            etAddress.setError("La dirección es requerida");
+            isValid = false;
+        }
+
+        // Validar departamento
+        if (spinnerDepartament.getSelectedItemPosition() == 0) {
+            TextView errorText = (TextView) spinnerDepartament.getSelectedView();
+            errorText.setError("");
+            errorText.setTextColor(Color.RED);
+            errorText.setText("Seleccione un departamento");
+            isValid = false;
+        }
+
+        // Validar municipio
+        if (spinnerTownship.getSelectedItemPosition() < 0 || 
+            spinnerDepartament.getSelectedItemPosition() == 0) {
+            TextView errorText = (TextView) spinnerTownship.getSelectedView();
+            errorText.setError("");
+            errorText.setTextColor(Color.RED);
+            errorText.setText("Seleccione un municipio");
+            isValid = false;
+        }
+
+        // Validar coordenadas (opcional pero con advertencia)
+        String latitude = etLatitude.getText().toString().trim();
+        String longitude = etLongitude.getText().toString().trim();
+        if (latitude.isEmpty() || longitude.isEmpty()) {
+            Toast.makeText(requireContext(), 
+                "Se recomienda capturar las coordenadas del cliente", 
+                Toast.LENGTH_SHORT).show();
+        } else {
+            try {
+                double lat = Double.parseDouble(latitude);
+                double lon = Double.parseDouble(longitude);
+                
+                // Validar rango de coordenadas para Honduras
+                if (lat < 12.98 || lat > 16.02 || lon < -89.35 || lon > -83.15) {
+                    etLatitude.setError("Coordenadas fuera de Honduras");
+                    etLongitude.setError("Coordenadas fuera de Honduras");
+                    isValid = false;
+                }
+            } catch (NumberFormatException e) {
+                etLatitude.setError("Coordenada inválida");
+                etLongitude.setError("Coordenada inválida");
+                isValid = false;
+            }
+        }
+
+        if (!isValid) {
+            Toast.makeText(requireContext(), 
+                "Por favor, complete todos los campos requeridos correctamente", 
+                Toast.LENGTH_SHORT).show();
+        }
+
+        return isValid;
     }
 
     private void loadDepartamentos() {
-        // Lista de los 18 departamentos de Honduras
-        departamentos = Arrays.asList(
-                "Seleccione",
-                "Atlántida", "Choluteca", "Colón", "Comayagua", "Copán", "Cortés",
-                "El Paraíso", "Francisco Morazán", "Gracias a Dios", "Intibucá",
-                "Islas de la Bahía", "La Paz", "Lempira", "Ocotepeque", "Olancho",
-                "Santa Bárbara", "Valle", "Yoro"
-        );
-
-        // Municipios por departamento
-        municipiosPorDepartamento = new HashMap<>();
-        municipiosPorDepartamento.put("Atlántida", Arrays.asList(
-                "La Ceiba", "Tela", "Jutiapa", "El Porvenir", "Esparta", "Arizona", "San Francisco"
-        ));
-        municipiosPorDepartamento.put("Choluteca", Arrays.asList(
-                "Choluteca", "Pespire", "Nacaome", "San Marcos de Colón", "Duyure", "El Triunfo", "Concepción de María"
-        ));
-        municipiosPorDepartamento.put("Colón", Arrays.asList(
-                "Trujillo", "Balfate", "Sonaguera", "Tocoa", "Bonito Oriental", "Santa Fe", "Iriona"
-        ));
-        municipiosPorDepartamento.put("Comayagua", Arrays.asList(
-                "Comayagua", "Siguatepeque", "La Libertad", "San Jerónimo", "Esquías", "Humuya", "Ojos de Agua"
-        ));
-        municipiosPorDepartamento.put("Copán", Arrays.asList(
-                "Santa Rosa de Copán", "Copán Ruinas", "Dulce Nombre", "San Agustín", "Concepción", "San Antonio", "Trinidad"
-        ));
-        municipiosPorDepartamento.put("Cortés", Arrays.asList(
-                "San Pedro Sula", "Puerto Cortés", "Villanueva", "Choloma", "La Lima", "Omoa", "Pimienta"
-        ));
-        municipiosPorDepartamento.put("El Paraíso", Arrays.asList(
-                "Yuscarán", "Danlí", "El Paraíso", "Texiguat", "Villa de San Francisco", "Morocelí", "Trojes"
-        ));
-        municipiosPorDepartamento.put("Francisco Morazán", Arrays.asList(
-                "Tegucigalpa", "Comayagüela", "Valle de Ángeles", "Santa Lucía", "San Juancito", "Talanga", "Orica"
-        ));
-        municipiosPorDepartamento.put("Gracias a Dios", Arrays.asList(
-                "Puerto Lempira", "Brus Laguna", "Ahuas", "Juan Francisco Bulnes", "Villeda Morales", "Wampusirpi", "Palacios"
-        ));
-        municipiosPorDepartamento.put("Intibucá", Arrays.asList(
-                "La Esperanza", "Intibucá", "Yamaranguila", "San Juan", "San Marcos de la Sierra", "Magdalena", "Camasca"
-        ));
-        municipiosPorDepartamento.put("Islas de la Bahía", Arrays.asList(
-                "Roatán", "Guanaja", "Utila", "José Santos Guardiola", "Santa Elena", "Santa Fe", "Juan Francisco"
-        ));
-        municipiosPorDepartamento.put("La Paz", Arrays.asList(
-                "La Paz", "Marcala", "Cabañas", "San Pedro de Tutule", "Santa María", "San José", "Opatoro"
-        ));
-        municipiosPorDepartamento.put("Lempira", Arrays.asList(
-                "Gracias", "Lepaera", "Erandique", "San Manuel Colohete", "San Rafael", "La Campa", "Talgua"
-        ));
-        municipiosPorDepartamento.put("Ocotepeque", Arrays.asList(
-                "Ocotepeque", "Sensenti", "San Marcos", "La Encarnación", "San Francisco del Valle", "Concepción", "Dolores Merendón"
-        ));
-        municipiosPorDepartamento.put("Olancho", Arrays.asList(
-                "Juticalpa", "Catacamas", "Campamento", "San Esteban", "Gualaco", "Guata", "Dulce Nombre de Culmí"
-        ));
-        municipiosPorDepartamento.put("Santa Bárbara", Arrays.asList(
-                "Santa Bárbara", "Quimistán", "Ilama", "San Luis", "San José de Colinas", "Naranjito", "Gualala"
-        ));
-        municipiosPorDepartamento.put("Valle", Arrays.asList(
-                "Nacaome", "San Lorenzo", "Langue", "Amapala", "Goascorán", "Alianza", "Aramecina"
-        ));
-        municipiosPorDepartamento.put("Yoro", Arrays.asList(
-                "Yoro", "El Progreso", "Olanchito", "Morazán", "Victoria", "Jocón", "Santa Rita"
-        ));
+        departamentos = LocationData.getDepartamentos();
+        municipiosPorDepartamento = LocationData.getMunicipiosPorDepartamento();
     }
 }
