@@ -348,6 +348,15 @@
                         android:layout_marginTop="8dp"
                         app:icon="@drawable/ic_camera"
                         style="@style/Widget.MaterialComponents.Button"/>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnUploadPhotos"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Subir Fotos Pendientes"
+                        android:layout_marginTop="8dp"
+                        app:icon="@drawable/ic_uploaded"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"/>
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
         </LinearLayout>

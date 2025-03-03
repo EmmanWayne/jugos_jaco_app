@@ -104,6 +104,17 @@ public class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.PhotoViewHol
         }
     }
 
+    // Agregar este método
+    public List<PhotoItem> getPendingPhotos() {
+        List<PhotoItem> pendingPhotos = new ArrayList<>();
+        for (PhotoItem photo : photos) {
+            if (!photo.isUploaded()) {
+                pendingPhotos.add(photo);
+            }
+        }
+        return pendingPhotos;
+    }
+
     @NonNull
     @Override
     public PhotoViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -148,10 +159,24 @@ public class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.PhotoViewHol
             }
         }
 
-        // Mostrar/ocultar el indicador de carga
-        holder.progressUpload.setVisibility(
-            photoItem.isUploading() ? View.VISIBLE : View.GONE
-        );
+        // Mostrar estado de la foto
+        if (photoItem.isUploading()) {
+            holder.progressUpload.setVisibility(View.VISIBLE);
+            holder.statusIcon.setVisibility(View.GONE);
+        } else {
+            holder.progressUpload.setVisibility(View.GONE);
+            holder.statusIcon.setVisibility(View.VISIBLE);
+            
+            if (photoItem.isUploaded()) {
+                // Foto subida exitosamente
+                holder.statusIcon.setImageResource(R.drawable.ic_uploaded);
+                holder.statusIcon.setContentDescription("Foto subida");
+            } else {
+                // Foto pendiente de subir
+                holder.statusIcon.setImageResource(R.drawable.ic_pending);
+                holder.statusIcon.setContentDescription("Pendiente de subir");
+            }
+        }
 
         // Configurar el clic para mostrar la imagen en pantalla completa
         holder.imageView.setOnClickListener(v -> {
@@ -195,11 +220,13 @@ public class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.PhotoViewHol
     public static class PhotoViewHolder extends RecyclerView.ViewHolder {
         ImageView imageView;
         ProgressBar progressUpload;
+        ImageView statusIcon;
 
         public PhotoViewHolder(@NonNull View itemView) {
             super(itemView);
             imageView = itemView.findViewById(R.id.ivPhoto);
             progressUpload = itemView.findViewById(R.id.progressUpload);
+            statusIcon = itemView.findViewById(R.id.ivStatus);
         }
     }
 

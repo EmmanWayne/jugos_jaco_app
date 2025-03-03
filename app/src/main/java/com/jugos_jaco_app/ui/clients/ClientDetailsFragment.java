@@ -138,6 +138,7 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
         TextView tvTypePrice = view.findViewById(R.id.tvTypePrice);
 
         Button btnAddPhoto = view.findViewById(R.id.btnAddPhoto);
+        Button btnUploadPhotos = view.findViewById(R.id.btnUploadPhotos);
         rvPhotos = view.findViewById(R.id.rvPhotos);
 
         tvName.setText(clientName);
@@ -185,6 +186,7 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
 
         // Evento para el botón que agrega fotos
         btnAddPhoto.setOnClickListener(v -> showPhotoDialog());
+        btnUploadPhotos.setOnClickListener(v -> uploadPendingPhotos());
 
         // Configurar el botón de llamada
         MaterialButton btnCall = view.findViewById(R.id.btnCall);
@@ -212,9 +214,6 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
     }
 
     // Abrir la cámara para tomar una foto
-
-
-    // Manejar los resultados de la cámara o la galería
     private void openCamera() {
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         if (takePictureIntent.resolveActivity(getActivity().getPackageManager()) != null) {
@@ -248,10 +247,8 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
             new ActivityResultContracts.StartActivityForResult(), result -> {
                 if (result.getResultCode() == getActivity().RESULT_OK) {
                     if (photoUri != null) {
-                        // Agregar la foto como no subida
+                        // Solo agregar la foto al adapter sin subirla
                         photoAdapter.addLocalPhoto(photoUri.toString());
-                        // Iniciar la subida
-                        uploadPhoto(photoUri.toString());
                     } else {
                         Toast.makeText(getContext(), "No se pudo obtener la foto", Toast.LENGTH_SHORT).show();
                     }
@@ -283,7 +280,6 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                                 String realPath = getRealPathFromURI(imageUri);
                                 if (realPath != null) {
                                     photoAdapter.addLocalPhoto(realPath);
-                                    uploadPhoto(realPath);
                                 }
                             }
                         }
@@ -294,7 +290,6 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                             String realPath = getRealPathFromURI(imageUri);
                             if (realPath != null) {
                                 photoAdapter.addLocalPhoto(realPath);
-                                uploadPhoto(realPath);
                             }
                         }
                     }
@@ -686,5 +681,21 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
             result = uri.getPath();
         }
         return result;
+    }
+
+    // Agregar método para subir todas las fotos pendientes
+    private void uploadPendingPhotos() {
+        List<PhotoAdapter.PhotoItem> pendingPhotos = photoAdapter.getPendingPhotos();
+        if (pendingPhotos.isEmpty()) {
+            Toast.makeText(requireContext(), "No hay fotos pendientes de subir", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        int totalPhotos = pendingPhotos.size();
+        int[] uploadedCount = {0};
+
+        for (PhotoAdapter.PhotoItem photo : pendingPhotos) {
+            uploadPhoto(photo.getPath());
+        }
     }
 }
