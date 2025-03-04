@@ -2,6 +2,9 @@ package com.jugos_jaco_app.ui.sales;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
@@ -27,7 +30,16 @@ public class NewSaleFragment extends Fragment {
     private TextView tvTotal;
     private MaterialButton btnFinishSale;
     private ArrayList<CartItem> cartItems = new ArrayList<>();
+    private View layoutProducts;
+    private View layoutCart;
+    private int currentView = 0; // 0: ambos, 1: solo productos, 2: solo carrito
     
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setHasOptionsMenu(true); // Habilitar menú de opciones
+    }
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_new_sale, container, false);
@@ -42,9 +54,29 @@ public class NewSaleFragment extends Fragment {
         setupRecyclerViews();
         loadProducts();
         
+        layoutProducts = view.findViewById(R.id.layoutProducts);
+        layoutCart = view.findViewById(R.id.layoutCart);
+        
         return view;
     }
-    
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        menu.add(Menu.NONE, 1, Menu.NONE, "Cambiar Vista")
+            .setIcon(R.drawable.ic_view_list)
+            .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
+        super.onCreateOptionsMenu(menu, inflater);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == 1) {
+            toggleView();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
     private void initializeViews(View view) {
         TextView tvClientName = view.findViewById(R.id.tvClientName);
         tvClientName.setText("Cliente: " + clientName);
@@ -153,5 +185,23 @@ public class NewSaleFragment extends Fragment {
     
     private void finishSale() {
         // TODO: Implementar guardado de la venta
+    }
+
+    private void toggleView() {
+        currentView = (currentView + 1) % 3;
+        switch (currentView) {
+            case 0: // Mostrar ambos
+                layoutProducts.setVisibility(View.VISIBLE);
+                layoutCart.setVisibility(View.VISIBLE);
+                break;
+            case 1: // Solo productos
+                layoutProducts.setVisibility(View.VISIBLE);
+                layoutCart.setVisibility(View.GONE);
+                break;
+            case 2: // Solo carrito
+                layoutProducts.setVisibility(View.GONE);
+                layoutCart.setVisibility(View.VISIBLE);
+                break;
+        }
     }
 } 

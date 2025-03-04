@@ -15,78 +15,64 @@
         android:layout_marginBottom="16dp"/>
 
     <!-- Lista de Productos -->
-    <androidx.cardview.widget.CardView
+    <LinearLayout
+        android:id="@+id/layoutProducts"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        app:cardCornerRadius="8dp"
-        app:cardElevation="4dp"
-        android:layout_marginBottom="8dp">
+        android:orientation="vertical">
 
-        <LinearLayout
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Productos"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp"/>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvProducts"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:padding="8dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Productos"
-                android:textStyle="bold"
-                android:layout_marginBottom="8dp"/>
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvProducts"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"/>
-        </LinearLayout>
-    </androidx.cardview.widget.CardView>
+            android:layout_height="match_parent"/>
+    </LinearLayout>
 
     <!-- Carrito -->
-    <androidx.cardview.widget.CardView
+    <LinearLayout
+        android:id="@+id/layoutCart"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        app:cardCornerRadius="8dp"
-        app:cardElevation="4dp">
+        android:orientation="vertical"
+        android:layout_marginTop="8dp">
 
-        <LinearLayout
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Carrito"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp"/>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvCart"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:padding="8dp">
+            android:layout_height="0dp"
+            android:layout_weight="1"/>
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Carrito"
-                android:textStyle="bold"
-                android:layout_marginBottom="8dp"/>
+        <TextView
+            android:id="@+id/tvTotal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:layout_gravity="end"
+            android:layout_marginTop="8dp"/>
 
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvCart"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1"/>
-
-            <TextView
-                android:id="@+id/tvTotal"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                android:layout_gravity="end"
-                android:layout_marginTop="8dp"/>
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnFinishSale"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Finalizar Venta"
-                android:layout_marginTop="8dp"
-                app:icon="@drawable/ic_sales"
-                style="@style/Widget.MaterialComponents.Button"/>
-        </LinearLayout>
-    </androidx.cardview.widget.CardView>
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnFinishSale"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Finalizar Venta"
+            android:layout_marginTop="8dp"
+            app:icon="@drawable/ic_sales"
+            style="@style/Widget.MaterialComponents.Button"/>
+    </LinearLayout>
 </LinearLayout> 
