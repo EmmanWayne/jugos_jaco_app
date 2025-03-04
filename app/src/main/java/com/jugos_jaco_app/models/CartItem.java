@@ -1,6 +1,8 @@
 package com.jugos_jaco_app.models;
 
-public class CartItem {
+import java.io.Serializable;
+
+public class CartItem implements Serializable {
     private Product product;
     private int quantity;
 

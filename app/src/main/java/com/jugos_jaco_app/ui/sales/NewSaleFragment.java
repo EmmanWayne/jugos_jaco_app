@@ -33,6 +33,8 @@ public class NewSaleFragment extends Fragment {
     private View layoutProducts;
     private View layoutCart;
     private int currentView = 0; // 0: ambos, 1: solo productos, 2: solo carrito
+    private static final String KEY_CART_ITEMS = "cart_items";
+    private static final String KEY_CURRENT_VIEW = "current_view";
     
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -50,6 +52,12 @@ public class NewSaleFragment extends Fragment {
             clientName = getArguments().getString("clientName");
         }
         
+        // Restaurar el estado si existe
+        if (savedInstanceState != null) {
+            cartItems = (ArrayList<CartItem>) savedInstanceState.getSerializable(KEY_CART_ITEMS);
+            currentView = savedInstanceState.getInt(KEY_CURRENT_VIEW, 0);
+        }
+        
         initializeViews(view);
         setupRecyclerViews();
         loadProducts();
@@ -57,7 +65,17 @@ public class NewSaleFragment extends Fragment {
         layoutProducts = view.findViewById(R.id.layoutProducts);
         layoutCart = view.findViewById(R.id.layoutCart);
         
+        // Restaurar la vista actual
+        updateViewVisibility();
+        
         return view;
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putSerializable(KEY_CART_ITEMS, cartItems);
+        outState.putInt(KEY_CURRENT_VIEW, currentView);
     }
 
     @Override
@@ -189,6 +207,10 @@ public class NewSaleFragment extends Fragment {
 
     private void toggleView() {
         currentView = (currentView + 1) % 3;
+        updateViewVisibility();
+    }
+
+    private void updateViewVisibility() {
         switch (currentView) {
             case 0: // Mostrar ambos
                 layoutProducts.setVisibility(View.VISIBLE);
