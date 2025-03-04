@@ -99,9 +99,14 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
             }
         });
 
-        holder.ivVentaIcon.setOnClickListener(v ->
-                Toast.makeText(context, "Iniciando venta para " + client.getFirstName(), Toast.LENGTH_SHORT).show()
-        );
+        holder.ivVentaIcon.setOnClickListener(v -> {
+            Bundle bundle = new Bundle();
+            bundle.putString("clientId", client.getId());
+            bundle.putString("clientName", client.getFirstName() + " " + client.getLastName());
+            
+            Navigation.findNavController(v)
+                .navigate(R.id.action_nav_clientes_to_newSaleFragment, bundle);
+        });
 
         // Evento de clic en el elemento completo para navegar a ClientDetailsFragment
         holder.itemView.setOnClickListener(v -> {

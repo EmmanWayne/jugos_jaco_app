@@ -108,4 +108,23 @@
             app:popUpToInclusive="true" />
     </fragment>
 
+    <fragment
+        android:id="@+id/newSaleFragment"
+        android:name="com.jugos_jaco_app.ui.sales.NewSaleFragment"
+        android:label="Nueva Venta"
+        tools:layout="@layout/fragment_new_sale">
+        
+        <argument
+            android:name="clientId"
+            app:argType="string" />
+        <argument
+            android:name="clientName"
+            app:argType="string" />
+    </fragment>
+
+    <!-- En el fragment de clientes -->
+    <action
+        android:id="@+id/action_nav_clientes_to_newSaleFragment"
+        app:destination="@id/newSaleFragment" />
+
 </navigation>
