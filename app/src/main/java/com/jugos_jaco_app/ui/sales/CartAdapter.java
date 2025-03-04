@@ -68,24 +68,32 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
             tvPrice.setText(String.format("L. %.2f", item.getProduct().getPrice()));
             updateSubtotal(item);
             
-            // Manejar entrada manual de cantidad
-            etQuantity.setOnEditorActionListener((v, actionId, event) -> {
-                if (actionId == EditorInfo.IME_ACTION_DONE) {
+            // Manejar cambios en el texto
+            etQuantity.addTextChangedListener(new android.text.TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+                @Override
+                public void afterTextChanged(android.text.Editable s) {
                     try {
-                        int newQuantity = Integer.parseInt(etQuantity.getText().toString());
-                        if (newQuantity > 0) {
-                            item.setQuantity(newQuantity);
-                            updateSubtotal(item);
-                            if (listener != null) listener.onCartUpdated();
-                        } else {
-                            etQuantity.setText(String.valueOf(item.getQuantity()));
+                        String text = s.toString();
+                        if (!text.isEmpty()) {
+                            int newQuantity = Integer.parseInt(text);
+                            if (newQuantity > 0) {
+                                item.setQuantity(newQuantity);
+                                updateSubtotal(item);
+                                if (listener != null) listener.onCartUpdated();
+                            }
                         }
                     } catch (NumberFormatException e) {
+                        // Si no es un número válido, restaurar el valor anterior
                         etQuantity.setText(String.valueOf(item.getQuantity()));
+                        etQuantity.setSelection(etQuantity.length());
                     }
-                    return true;
                 }
-                return false;
             });
             
             // Botones de incremento/decremento
@@ -109,6 +117,26 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
                 cartItems.remove(getAdapterPosition());
                 notifyItemRemoved(getAdapterPosition());
                 if (listener != null) listener.onCartUpdated();
+            });
+            
+            // Mantener el resto del código existente...
+            etQuantity.setOnEditorActionListener((v, actionId, event) -> {
+                if (actionId == EditorInfo.IME_ACTION_DONE) {
+                    try {
+                        int newQuantity = Integer.parseInt(etQuantity.getText().toString());
+                        if (newQuantity > 0) {
+                            item.setQuantity(newQuantity);
+                            updateSubtotal(item);
+                            if (listener != null) listener.onCartUpdated();
+                        } else {
+                            etQuantity.setText(String.valueOf(item.getQuantity()));
+                        }
+                    } catch (NumberFormatException e) {
+                        etQuantity.setText(String.valueOf(item.getQuantity()));
+                    }
+                    return true;
+                }
+                return false;
             });
         }
         
