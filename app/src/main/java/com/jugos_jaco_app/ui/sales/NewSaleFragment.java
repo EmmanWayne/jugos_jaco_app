@@ -18,6 +18,7 @@ import com.jugos_jaco_app.models.CartItem;
 import com.jugos_jaco_app.models.Product;
 import java.util.ArrayList;
 import java.util.List;
+import androidx.appcompat.widget.SearchView;
 
 public class NewSaleFragment extends Fragment {
     
@@ -35,6 +36,7 @@ public class NewSaleFragment extends Fragment {
     private int currentView = 0; // 0: ambos, 1: solo productos, 2: solo carrito
     private static final String KEY_CART_ITEMS = "cart_items";
     private static final String KEY_CURRENT_VIEW = "current_view";
+    private List<Product> allProducts = new ArrayList<>(); // Lista completa de productos
     
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -80,10 +82,31 @@ public class NewSaleFragment extends Fragment {
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        super.onCreateOptionsMenu(menu, inflater);
+        
+        // Obtener el SearchView que ya existe
+        MenuItem searchItem = menu.findItem(R.id.action_search);
+        SearchView searchView = (SearchView) searchItem.getActionView();
+        
+        // Configurar el SearchView
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                filterProducts(query);
+                return true;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                filterProducts(newText);
+                return true;
+            }
+        });
+
+        // Agregar el botón de vista que se eliminó accidentalmente
         menu.add(Menu.NONE, 1, Menu.NONE, "Cambiar Vista")
             .setIcon(R.drawable.ic_view_list)
             .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
-        super.onCreateOptionsMenu(menu, inflater);
     }
 
     @Override
@@ -121,9 +144,9 @@ public class NewSaleFragment extends Fragment {
     
     private void loadProducts() {
         // Crear lista de productos de prueba
-        List<Product> products = new ArrayList<>();
+        allProducts = new ArrayList<>(); // Guardar la lista completa
         
-        products.add(new Product(
+        allProducts.add(new Product(
             "1",
             "Esencia de Vainilla",
             "VAN-001",
@@ -131,10 +154,10 @@ public class NewSaleFragment extends Fragment {
             "1",
             "Esencias Dulces",
             25.00,
-            "https://example.com/vanilla.jpg"  // URL de imagen de prueba
+            "https://example.com/vanilla.jpg"
         ));
         
-        products.add(new Product(
+        allProducts.add(new Product(
             "2",
             "Esencia de Chocolate",
             "CHO-001",
@@ -145,7 +168,7 @@ public class NewSaleFragment extends Fragment {
             "https://example.com/chocolate.jpg"
         ));
         
-        products.add(new Product(
+        allProducts.add(new Product(
             "3",
             "Esencia de Fresa",
             "FRE-001",
@@ -156,7 +179,7 @@ public class NewSaleFragment extends Fragment {
             "https://example.com/strawberry.jpg"
         ));
         
-        products.add(new Product(
+        allProducts.add(new Product(
             "4",
             "Esencia de Menta",
             "MEN-001",
@@ -167,8 +190,8 @@ public class NewSaleFragment extends Fragment {
             "https://example.com/mint.jpg"
         ));
 
-        // Actualizar el adaptador con los productos
-        productsAdapter.updateProducts(products);
+        // Actualizar el adaptador con todos los productos
+        productsAdapter.updateProducts(allProducts);
     }
     
     private void addToCart(Product product) {
@@ -225,5 +248,24 @@ public class NewSaleFragment extends Fragment {
                 layoutCart.setVisibility(View.VISIBLE);
                 break;
         }
+    }
+
+    private void filterProducts(String query) {
+        if (query == null || query.isEmpty()) {
+            productsAdapter.updateProducts(allProducts);
+            return;
+        }
+
+        List<Product> filteredList = new ArrayList<>();
+        String searchQuery = query.toLowerCase().trim();
+
+        for (Product product : allProducts) {
+            if (product.getName().toLowerCase().contains(searchQuery) ||
+                product.getCode().toLowerCase().contains(searchQuery)) {
+                filteredList.add(product);
+            }
+        }
+
+        productsAdapter.updateProducts(filteredList);
     }
 } 
