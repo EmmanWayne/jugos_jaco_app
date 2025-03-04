@@ -2,7 +2,7 @@ package com.jugos_jaco_app.api;
 
 import com.jugos_jaco_app.ui.utilities.Utilities;
 import okhttp3.OkHttpClient;
-import okhttp3.logging.HttpLoggingInterceptor;
+import okhttp3.Request;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
@@ -11,16 +11,15 @@ public class RetrofitClient {
 
     public static Retrofit getClient() {
         if (retrofit == null) {
-            // Crear interceptor para logging
-            HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
-            interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-
-            // Crear cliente OkHttp con el interceptor
             OkHttpClient client = new OkHttpClient.Builder()
-                .addInterceptor(interceptor)
+                .addInterceptor(chain -> {
+                    Request original = chain.request();
+                    Request.Builder requestBuilder = original.newBuilder()
+                        .header("Accept", "application/json");
+                    return chain.proceed(requestBuilder.build());
+                })
                 .build();
 
-            // Crear instancia de Retrofit
             retrofit = new Retrofit.Builder()
                 .baseUrl(Utilities.URL)
                 .addConverterFactory(GsonConverterFactory.create())

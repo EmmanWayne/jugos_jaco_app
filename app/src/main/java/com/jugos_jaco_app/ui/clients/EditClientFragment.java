@@ -358,8 +358,10 @@ public class EditClientFragment extends Fragment {
                             ClientsViewModel viewModel = new ViewModelProvider(requireActivity())
                                     .get(ClientsViewModel.class);
                             viewModel.updateClient(updatedClient);
-                            // Navegar hacia atrás
-                            Navigation.findNavController(requireView()).navigateUp();
+                            
+                            // Navegar hacia atrás hasta ClientsFragment
+                            Navigation.findNavController(requireView())
+                                .popBackStack(R.id.nav_clientes, false);
                         } else {
                             Toast.makeText(requireContext(), "Respuesta del servidor incompleta", Toast.LENGTH_SHORT).show();
                         }

@@ -99,6 +99,13 @@
         android:id="@+id/editClientFragment"
         android:name="com.jugos_jaco_app.ui.clients.EditClientFragment"
         android:label="Editar Cliente"
-        tools:layout="@layout/fragment_edit_client" />
+        tools:layout="@layout/fragment_edit_client">
+        
+        <action
+            android:id="@+id/action_editClientFragment_to_clientsFragment"
+            app:destination="@id/nav_clientes"
+            app:popUpTo="@id/nav_clientes"
+            app:popUpToInclusive="true" />
+    </fragment>
 
 </navigation>

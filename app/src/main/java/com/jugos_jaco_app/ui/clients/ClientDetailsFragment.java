@@ -541,15 +541,20 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
         }
     }
 
+    /**
+     * Maneja la subida de una foto al servidor
+     * @param imagePath Ruta de la imagen a subir
+     */
     private void uploadPhoto(String imagePath) {
         try {
+            // Verificar si el archivo existe
             File imageFile = new File(imagePath);
             if (!imageFile.exists()) {
                 handleUploadError();
                 return;
             }
 
-            // Si es una URI, necesitamos obtener el path real
+            // Convertir URI de contenido a ruta real si es necesario
             if (imagePath.startsWith("content://")) {
                 String realPath = getRealPathFromURI(Uri.parse(imagePath));
                 if (realPath != null) {
@@ -557,13 +562,13 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                 }
             }
 
-            // Intentar cargar y comprimir la imagen
+            // Cargar y procesar la imagen
             Bitmap originalBitmap = null;
             try {
-                // Primero intentar con BitmapFactory
+                // Intentar cargar la imagen usando diferentes métodos
                 originalBitmap = BitmapFactory.decodeFile(imageFile.getAbsolutePath());
                 
-                // Si falla, intentar con ContentResolver
+                // Si falla el primer método, intentar con ContentResolver
                 if (originalBitmap == null && getContext() != null) {
                     Uri imageUri = Uri.parse(imagePath);
                     originalBitmap = MediaStore.Images.Media.getBitmap(
@@ -584,11 +589,11 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                 return;
             }
 
-            // Comprimir la imagen
+            // Comprimir la imagen para reducir el tamaño
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             originalBitmap.compress(Bitmap.CompressFormat.JPEG, 70, bos);
             
-            // Guardar la imagen comprimida
+            // Guardar la imagen comprimida en caché
             File compressedFile = new File(requireContext().getCacheDir(), 
                 "compressed_" + imageFile.getName());
             FileOutputStream fos = new FileOutputStream(compressedFile);
@@ -596,12 +601,13 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
             fos.flush();
             fos.close();
 
-            // Crear MultipartBody.Part
+            // Preparar la imagen para la subida
             RequestBody requestFile = RequestBody.create(
                 MediaType.parse("image/jpeg"),
                 compressedFile
             );
 
+            // Crear la parte multipart para la petición
             MultipartBody.Part photoPart = MultipartBody.Part.createFormData(
                 "photo",
                 compressedFile.getName(),
@@ -611,13 +617,14 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
             // Obtener token de autorización
             String token = "Bearer " + getAuthToken();
 
-            // Realizar la petición
+            // Realizar la petición al servidor
             RetrofitClient.getApiService()
                 .uploadPhoto(id, photoPart, token)
                 .enqueue(new Callback<PhotoResponse>() {
                     @Override
                     public void onResponse(Call<PhotoResponse> call, Response<PhotoResponse> response) {
                         if (response.isSuccessful() && response.body() != null) {
+                            // Actualizar UI con la URL de la imagen subida
                             String photoUrl = response.body().getUrl();
                             requireActivity().runOnUiThread(() -> {
                                 Toast.makeText(requireContext(), 
@@ -643,6 +650,9 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
         }
     }
 
+    /**
+     * Maneja los errores durante la subida de fotos
+     */
     private void handleUploadError() {
         requireActivity().runOnUiThread(() -> {
             Toast.makeText(requireContext(), 
@@ -657,12 +667,20 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
         });
     }
 
+    /**
+     * Obtiene el token de autenticación almacenado
+     * @return Token de autenticación
+     */
     private String getAuthToken() {
-        // Implementar la obtención del token desde SharedPreferences
         SharedPreferences prefs = requireContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
         return prefs.getString("token", "");
     }
 
+    /**
+     * Convierte una URI de contenido a una ruta de archivo real
+     * @param uri URI a convertir
+     * @return Ruta real del archivo o null si no se puede obtener
+     */
     private String getRealPathFromURI(Uri uri) {
         String result = null;
         if (uri.getScheme().equals("content")) {
@@ -683,17 +701,18 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
         return result;
     }
 
-    // Agregar método para subir todas las fotos pendientes
+    /**
+     * Sube todas las fotos pendientes al servidor
+     */
     private void uploadPendingPhotos() {
+        // Obtener lista de fotos pendientes
         List<PhotoAdapter.PhotoItem> pendingPhotos = photoAdapter.getPendingPhotos();
         if (pendingPhotos.isEmpty()) {
             Toast.makeText(requireContext(), "No hay fotos pendientes de subir", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        int totalPhotos = pendingPhotos.size();
-        int[] uploadedCount = {0};
-
+        // Subir cada foto pendiente
         for (PhotoAdapter.PhotoItem photo : pendingPhotos) {
             uploadPhoto(photo.getPath());
         }
