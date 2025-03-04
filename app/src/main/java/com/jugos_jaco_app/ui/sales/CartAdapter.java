@@ -5,10 +5,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.TextView;
+import android.widget.EditText;
 import androidx.recyclerview.widget.RecyclerView;
 import com.jugos_jaco_app.R;
 import com.jugos_jaco_app.models.CartItem;
 import java.util.List;
+import android.view.inputmethod.EditorInfo;
+import com.google.android.material.textfield.TextInputEditText;
 
 public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
     
@@ -43,37 +46,63 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
     }
     
     class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvName, tvQuantity, tvPrice, tvSubtotal;
-        ImageButton btnIncrease, btnDecrease, btnRemove;
+        TextView tvName, tvPrice, tvSubtotal;
+        ImageButton btnRemove;
+        com.google.android.material.button.MaterialButton btnIncrease, btnDecrease;
+        TextInputEditText etQuantity;
         
         ViewHolder(View itemView) {
             super(itemView);
             tvName = itemView.findViewById(R.id.tvProductName);
-            tvQuantity = itemView.findViewById(R.id.tvQuantity);
             tvPrice = itemView.findViewById(R.id.tvPrice);
             tvSubtotal = itemView.findViewById(R.id.tvSubtotal);
             btnIncrease = itemView.findViewById(R.id.btnIncrease);
             btnDecrease = itemView.findViewById(R.id.btnDecrease);
             btnRemove = itemView.findViewById(R.id.btnRemove);
+            etQuantity = itemView.findViewById(R.id.etQuantity);
         }
         
         void bind(CartItem item) {
             tvName.setText(item.getProduct().getName());
-            tvQuantity.setText(String.valueOf(item.getQuantity()));
+            etQuantity.setText(String.valueOf(item.getQuantity()));
             tvPrice.setText(String.format("L. %.2f", item.getProduct().getPrice()));
-            tvSubtotal.setText(String.format("L. %.2f", 
-                item.getQuantity() * item.getProduct().getPrice()));
+            updateSubtotal(item);
             
+            // Manejar entrada manual de cantidad
+            etQuantity.setOnEditorActionListener((v, actionId, event) -> {
+                if (actionId == EditorInfo.IME_ACTION_DONE) {
+                    try {
+                        int newQuantity = Integer.parseInt(etQuantity.getText().toString());
+                        if (newQuantity > 0) {
+                            item.setQuantity(newQuantity);
+                            updateSubtotal(item);
+                            if (listener != null) listener.onCartUpdated();
+                        } else {
+                            etQuantity.setText(String.valueOf(item.getQuantity()));
+                        }
+                    } catch (NumberFormatException e) {
+                        etQuantity.setText(String.valueOf(item.getQuantity()));
+                    }
+                    return true;
+                }
+                return false;
+            });
+            
+            // Botones de incremento/decremento
             btnIncrease.setOnClickListener(v -> {
                 item.incrementQuantity();
-                notifyItemChanged(getAdapterPosition());
+                etQuantity.setText(String.valueOf(item.getQuantity()));
+                updateSubtotal(item);
                 if (listener != null) listener.onCartUpdated();
             });
             
             btnDecrease.setOnClickListener(v -> {
-                item.decrementQuantity();
-                notifyItemChanged(getAdapterPosition());
-                if (listener != null) listener.onCartUpdated();
+                if (item.getQuantity() > 1) {
+                    item.decrementQuantity();
+                    etQuantity.setText(String.valueOf(item.getQuantity()));
+                    updateSubtotal(item);
+                    if (listener != null) listener.onCartUpdated();
+                }
             });
             
             btnRemove.setOnClickListener(v -> {
@@ -81,6 +110,11 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
                 notifyItemRemoved(getAdapterPosition());
                 if (listener != null) listener.onCartUpdated();
             });
+        }
+        
+        private void updateSubtotal(CartItem item) {
+            double subtotal = item.getQuantity() * item.getProduct().getPrice();
+            tvSubtotal.setText(String.format("L. %.2f", subtotal));
         }
     }
 } 
