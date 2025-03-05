@@ -76,6 +76,24 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
             tvPrice.setText(String.format("L. %.2f", item.getProduct().getPrice()));
             updateSubtotal(item);
             
+            // Manejar la tecla Done
+            etQuantity.setOnEditorActionListener((v, actionId, event) -> {
+                if (actionId == EditorInfo.IME_ACTION_DONE) {
+                    String text = etQuantity.getText().toString();
+                    if (text.isEmpty() || text.equals("0")) {
+                        etQuantity.setText("1");
+                        item.setQuantity(1);
+                        updateSubtotal(item);
+                        notifyTotalUpdate();
+                    }
+                    etQuantity.clearFocus();
+                    // Notificar que el teclado se ocultará
+                    if (listener != null) listener.onKeyboardHiding();
+                    return true;
+                }
+                return false;
+            });
+            
             // Configurar el EditText
             etQuantity.setOnFocusChangeListener((v, hasFocus) -> {
                 if (hasFocus) {
@@ -93,6 +111,16 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
                     // Notificar al fragment que el teclado se ocultará
                     if (listener != null) listener.onKeyboardHiding();
                 }
+            });
+            
+            // Agregar listener para detectar cuando se oculta el teclado con el botón atrás
+            etQuantity.setOnKeyListener((v, keyCode, event) -> {
+                if (keyCode == android.view.KeyEvent.KEYCODE_BACK) {
+                    etQuantity.clearFocus();
+                    if (listener != null) listener.onKeyboardHiding();
+                    return true;
+                }
+                return false;
             });
             
             // Manejar cambios en el texto
@@ -121,22 +149,6 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
                         etQuantity.setSelection(etQuantity.length());
                     }
                 }
-            });
-            
-            // Manejar la tecla Done
-            etQuantity.setOnEditorActionListener((v, actionId, event) -> {
-                if (actionId == EditorInfo.IME_ACTION_DONE) {
-                    String text = etQuantity.getText().toString();
-                    if (text.isEmpty() || text.equals("0")) {
-                        etQuantity.setText("1");
-                        item.setQuantity(1);
-                        updateSubtotal(item);
-                        notifyTotalUpdate();
-                    }
-                    etQuantity.clearFocus();
-                    return true;
-                }
-                return false;
             });
             
             // Botones de incremento/decremento

@@ -19,6 +19,8 @@ import com.jugos_jaco_app.models.Product;
 import java.util.ArrayList;
 import java.util.List;
 import androidx.appcompat.widget.SearchView;
+import androidx.activity.OnBackPressedCallback;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdateListener {
     
@@ -43,6 +45,20 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true); // Habilitar menú de opciones
+        
+        // Agregar callback para interceptar el botón atrás
+        requireActivity().getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (!cartItems.isEmpty()) {
+                    showExitConfirmationDialog();
+                } else {
+                    // Si no hay items en el carrito, salir directamente
+                    this.remove();
+                    requireActivity().onBackPressed();
+                }
+            }
+        });
         
         // Inicializar cartItems
         if (savedInstanceState != null) {
@@ -186,6 +202,7 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
             public void onKeyboardHiding() {
                 if (previousView == 0) { // Si antes se mostraban ambos
                     currentView = previousView;
+                    previousView = -1; // Resetear el previousView
                     updateViewVisibility();
                 }
             }
@@ -344,7 +361,21 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
     public void onKeyboardHiding() {
         if (previousView == 0) { // Si antes se mostraban ambos
             currentView = previousView;
+            previousView = -1; // Resetear el previousView
             updateViewVisibility();
         }
+    }
+
+    private void showExitConfirmationDialog() {
+        new MaterialAlertDialogBuilder(requireContext())
+            .setTitle("¿Desea salir?")
+            .setMessage("Si sale ahora, perderá todos los productos en el carrito.")
+            .setPositiveButton("Salir", (dialog, which) -> {
+                // Limpiar el carrito y salir
+                cartItems.clear();
+                requireActivity().onBackPressed();
+            })
+            .setNegativeButton("Cancelar", null)
+            .show();
     }
 } 
