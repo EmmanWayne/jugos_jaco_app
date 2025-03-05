@@ -14,12 +14,16 @@ import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
 
+/**
+ * Adaptador para mostrar la lista de productos en un RecyclerView.
+ * Maneja la visualización de productos y su estado (en carrito/no en carrito).
+ */
 public class ProductsAdapter extends RecyclerView.Adapter<ProductsAdapter.ViewHolder> {
     
-    private List<Product> products;
-    private OnProductClickListener listener;
-    private Set<String> productsInCart;
-    
+    private List<Product> products;              // Lista de productos a mostrar
+    private OnProductClickListener listener;     // Listener para clicks en productos
+    private Set<String> productsInCart;         // Set de IDs de productos en carrito
+
     public interface OnProductClickListener {
         void onProductClick(Product product);
     }
@@ -47,10 +51,37 @@ public class ProductsAdapter extends RecyclerView.Adapter<ProductsAdapter.ViewHo
     public int getItemCount() {
         return products.size();
     }
-    
+
+    /**
+     * Actualiza la lista de productos y notifica cambios en la UI.
+     * Usado para búsqueda y filtrado.
+     */
     public void updateProducts(List<Product> newProducts) {
         products.clear();
         products.addAll(newProducts);
+        notifyDataSetChanged();
+    }
+
+    /**
+     * Marca o desmarca un producto como "en carrito".
+     * Actualiza la UI correspondiente.
+     */
+    public void setProductInCart(String productId, boolean inCart) {
+        if (inCart) {
+            productsInCart.add(productId);
+        } else {
+            productsInCart.remove(productId);
+        }
+        notifyDataSetChanged();
+    }
+
+    /**
+     * Actualiza el estado de múltiples productos en el carrito.
+     * Usado al restaurar el estado.
+     */
+    public void updateCartState(List<String> productIds) {
+        productsInCart.clear();
+        productsInCart.addAll(productIds);
         notifyDataSetChanged();
     }
     
@@ -61,6 +92,7 @@ public class ProductsAdapter extends RecyclerView.Adapter<ProductsAdapter.ViewHo
         
         ViewHolder(View itemView) {
             super(itemView);
+            // Inicializar vistas
             tvName = itemView.findViewById(R.id.tvProductName);
             tvCode = itemView.findViewById(R.id.tvProductCode);
             tvContent = itemView.findViewById(R.id.tvContent);
@@ -71,11 +103,13 @@ public class ProductsAdapter extends RecyclerView.Adapter<ProductsAdapter.ViewHo
         }
         
         void bind(Product product) {
+            // Configurar datos del producto
             tvName.setText(product.getName());
             tvCode.setText(product.getCode());
             tvContent.setText(product.getContent());
             tvCategory.setText(product.getCategoryName());
             
+            // Manejar estado visual (en carrito/no en carrito)
             if (productsInCart.contains(product.getId())) {
                 btnAdd.setVisibility(View.GONE);
                 tvInCart.setVisibility(View.VISIBLE);
@@ -84,13 +118,14 @@ public class ProductsAdapter extends RecyclerView.Adapter<ProductsAdapter.ViewHo
                 tvInCart.setVisibility(View.GONE);
             }
             
+            // Configurar click listener
             btnAdd.setOnClickListener(v -> {
                 if (listener != null) {
                     listener.onProductClick(product);
-                    setProductInCart(product.getId(), true);
                 }
             });
             
+            // Cargar imagen con Glide
             if (product.getImageUrl() != null && !product.getImageUrl().isEmpty()) {
                 Glide.with(itemView.getContext())
                     .load(product.getImageUrl())
@@ -99,20 +134,5 @@ public class ProductsAdapter extends RecyclerView.Adapter<ProductsAdapter.ViewHo
                     .into(ivProduct);
             }
         }
-    }
-
-    public void setProductInCart(String productId, boolean inCart) {
-        if (inCart) {
-            productsInCart.add(productId);
-        } else {
-            productsInCart.remove(productId);
-        }
-        notifyDataSetChanged();
-    }
-
-    public void updateCartState(List<String> productIds) {
-        productsInCart.clear();
-        productsInCart.addAll(productIds);
-        notifyDataSetChanged();
     }
 } 

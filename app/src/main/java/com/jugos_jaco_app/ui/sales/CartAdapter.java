@@ -5,27 +5,36 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.TextView;
-import android.widget.EditText;
 import androidx.recyclerview.widget.RecyclerView;
+import com.google.android.material.textfield.TextInputEditText;
 import com.jugos_jaco_app.R;
 import com.jugos_jaco_app.models.CartItem;
 import java.util.List;
 import android.view.inputmethod.EditorInfo;
-import com.google.android.material.textfield.TextInputEditText;
 
+/**
+ * Adaptador para mostrar los items en el carrito de compras.
+ * Maneja la interacción con cantidades y cálculo de subtotales.
+ */
 public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
     
-    private List<CartItem> cartItems;
-    private OnCartUpdateListener listener;
-    private OnTotalUpdateListener totalListener;
+    private List<CartItem> cartItems;           // Lista de items en el carrito
+    private OnCartUpdateListener listener;      // Listener para eventos del carrito
+    private OnTotalUpdateListener totalListener; // Listener para actualizar total
     
+    /**
+     * Interface para manejar eventos del carrito
+     */
     public interface OnCartUpdateListener {
-        void onCartItemRemoved(CartItem item);
-        void onCartUpdated();
-        void onKeyboardShowing();
-        void onKeyboardHiding();
+        void onCartItemRemoved(CartItem item);  // Cuando se elimina un item
+        void onCartUpdated();                   // Cuando cambia una cantidad
+        void onKeyboardShowing();               // Cuando aparece el teclado
+        void onKeyboardHiding();                // Cuando se oculta el teclado
     }
 
+    /**
+     * Interface para actualizar el total de la venta
+     */
     public interface OnTotalUpdateListener {
         void onTotalUpdate();
     }
@@ -52,6 +61,18 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
     public int getItemCount() {
         return cartItems.size();
     }
+
+    public void setOnCartUpdateListener(OnCartUpdateListener listener) {
+        this.listener = listener;
+    }
+
+    /**
+     * Notifica cambios en el total a los listeners correspondientes
+     */
+    private void notifyTotalUpdate() {
+        if (listener != null) listener.onCartUpdated();
+        if (totalListener != null) totalListener.onTotalUpdate();
+    }
     
     class ViewHolder extends RecyclerView.ViewHolder {
         TextView tvName, tvPrice, tvSubtotal;
@@ -61,6 +82,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
         
         ViewHolder(View itemView) {
             super(itemView);
+            // Inicializar vistas
             tvName = itemView.findViewById(R.id.tvProductName);
             tvPrice = itemView.findViewById(R.id.tvPrice);
             tvSubtotal = itemView.findViewById(R.id.tvSubtotal);
@@ -71,33 +93,16 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
         }
         
         void bind(CartItem item) {
+            // Configurar datos básicos
             tvName.setText(item.getProduct().getName());
             etQuantity.setText(String.valueOf(item.getQuantity()));
             tvPrice.setText(String.format("L. %.2f", item.getProduct().getPrice()));
             updateSubtotal(item);
             
-            // Manejar la tecla Done
-            etQuantity.setOnEditorActionListener((v, actionId, event) -> {
-                if (actionId == EditorInfo.IME_ACTION_DONE) {
-                    String text = etQuantity.getText().toString();
-                    if (text.isEmpty() || text.equals("0")) {
-                        etQuantity.setText("1");
-                        item.setQuantity(1);
-                        updateSubtotal(item);
-                        notifyTotalUpdate();
-                    }
-                    etQuantity.clearFocus();
-                    // Notificar que el teclado se ocultará
-                    if (listener != null) listener.onKeyboardHiding();
-                    return true;
-                }
-                return false;
-            });
-            
             // Configurar el EditText
             etQuantity.setOnFocusChangeListener((v, hasFocus) -> {
                 if (hasFocus) {
-                    // Notificar al fragment que el teclado se mostrará
+                    // Notificar que el teclado se mostrará
                     if (listener != null) listener.onKeyboardShowing();
                 } else {
                     // Validar al perder el foco
@@ -108,19 +113,9 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
                         updateSubtotal(item);
                         notifyTotalUpdate();
                     }
-                    // Notificar al fragment que el teclado se ocultará
+                    // Notificar que el teclado se ocultará
                     if (listener != null) listener.onKeyboardHiding();
                 }
-            });
-            
-            // Agregar listener para detectar cuando se oculta el teclado con el botón atrás
-            etQuantity.setOnKeyListener((v, keyCode, event) -> {
-                if (keyCode == android.view.KeyEvent.KEYCODE_BACK) {
-                    etQuantity.clearFocus();
-                    if (listener != null) listener.onKeyboardHiding();
-                    return true;
-                }
-                return false;
             });
             
             // Manejar cambios en el texto
@@ -135,7 +130,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
                 public void afterTextChanged(android.text.Editable s) {
                     String text = s.toString();
                     if (text.isEmpty()) {
-                        return; // Permitir que esté vacío temporalmente mientras se edita
+                        return; // Permitir que esté vacío temporalmente
                     }
                     try {
                         int newQuantity = Integer.parseInt(text);
@@ -151,7 +146,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
                 }
             });
             
-            // Botones de incremento/decremento
+            // Configurar botones de incremento/decremento
             btnIncrease.setOnClickListener(v -> {
                 item.incrementQuantity();
                 etQuantity.setText(String.valueOf(item.getQuantity()));
@@ -168,6 +163,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
                 }
             });
             
+            // Configurar botón de eliminar
             btnRemove.setOnClickListener(v -> {
                 cartItems.remove(getAdapterPosition());
                 notifyItemRemoved(getAdapterPosition());
@@ -179,14 +175,5 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
             double subtotal = item.getQuantity() * item.getProduct().getPrice();
             tvSubtotal.setText(String.format("L. %.2f", subtotal));
         }
-    }
-
-    public void setOnCartUpdateListener(OnCartUpdateListener listener) {
-        this.listener = listener;
-    }
-
-    private void notifyTotalUpdate() {
-        if (listener != null) listener.onCartUpdated();
-        if (totalListener != null) totalListener.onTotalUpdate();
     }
 } 
