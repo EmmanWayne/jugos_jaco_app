@@ -17,7 +17,7 @@
             android:id="@+id/tvClientName"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:padding="16dp"
+            android:padding="6dp"
             android:textSize="18sp"
             android:textStyle="bold"
             android:drawableStart="@drawable/ic_person"
@@ -38,7 +38,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="8dp"
-            android:layout_marginBottom="8dp"
+            android:layout_marginBottom="5dp"
             app:cardElevation="2dp"
             app:cardCornerRadius="8dp">
 
@@ -47,7 +47,7 @@
                 android:layout_height="wrap_content"
                 android:text="Productos"
                 android:textStyle="bold"
-                android:padding="16dp"
+                android:padding="6dp"
                 android:drawableStart="@drawable/ic_products"
                 android:drawablePadding="8dp"
                 android:gravity="center_vertical"/>
@@ -83,7 +83,7 @@
                 android:layout_height="wrap_content"
                 android:text="Carrito"
                 android:textStyle="bold"
-                android:padding="16dp"
+                android:padding="6dp"
                 android:drawableStart="@drawable/ic_cart"
                 android:drawablePadding="8dp"
                 android:gravity="center_vertical"/>
