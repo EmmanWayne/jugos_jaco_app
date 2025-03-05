@@ -4,8 +4,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="4dp"
-    app:cardCornerRadius="8dp"
+    android:layout_margin="3dp"
+    app:cardCornerRadius="6dp"
     app:cardElevation="2dp">
 
     <LinearLayout
@@ -16,7 +16,7 @@
         <ImageView
             android:id="@+id/ivProduct"
             android:layout_width="match_parent"
-            android:layout_height="100dp"
+            android:layout_height="90dp"
             android:scaleType="centerCrop"
             android:src="@drawable/product_placeholder"/>
 
@@ -24,59 +24,68 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="8dp">
+            android:padding="6dp">
 
             <TextView
                 android:id="@+id/tvProductName"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textSize="16sp"
+                android:textSize="14sp"
                 android:textStyle="bold"
                 android:maxLines="2"
+                android:minLines="2"
                 android:ellipsize="end"/>
 
             <TextView
                 android:id="@+id/tvProductCode"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textSize="14sp"
-                android:layout_marginTop="4dp"/>
+                android:textSize="12sp"
+                android:layout_marginTop="2dp"
+                android:maxLines="1"/>
 
             <TextView
                 android:id="@+id/tvContent"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textSize="14sp"
-                android:layout_marginTop="4dp"/>
+                android:textSize="12sp"
+                android:layout_marginTop="2dp"
+                android:maxLines="1"/>
 
             <TextView
                 android:id="@+id/tvCategory"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textSize="14sp"
-                android:layout_marginTop="4dp"
-                android:textStyle="italic"/>
+                android:textSize="12sp"
+                android:layout_marginTop="2dp"
+                android:textStyle="italic"
+                android:maxLines="1"/>
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnAddToCart"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="36dp"
+                 android:layout_marginTop="4dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                 android:textSize="8sp"
                 android:text="Agregar"
-                android:layout_marginTop="8dp"
-                app:icon="@drawable/ic_add"
+                app:icon="@drawable/ic_add_cart"
+                app:iconGravity="textEnd"
+                app:iconPadding="4dp"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"/>
 
             <TextView
                 android:id="@+id/tvInCart"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:drawableStart="@drawable/ic_check"
                 android:text="En carrito"
                 android:textColor="@color/design_default_color_primary"
                 android:gravity="center"
                 android:visibility="gone"
-                android:drawableStart="@drawable/ic_check"
-                android:drawablePadding="8dp"
-                android:layout_marginTop="8dp"/>
+                android:textSize="12sp"
+                android:layout_marginTop="4dp"/>
         </LinearLayout>
     </LinearLayout>
 </androidx.cardview.widget.CardView> 

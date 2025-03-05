@@ -170,9 +170,9 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
     }
     
     private void setupRecyclerViews() {
-        // Configurar RecyclerView de productos
+        // Configurar RecyclerView de productos con 3 columnas
         productsAdapter = new ProductsAdapter(new ArrayList<>(), this::addToCart);
-        rvProducts.setLayoutManager(new GridLayoutManager(getContext(), 2));
+        rvProducts.setLayoutManager(new GridLayoutManager(getContext(), 3)); // Cambiar a 3 columnas
         rvProducts.setAdapter(productsAdapter);
         
         // Configurar RecyclerView del carrito
