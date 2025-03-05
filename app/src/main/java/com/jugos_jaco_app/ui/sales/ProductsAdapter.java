@@ -11,11 +11,14 @@ import com.google.android.material.button.MaterialButton;
 import com.jugos_jaco_app.R;
 import com.jugos_jaco_app.models.Product;
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
 
 public class ProductsAdapter extends RecyclerView.Adapter<ProductsAdapter.ViewHolder> {
     
     private List<Product> products;
     private OnProductClickListener listener;
+    private Set<String> productsInCart;
     
     public interface OnProductClickListener {
         void onProductClick(Product product);
@@ -24,6 +27,7 @@ public class ProductsAdapter extends RecyclerView.Adapter<ProductsAdapter.ViewHo
     public ProductsAdapter(List<Product> products, OnProductClickListener listener) {
         this.products = products;
         this.listener = listener;
+        this.productsInCart = new HashSet<>();
     }
     
     @Override
@@ -51,7 +55,7 @@ public class ProductsAdapter extends RecyclerView.Adapter<ProductsAdapter.ViewHo
     }
     
     class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvName, tvCode, tvContent, tvCategory;
+        TextView tvName, tvCode, tvContent, tvCategory, tvInCart;
         MaterialButton btnAdd;
         ImageView ivProduct;
         
@@ -63,6 +67,7 @@ public class ProductsAdapter extends RecyclerView.Adapter<ProductsAdapter.ViewHo
             tvCategory = itemView.findViewById(R.id.tvCategory);
             btnAdd = itemView.findViewById(R.id.btnAddToCart);
             ivProduct = itemView.findViewById(R.id.ivProduct);
+            tvInCart = itemView.findViewById(R.id.tvInCart);
         }
         
         void bind(Product product) {
@@ -71,15 +76,43 @@ public class ProductsAdapter extends RecyclerView.Adapter<ProductsAdapter.ViewHo
             tvContent.setText(product.getContent());
             tvCategory.setText(product.getCategoryName());
             
-            btnAdd.setOnClickListener(v -> listener.onProductClick(product));
+            if (productsInCart.contains(product.getId())) {
+                btnAdd.setVisibility(View.GONE);
+                tvInCart.setVisibility(View.VISIBLE);
+            } else {
+                btnAdd.setVisibility(View.VISIBLE);
+                tvInCart.setVisibility(View.GONE);
+            }
+            
+            btnAdd.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onProductClick(product);
+                    setProductInCart(product.getId(), true);
+                }
+            });
             
             if (product.getImageUrl() != null && !product.getImageUrl().isEmpty()) {
                 Glide.with(itemView.getContext())
                     .load(product.getImageUrl())
                     .placeholder(R.drawable.producto_jaco)
-                     .centerCrop()
+                    .centerCrop()
                     .into(ivProduct);
             }
         }
+    }
+
+    public void setProductInCart(String productId, boolean inCart) {
+        if (inCart) {
+            productsInCart.add(productId);
+        } else {
+            productsInCart.remove(productId);
+        }
+        notifyDataSetChanged();
+    }
+
+    public void updateCartState(List<String> productIds) {
+        productsInCart.clear();
+        productsInCart.addAll(productIds);
+        notifyDataSetChanged();
     }
 } 

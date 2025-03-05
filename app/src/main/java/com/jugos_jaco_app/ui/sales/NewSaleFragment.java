@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import androidx.appcompat.widget.SearchView;
 
-public class NewSaleFragment extends Fragment {
+public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdateListener {
     
     private String clientId;
     private String clientName;
@@ -30,7 +30,7 @@ public class NewSaleFragment extends Fragment {
     private CartAdapter cartAdapter;
     private TextView tvTotal;
     private MaterialButton btnFinishSale;
-    private ArrayList<CartItem> cartItems = new ArrayList<>();
+    private ArrayList<CartItem> cartItems;
     private View layoutProducts;
     private View layoutCart;
     private int currentView = 0; // 0: ambos, 1: solo productos, 2: solo carrito
@@ -42,6 +42,14 @@ public class NewSaleFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true); // Habilitar menú de opciones
+        
+        // Inicializar cartItems
+        if (savedInstanceState != null) {
+            cartItems = (ArrayList<CartItem>) savedInstanceState.getSerializable(KEY_CART_ITEMS);
+        }
+        if (cartItems == null) {
+            cartItems = new ArrayList<>();
+        }
     }
 
     @Override
@@ -54,18 +62,32 @@ public class NewSaleFragment extends Fragment {
             clientName = getArguments().getString("clientName");
         }
         
-        // Restaurar el estado si existe
-        if (savedInstanceState != null) {
-            cartItems = (ArrayList<CartItem>) savedInstanceState.getSerializable(KEY_CART_ITEMS);
-            currentView = savedInstanceState.getInt(KEY_CURRENT_VIEW, 0);
-        }
-        
+        // Inicializar vistas
         initializeViews(view);
+        
+        // Configurar RecyclerViews
         setupRecyclerViews();
+        
+        // Cargar productos
         loadProducts();
         
         layoutProducts = view.findViewById(R.id.layoutProducts);
         layoutCart = view.findViewById(R.id.layoutCart);
+        
+        // Restaurar el estado de la vista
+        if (savedInstanceState != null) {
+            currentView = savedInstanceState.getInt(KEY_CURRENT_VIEW, 0);
+        }
+        
+        // Actualizar estado de productos en carrito
+        if (!cartItems.isEmpty()) {
+            List<String> productIds = new ArrayList<>();
+            for (CartItem item : cartItems) {
+                productIds.add(item.getProduct().getId());
+            }
+            productsAdapter.updateCartState(productIds);
+            updateTotal();
+        }
         
         // Restaurar la vista actual
         updateViewVisibility();
@@ -138,6 +160,18 @@ public class NewSaleFragment extends Fragment {
         
         // Configurar RecyclerView del carrito
         cartAdapter = new CartAdapter(cartItems, this::updateTotal);
+        cartAdapter.setOnCartUpdateListener(new CartAdapter.OnCartUpdateListener() {
+            @Override
+            public void onCartItemRemoved(CartItem item) {
+                productsAdapter.setProductInCart(item.getProduct().getId(), false);
+                updateTotal();
+            }
+
+            @Override
+            public void onCartUpdated() {
+                updateTotal();
+            }
+        });
         rvCart.setLayoutManager(new LinearLayoutManager(getContext()));
         rvCart.setAdapter(cartAdapter);
     }
@@ -195,7 +229,6 @@ public class NewSaleFragment extends Fragment {
     }
     
     private void addToCart(Product product) {
-        // Buscar si el producto ya está en el carrito
         CartItem existingItem = null;
         for (CartItem item : cartItems) {
             if (item.getProduct().getId().equals(product.getId())) {
@@ -211,6 +244,7 @@ public class NewSaleFragment extends Fragment {
             CartItem newItem = new CartItem(product, 1);
             cartItems.add(newItem);
             cartAdapter.notifyItemInserted(cartItems.size() - 1);
+            productsAdapter.setProductInCart(product.getId(), true);
         }
         
         updateTotal();
@@ -267,5 +301,15 @@ public class NewSaleFragment extends Fragment {
         }
 
         productsAdapter.updateProducts(filteredList);
+    }
+
+    @Override
+    public void onCartItemRemoved(CartItem item) {
+        productsAdapter.setProductInCart(item.getProduct().getId(), false);
+    }
+
+    @Override
+    public void onCartUpdated() {
+        updateTotal(); // Actualizar el total cuando cambia la cantidad
     }
 } 

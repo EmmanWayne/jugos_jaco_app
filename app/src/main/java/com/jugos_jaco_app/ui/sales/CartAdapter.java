@@ -17,14 +17,20 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
     
     private List<CartItem> cartItems;
     private OnCartUpdateListener listener;
+    private OnTotalUpdateListener totalListener;
     
     public interface OnCartUpdateListener {
+        void onCartItemRemoved(CartItem item);
         void onCartUpdated();
     }
+
+    public interface OnTotalUpdateListener {
+        void onTotalUpdate();
+    }
     
-    public CartAdapter(List<CartItem> cartItems, OnCartUpdateListener listener) {
+    public CartAdapter(List<CartItem> cartItems, OnTotalUpdateListener totalListener) {
         this.cartItems = cartItems;
-        this.listener = listener;
+        this.totalListener = totalListener;
     }
     
     @Override
@@ -85,7 +91,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
                             if (newQuantity > 0) {
                                 item.setQuantity(newQuantity);
                                 updateSubtotal(item);
-                                if (listener != null) listener.onCartUpdated();
+                                notifyTotalUpdate();
                             }
                         }
                     } catch (NumberFormatException e) {
@@ -101,7 +107,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
                 item.incrementQuantity();
                 etQuantity.setText(String.valueOf(item.getQuantity()));
                 updateSubtotal(item);
-                if (listener != null) listener.onCartUpdated();
+                notifyTotalUpdate();
             });
             
             btnDecrease.setOnClickListener(v -> {
@@ -109,14 +115,14 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
                     item.decrementQuantity();
                     etQuantity.setText(String.valueOf(item.getQuantity()));
                     updateSubtotal(item);
-                    if (listener != null) listener.onCartUpdated();
+                    notifyTotalUpdate();
                 }
             });
             
             btnRemove.setOnClickListener(v -> {
                 cartItems.remove(getAdapterPosition());
                 notifyItemRemoved(getAdapterPosition());
-                if (listener != null) listener.onCartUpdated();
+                if (listener != null) listener.onCartItemRemoved(item);
             });
             
             // Mantener el resto del código existente...
@@ -127,7 +133,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
                         if (newQuantity > 0) {
                             item.setQuantity(newQuantity);
                             updateSubtotal(item);
-                            if (listener != null) listener.onCartUpdated();
+                            notifyTotalUpdate();
                         } else {
                             etQuantity.setText(String.valueOf(item.getQuantity()));
                         }
@@ -144,5 +150,14 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
             double subtotal = item.getQuantity() * item.getProduct().getPrice();
             tvSubtotal.setText(String.format("L. %.2f", subtotal));
         }
+    }
+
+    public void setOnCartUpdateListener(OnCartUpdateListener listener) {
+        this.listener = listener;
+    }
+
+    private void notifyTotalUpdate() {
+        if (listener != null) listener.onCartUpdated();
+        if (totalListener != null) totalListener.onTotalUpdate();
     }
 } 
