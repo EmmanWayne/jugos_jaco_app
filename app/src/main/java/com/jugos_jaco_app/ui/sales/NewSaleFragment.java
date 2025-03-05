@@ -37,6 +37,7 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
     private static final String KEY_CART_ITEMS = "cart_items";
     private static final String KEY_CURRENT_VIEW = "current_view";
     private List<Product> allProducts = new ArrayList<>(); // Lista completa de productos
+    private int previousView = 0; // Para recordar la vista anterior
     
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -170,6 +171,23 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
             @Override
             public void onCartUpdated() {
                 updateTotal();
+            }
+
+            @Override
+            public void onKeyboardShowing() {
+                if (currentView == 0) { // Si se están mostrando ambos
+                    previousView = currentView;
+                    currentView = 2; // Cambiar a solo carrito
+                    updateViewVisibility();
+                }
+            }
+
+            @Override
+            public void onKeyboardHiding() {
+                if (previousView == 0) { // Si antes se mostraban ambos
+                    currentView = previousView;
+                    updateViewVisibility();
+                }
             }
         });
         rvCart.setLayoutManager(new LinearLayoutManager(getContext()));
@@ -311,5 +329,22 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
     @Override
     public void onCartUpdated() {
         updateTotal(); // Actualizar el total cuando cambia la cantidad
+    }
+
+    @Override
+    public void onKeyboardShowing() {
+        if (currentView == 0) { // Si se están mostrando ambos
+            previousView = currentView;
+            currentView = 2; // Cambiar a solo carrito
+            updateViewVisibility();
+        }
+    }
+
+    @Override
+    public void onKeyboardHiding() {
+        if (previousView == 0) { // Si antes se mostraban ambos
+            currentView = previousView;
+            updateViewVisibility();
+        }
     }
 } 

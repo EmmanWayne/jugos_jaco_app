@@ -49,7 +49,11 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:inputType="number"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:minWidth="48dp"
+                    android:maxLength="3"
+                    android:selectAllOnFocus="true"
+                    android:imeOptions="actionDone"/>
 
             </com.google.android.material.textfield.TextInputLayout>
 

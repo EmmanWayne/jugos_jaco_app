@@ -22,6 +22,8 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
     public interface OnCartUpdateListener {
         void onCartItemRemoved(CartItem item);
         void onCartUpdated();
+        void onKeyboardShowing();
+        void onKeyboardHiding();
     }
 
     public interface OnTotalUpdateListener {
@@ -74,6 +76,25 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
             tvPrice.setText(String.format("L. %.2f", item.getProduct().getPrice()));
             updateSubtotal(item);
             
+            // Configurar el EditText
+            etQuantity.setOnFocusChangeListener((v, hasFocus) -> {
+                if (hasFocus) {
+                    // Notificar al fragment que el teclado se mostrará
+                    if (listener != null) listener.onKeyboardShowing();
+                } else {
+                    // Validar al perder el foco
+                    String text = etQuantity.getText().toString();
+                    if (text.isEmpty() || text.equals("0")) {
+                        etQuantity.setText("1");
+                        item.setQuantity(1);
+                        updateSubtotal(item);
+                        notifyTotalUpdate();
+                    }
+                    // Notificar al fragment que el teclado se ocultará
+                    if (listener != null) listener.onKeyboardHiding();
+                }
+            });
+            
             // Manejar cambios en el texto
             etQuantity.addTextChangedListener(new android.text.TextWatcher() {
                 @Override
@@ -84,22 +105,38 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
 
                 @Override
                 public void afterTextChanged(android.text.Editable s) {
+                    String text = s.toString();
+                    if (text.isEmpty()) {
+                        return; // Permitir que esté vacío temporalmente mientras se edita
+                    }
                     try {
-                        String text = s.toString();
-                        if (!text.isEmpty()) {
-                            int newQuantity = Integer.parseInt(text);
-                            if (newQuantity > 0) {
-                                item.setQuantity(newQuantity);
-                                updateSubtotal(item);
-                                notifyTotalUpdate();
-                            }
+                        int newQuantity = Integer.parseInt(text);
+                        if (newQuantity > 0) {
+                            item.setQuantity(newQuantity);
+                            updateSubtotal(item);
+                            notifyTotalUpdate();
                         }
                     } catch (NumberFormatException e) {
-                        // Si no es un número válido, restaurar el valor anterior
                         etQuantity.setText(String.valueOf(item.getQuantity()));
                         etQuantity.setSelection(etQuantity.length());
                     }
                 }
+            });
+            
+            // Manejar la tecla Done
+            etQuantity.setOnEditorActionListener((v, actionId, event) -> {
+                if (actionId == EditorInfo.IME_ACTION_DONE) {
+                    String text = etQuantity.getText().toString();
+                    if (text.isEmpty() || text.equals("0")) {
+                        etQuantity.setText("1");
+                        item.setQuantity(1);
+                        updateSubtotal(item);
+                        notifyTotalUpdate();
+                    }
+                    etQuantity.clearFocus();
+                    return true;
+                }
+                return false;
             });
             
             // Botones de incremento/decremento
@@ -123,26 +160,6 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
                 cartItems.remove(getAdapterPosition());
                 notifyItemRemoved(getAdapterPosition());
                 if (listener != null) listener.onCartItemRemoved(item);
-            });
-            
-            // Mantener el resto del código existente...
-            etQuantity.setOnEditorActionListener((v, actionId, event) -> {
-                if (actionId == EditorInfo.IME_ACTION_DONE) {
-                    try {
-                        int newQuantity = Integer.parseInt(etQuantity.getText().toString());
-                        if (newQuantity > 0) {
-                            item.setQuantity(newQuantity);
-                            updateSubtotal(item);
-                            notifyTotalUpdate();
-                        } else {
-                            etQuantity.setText(String.valueOf(item.getQuantity()));
-                        }
-                    } catch (NumberFormatException e) {
-                        etQuantity.setText(String.valueOf(item.getQuantity()));
-                    }
-                    return true;
-                }
-                return false;
             });
         }
         
