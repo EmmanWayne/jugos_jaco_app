@@ -8,7 +8,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
+import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 import com.android.volley.Request;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.jugos_jaco_app.Login;
@@ -16,6 +18,7 @@ import com.jugos_jaco_app.R;
 import com.jugos_jaco_app.ui.models.Employee;
 import com.jugos_jaco_app.ui.utilities.Utilities;
 import com.jugos_jaco_app.ui.utilities.VolleySingleton;
+import com.jugos_jaco_app.ui.employee.EmployeeProfileViewModel;
 import org.json.JSONObject;
 import java.text.SimpleDateFormat;
 import java.util.HashMap;
@@ -24,6 +27,7 @@ import java.util.Map;
 
 public class EmployeeProfileFragment extends Fragment {
 
+    private EmployeeProfileViewModel viewModel;
     private TextView tvEmployeeName;
     private TextView tvEmployeeId;
     private TextView tvIdentity;
@@ -37,14 +41,34 @@ public class EmployeeProfileFragment extends Fragment {
     private View loadingOverlay;
 
     @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        viewModel = new ViewModelProvider(requireActivity()).get(EmployeeProfileViewModel.class);
+    }
+
+    @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_employee_profile, container, false);
 
         initializeViews(view);
         loadingOverlay = view.findViewById(R.id.loadingView);
         
-        showLoading(); // Mostrar loading antes de cargar datos
-        loadEmployeeData();
+        // Observar cambios en los datos del empleado
+        viewModel.getEmployee().observe(getViewLifecycleOwner(), employee -> {
+            updateUI(employee);
+            hideLoading(); // Ocultar loading cuando los datos se cargan
+        });
+        
+        // Observar mensajes de error
+        viewModel.getErrorMessage().observe(getViewLifecycleOwner(), message -> {
+            if (message != null && !message.isEmpty()) {
+                showError(message);
+                hideLoading();
+            }
+        });
+
+        showLoading();
+        viewModel.loadEmployeeIfNeeded(requireContext());
 
         return view;
     }
@@ -60,79 +84,6 @@ public class EmployeeProfileFragment extends Fragment {
         tvBranchAddress = view.findViewById(R.id.tvBranchAddress);
         tvStartDate = view.findViewById(R.id.tvStartDate);
         tvLastUpdate = view.findViewById(R.id.tvLastUpdate);
-    }
-
-    private void loadEmployeeData() {
-        String url = Utilities.URL + "employees/"+getIdEmpleado(requireContext());
-
-        JsonObjectRequest request = new JsonObjectRequest(
-            Request.Method.GET,
-            url,
-            null,
-            response -> {
-                try {
-                    JSONObject data = response.getJSONObject("data");
-                    JSONObject branchData = data.getJSONObject("branch");
-
-                    // Crear objeto Branch
-                    Employee.Branch branch = new Employee.Branch(
-                        branchData.getInt("id"),
-                        branchData.getString("name"),
-                        branchData.getString("address"),
-                        branchData.getString("phone_number")
-                    );
-
-                    // Crear objeto Employee
-                    Employee employee = new Employee(
-                        data.getInt("id"),
-                        data.getString("first_name"),
-                        data.getString("last_name"),
-                        data.getString("phone_number"),
-                        data.getString("address"),
-                        data.getString("identity"),
-                        data.getInt("branch_id"),
-                        branch,
-                        data.getString("created_at"),
-                        data.getString("updated_at")
-                    );
-
-                    updateUI(employee);
-                    hideLoading(); // Ocultar loading al terminar
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    showError("Error al procesar los datos del empleado");
-                    hideLoading(); // Ocultar loading en caso de error
-                }
-            },
-            error -> {
-                String errorMessage = "Error desconocido";
-                if (error.networkResponse != null) {
-                    errorMessage = "Error " + error.networkResponse.statusCode;
-                    try {
-                        String responseBody = new String(error.networkResponse.data, "utf-8");
-                        JSONObject errorJson = new JSONObject(responseBody);
-                        if (errorJson.has("message")) {
-                            errorMessage = errorJson.getString("message");
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-                showError("Error al cargar los datos: " + errorMessage);
-                hideLoading(); // Ocultar loading en caso de error
-            }
-        ) {
-            @Override
-            public Map<String, String> getHeaders() {
-                Map<String, String> headers = new HashMap<>();
-                headers.put("Authorization", Login.getAuthorizationHeader(requireContext()));
-                headers.put("Accept", "application/json");
-
-                return headers;
-            }
-        };
-
-        VolleySingleton.getInstance(requireContext()).addToRequestQueue(request);
     }
 
     private void updateUI(Employee employee) {
