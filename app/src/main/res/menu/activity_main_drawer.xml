@@ -12,7 +12,9 @@
             android:id="@+id/nav_ventas"
             android:icon="@drawable/ic_sales"
             android:title="@string/Ventas" />
-
-
+        <item
+            android:id="@+id/nav_profile"
+            android:icon="@drawable/ic_profile"
+            android:title="Mi Perfil"/>
     </group>
 </menu>

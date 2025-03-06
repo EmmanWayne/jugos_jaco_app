@@ -1,4 +1,4 @@
-package com.jugos_jaco_app.ui.clients;
+package com.jugos_jaco_app.ui.adapters;
 
 import android.app.Activity;
 import android.content.Context;
@@ -22,6 +22,7 @@ import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.RecyclerView;
 import com.jugos_jaco_app.R;
+import com.jugos_jaco_app.ui.models.Client;
 
 import java.util.List;
 import android.Manifest;

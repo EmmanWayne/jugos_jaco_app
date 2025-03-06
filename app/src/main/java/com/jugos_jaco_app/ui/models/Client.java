@@ -1,4 +1,4 @@
-package com.jugos_jaco_app.ui.clients;
+package com.jugos_jaco_app.ui.models;
 
 import java.io.Serializable;
 

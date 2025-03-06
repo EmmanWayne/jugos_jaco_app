@@ -32,6 +32,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import androidx.lifecycle.ViewModelProvider;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
  import com.jugos_jaco_app.R;
+import com.jugos_jaco_app.ui.adapters.ClientAdapter;
 import com.jugos_jaco_app.ui.utilities.Utilities;
 
 

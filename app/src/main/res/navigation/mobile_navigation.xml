@@ -127,4 +127,10 @@
         android:id="@+id/action_nav_clientes_to_newSaleFragment"
         app:destination="@id/newSaleFragment" />
 
+    <fragment
+        android:id="@+id/nav_profile"
+        android:name="com.jugos_jaco_app.ui.employee.EmployeeProfileFragment"
+        android:label="Mi Perfil"
+        tools:layout="@layout/fragment_employee_profile" />
+
 </navigation>

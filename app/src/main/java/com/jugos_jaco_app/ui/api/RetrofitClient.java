@@ -1,4 +1,4 @@
-package com.jugos_jaco_app.api;
+package com.jugos_jaco_app.ui.api;
 
 import com.jugos_jaco_app.ui.utilities.Utilities;
 import okhttp3.OkHttpClient;

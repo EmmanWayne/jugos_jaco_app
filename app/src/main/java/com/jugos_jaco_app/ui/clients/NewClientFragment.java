@@ -36,6 +36,7 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
  import com.jugos_jaco_app.R;
+import com.jugos_jaco_app.ui.models.Client;
 import com.jugos_jaco_app.ui.utilities.VolleySingleton;
 import com.jugos_jaco_app.ui.utilities.Utilities;
 

@@ -1,4 +1,4 @@
-package com.jugos_jaco_app.ui.clients;
+package com.jugos_jaco_app.ui.adapters;
 
 import android.content.Context;
 import android.net.Uri;
@@ -11,6 +11,8 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.jugos_jaco_app.R;
+import com.jugos_jaco_app.ui.clients.FullscreenImageDialog;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;

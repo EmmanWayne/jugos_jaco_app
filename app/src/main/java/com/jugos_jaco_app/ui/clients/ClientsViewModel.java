@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModel;
 import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.jugos_jaco_app.ui.models.Client;
 import com.jugos_jaco_app.ui.utilities.VolleySingleton;
 import com.jugos_jaco_app.ui.utilities.Utilities;
 import org.json.JSONArray;

@@ -1,4 +1,4 @@
-package com.jugos_jaco_app.ui.sales;
+package com.jugos_jaco_app.ui.adapters;
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -9,7 +9,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.google.android.material.button.MaterialButton;
 import com.jugos_jaco_app.R;
-import com.jugos_jaco_app.models.Product;
+import com.jugos_jaco_app.ui.models.Product;
 import java.util.List;
 import java.util.Set;
 import java.util.HashSet;

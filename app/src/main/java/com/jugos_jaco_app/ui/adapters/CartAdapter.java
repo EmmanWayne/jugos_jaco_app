@@ -1,4 +1,4 @@
-package com.jugos_jaco_app.ui.sales;
+package com.jugos_jaco_app.ui.adapters;
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -8,7 +8,7 @@ import android.widget.TextView;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.textfield.TextInputEditText;
 import com.jugos_jaco_app.R;
-import com.jugos_jaco_app.models.CartItem;
+import com.jugos_jaco_app.ui.models.CartItem;
 import java.util.List;
 import android.view.inputmethod.EditorInfo;
 
@@ -99,11 +99,24 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
             tvPrice.setText(String.format("L. %.2f", item.getProduct().getPrice()));
             updateSubtotal(item);
             
+            // Agregar listener para detectar cuando se oculta el teclado con el botón atrás
+            etQuantity.setOnKeyListener((v, keyCode, event) -> {
+                if (keyCode == android.view.KeyEvent.KEYCODE_BACK) {
+                    etQuantity.clearFocus();
+                    if (listener != null) {
+                        listener.onKeyboardHiding();
+                    }
+                    return true;
+                }
+                return false;
+            });
+
             // Configurar el EditText
             etQuantity.setOnFocusChangeListener((v, hasFocus) -> {
                 if (hasFocus) {
-                    // Notificar que el teclado se mostrará
-                    if (listener != null) listener.onKeyboardShowing();
+                    if (listener != null) {
+                        listener.onKeyboardShowing();
+                    }
                 } else {
                     // Validar al perder el foco
                     String text = etQuantity.getText().toString();
@@ -114,7 +127,27 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
                         notifyTotalUpdate();
                     }
                     // Notificar que el teclado se ocultará
-                    if (listener != null) listener.onKeyboardHiding();
+                    if (listener != null) {
+                        listener.onKeyboardHiding();
+                    }
+                }
+            });
+
+            // Configurar para que el teclado se cierre al presionar Done
+            etQuantity.setOnEditorActionListener((v, actionId, event) -> {
+                if (actionId == EditorInfo.IME_ACTION_DONE) {
+                    etQuantity.clearFocus();
+                    return true;
+                }
+                return false;
+            });
+
+            // Manejar click en el EditText
+            etQuantity.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onKeyboardShowing();
+                    etQuantity.requestFocus();
+                    etQuantity.setSelection(etQuantity.length());
                 }
             });
             

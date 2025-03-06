@@ -2,6 +2,7 @@
 <androidx.cardview.widget.CardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="4dp"
@@ -17,6 +18,7 @@
         <TextView
             android:id="@+id/tvProductName"
             android:layout_width="match_parent"
+            android:textColor="@color/black"
             android:layout_height="wrap_content"
             android:textStyle="bold"/>
 
@@ -80,14 +82,17 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textStyle="bold"
+                android:textColor="@color/green"
                 android:layout_marginEnd="8dp"/>
 
             <ImageButton
                 android:id="@+id/btnRemove"
                 android:layout_width="36dp"
                 android:layout_height="36dp"
+                android:tint="@color/primary"
                 android:src="@drawable/ic_delete"
-                android:background="?attr/selectableItemBackgroundBorderless"/>
+                android:background="?attr/selectableItemBackgroundBorderless"
+                tools:ignore="UseAppTint" />
         </LinearLayout>
     </LinearLayout>
 </androidx.cardview.widget.CardView> 

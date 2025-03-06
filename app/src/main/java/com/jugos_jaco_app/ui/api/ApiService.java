@@ -1,4 +1,4 @@
-package com.jugos_jaco_app.api;
+package com.jugos_jaco_app.ui.api;
 
 import okhttp3.MultipartBody;
 import retrofit2.Call;

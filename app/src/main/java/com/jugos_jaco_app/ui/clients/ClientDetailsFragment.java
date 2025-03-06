@@ -49,8 +49,9 @@ import androidx.navigation.Navigation;
 
 import android.util.Log;
 
-import com.jugos_jaco_app.api.RetrofitClient;
-import com.jugos_jaco_app.api.PhotoResponse;
+import com.jugos_jaco_app.ui.adapters.PhotoAdapter;
+import com.jugos_jaco_app.ui.api.RetrofitClient;
+import com.jugos_jaco_app.ui.api.PhotoResponse;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;

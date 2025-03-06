@@ -17,8 +17,10 @@ import androidx.activity.OnBackPressedCallback;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.jugos_jaco_app.R;
-import com.jugos_jaco_app.models.CartItem;
-import com.jugos_jaco_app.models.Product;
+import com.jugos_jaco_app.ui.adapters.CartAdapter;
+import com.jugos_jaco_app.ui.adapters.ProductsAdapter;
+import com.jugos_jaco_app.ui.models.CartItem;
+import com.jugos_jaco_app.ui.models.Product;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -224,7 +226,7 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
             public void onKeyboardShowing() {
                 if (currentView == 0) { // Si se están mostrando ambos
                     previousView = currentView;
-                    currentView = 2; // Cambiar a solo carrito
+                    currentView = 1; // Cambiar a solo carrito
                     updateViewVisibility();
                 }
             }
@@ -421,7 +423,7 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
     public void onKeyboardShowing() {
         if (currentView == 0) { // Si se están mostrando ambos
             previousView = currentView;
-            currentView = 2; // Cambiar a solo carrito
+            currentView = 1; // Cambiar a solo carrito
             updateViewVisibility();
         }
     }
