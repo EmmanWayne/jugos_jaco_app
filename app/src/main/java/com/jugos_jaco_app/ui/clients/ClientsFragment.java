@@ -10,10 +10,10 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.LocationManager;
- import android.os.Build;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
- import android.view.LayoutInflater;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
@@ -31,13 +31,11 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import androidx.lifecycle.ViewModelProvider;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
- import com.jugos_jaco_app.R;
+import com.jugos_jaco_app.R;
 import com.jugos_jaco_app.ui.adapters.ClientAdapter;
 import com.jugos_jaco_app.ui.utilities.Utilities;
 
-
 import java.util.ArrayList;
-
 
 public class ClientsFragment extends Fragment {
 
@@ -63,6 +61,8 @@ public class ClientsFragment extends Fragment {
             }
     );
 
+    private View loadingOverlay;
+
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -86,10 +86,14 @@ public class ClientsFragment extends Fragment {
         // Inicializar vistas
         setupViews(root);
 
+        // Inicializar overlay de carga
+        loadingOverlay = root.findViewById(R.id.loadingView);
+
         // Observar cambios en la lista de clientes
         viewModel.getClients().observe(getViewLifecycleOwner(), clients -> {
             clientAdapter.updateList(clients);
             swipeRefreshLayout.setRefreshing(false);
+            hideLoading(); // Ocultar loading cuando se cargan los datos
         });
 
         // Observar mensajes de error
@@ -97,8 +101,14 @@ public class ClientsFragment extends Fragment {
             if (message != null && !message.isEmpty()) {
                 Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
                 swipeRefreshLayout.setRefreshing(false);
+                hideLoading(); // Ocultar loading en caso de error
             }
         });
+
+        // Mostrar loading al cargar clientes
+        if (viewModel.getClients().getValue() == null || viewModel.getClients().getValue().isEmpty()) {
+            showLoading();
+        }
 
         // Cargar clientes solo si es necesario
         viewModel.loadClientsIfNeeded(requireContext());
@@ -208,6 +218,29 @@ public class ClientsFragment extends Fragment {
             return tokenType + " " + token;
         }
         return null;
+    }
+
+    private void showLoading() {
+        if (loadingOverlay != null) {
+            loadingOverlay.setVisibility(View.VISIBLE);
+            // Animación de fade in
+            loadingOverlay.setAlpha(0f);
+            loadingOverlay.animate()
+                .alpha(1f)
+                .setDuration(200)
+                .start();
+        }
+    }
+
+    private void hideLoading() {
+        if (loadingOverlay != null && loadingOverlay.getVisibility() == View.VISIBLE) {
+            // Animación de fade out
+            loadingOverlay.animate()
+                .alpha(0f)
+                .setDuration(200)
+                .withEndAction(() -> loadingOverlay.setVisibility(View.GONE))
+                .start();
+        }
     }
 }
 

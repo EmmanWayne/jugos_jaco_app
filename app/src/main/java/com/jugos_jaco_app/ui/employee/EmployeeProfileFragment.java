@@ -34,12 +34,16 @@ public class EmployeeProfileFragment extends Fragment {
     private TextView tvBranchAddress;
     private TextView tvStartDate;
     private TextView tvLastUpdate;
+    private View loadingOverlay;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_employee_profile, container, false);
 
         initializeViews(view);
+        loadingOverlay = view.findViewById(R.id.loadingView);
+        
+        showLoading(); // Mostrar loading antes de cargar datos
         loadEmployeeData();
 
         return view;
@@ -59,10 +63,7 @@ public class EmployeeProfileFragment extends Fragment {
     }
 
     private void loadEmployeeData() {
-
- 
-         String url = Utilities.URL + "employees/"+getIdEmpleado(requireContext());
-        Toast.makeText(getContext(), ""+url, Toast.LENGTH_SHORT).show();
+        String url = Utilities.URL + "employees/"+getIdEmpleado(requireContext());
 
         JsonObjectRequest request = new JsonObjectRequest(
             Request.Method.GET,
@@ -96,10 +97,11 @@ public class EmployeeProfileFragment extends Fragment {
                     );
 
                     updateUI(employee);
-
+                    hideLoading(); // Ocultar loading al terminar
                 } catch (Exception e) {
                     e.printStackTrace();
                     showError("Error al procesar los datos del empleado");
+                    hideLoading(); // Ocultar loading en caso de error
                 }
             },
             error -> {
@@ -117,6 +119,7 @@ public class EmployeeProfileFragment extends Fragment {
                     }
                 }
                 showError("Error al cargar los datos: " + errorMessage);
+                hideLoading(); // Ocultar loading en caso de error
             }
         ) {
             @Override
@@ -175,7 +178,32 @@ public class EmployeeProfileFragment extends Fragment {
         }
     }
 
+    private void showLoading() {
+        if (loadingOverlay != null) {
+            // Configurar el mensaje de carga
+            TextView tvLoadingMessage = loadingOverlay.findViewById(R.id.tvLoadingMessage);
+            tvLoadingMessage.setText("Cargando información del empleado...");
+            
+            loadingOverlay.setVisibility(View.VISIBLE);
+            // Animación de fade in
+            loadingOverlay.setAlpha(0f);
+            loadingOverlay.animate()
+                .alpha(1f)
+                .setDuration(200)
+                .start();
+        }
+    }
 
+    private void hideLoading() {
+        if (loadingOverlay != null && loadingOverlay.getVisibility() == View.VISIBLE) {
+            // Animación de fade out
+            loadingOverlay.animate()
+                .alpha(0f)
+                .setDuration(200)
+                .withEndAction(() -> loadingOverlay.setVisibility(View.GONE))
+                .start();
+        }
+    }
 
     private void showError(String message) {
         if (isAdded()) {

@@ -15,5 +15,6 @@
     <color name="primary">#C02A27</color> <!-- Rojo de la empresa -->
     <color name="primary_dark">#A92321</color> <!-- Rojo oscuro -->
     <color name="error_color">#B00020</color>
+    <color name="warning_color">#FFA000</color>
 
 </resources>

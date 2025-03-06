@@ -171,4 +171,8 @@
         android:src="@drawable/baseline_person_add_24"
         app:fabSize="normal"/>
 
+    <include
+        android:id="@+id/loadingView"
+        layout="@layout/layout_loading_overlay"/>
+
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
