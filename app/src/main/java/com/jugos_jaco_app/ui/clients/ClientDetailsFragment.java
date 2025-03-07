@@ -100,6 +100,9 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
     private List<PhotoAdapter.PhotoItem> localPhotos = new ArrayList<>();
     private List<ServerPhotosResponse.ServerPhoto> serverPhotos = new ArrayList<>();
 
+    // Agregar variable para guardar el path de la foto actual
+    private String currentPhotoPath;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -260,20 +263,26 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
     // Abrir la cámara para tomar una foto
     private void openCamera() {
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        if (takePictureIntent.resolveActivity(getActivity().getPackageManager()) != null) {
+        if (takePictureIntent.resolveActivity(requireActivity().getPackageManager()) != null) {
             File photoFile = null;
             try {
                 photoFile = createImageFile();
-            } catch (IOException ex) {
-                // Manejar el error
-                ex.printStackTrace();
-            }
-            if (photoFile != null) {
-                photoUri = FileProvider.getUriForFile(getActivity(),
-                        getActivity().getPackageName() + ".fileprovider",
+                if (photoFile != null) {
+                    photoUri = FileProvider.getUriForFile(requireContext(),
+                        requireContext().getPackageName() + ".fileprovider",
                         photoFile);
-                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoUri);
-                cameraLauncher.launch(takePictureIntent);
+                    
+                    // Agregar flags para dar permisos de lectura/escritura
+                    takePictureIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    takePictureIntent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                    takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoUri);
+                    
+                    cameraLauncher.launch(takePictureIntent);
+                }
+            } catch (IOException ex) {
+                Toast.makeText(requireContext(), 
+                    "Error al crear el archivo de imagen", 
+                    Toast.LENGTH_SHORT).show();
             }
         }
     }
@@ -290,24 +299,36 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
     private final ActivityResultLauncher<Intent> cameraLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(), result -> {
                 if (result.getResultCode() == getActivity().RESULT_OK) {
-                    if (photoUri != null) {
-                        // Solo agregar la foto al adapter sin subirla
-                        addPhotoToAdapter(photoUri.toString());
-                    } else {
-                        Toast.makeText(getContext(), "No se pudo obtener la foto", Toast.LENGTH_SHORT).show();
+                    if (currentPhotoPath != null) {
+                        // Usar directamente el path guardado
+                        File file = new File(currentPhotoPath);
+                        if (file.exists()) {
+                            addPhotoToAdapter(currentPhotoPath);
+                        } else {
+                            Toast.makeText(getContext(), 
+                                "No se pudo acceder a la imagen", 
+                                Toast.LENGTH_SHORT).show();
+                        }
                     }
                 }
             });
     private File createImageFile() throws IOException {
-        // Crear un nombre único para la imagen
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
         String imageFileName = "JPEG_" + timeStamp + "_";
-        File storageDir = getActivity().getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        
+        // Usar el directorio de caché interno de la app
+        File storageDir = new File(requireContext().getCacheDir(), "camera_photos");
+        if (!storageDir.exists()) {
+            storageDir.mkdirs();
+        }
+
         File image = File.createTempFile(
-                imageFileName,  /* prefijo */
-                ".jpg",         /* sufijo */
-                storageDir      /* directorio */
+            imageFileName,
+            ".jpg",
+            storageDir
         );
+
+        currentPhotoPath = image.getAbsolutePath();
         return image;
     }
 
@@ -870,9 +891,42 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
 
     private void addPhotoToAdapter(String photoPath) {
         if (photoPath != null) {
-            PhotoAdapter.PhotoItem newPhoto = new PhotoAdapter.PhotoItem(photoPath, false);
-            photos.add(newPhoto);
-            photoAdapter.updatePhotos(photos);
+            File imageFile = new File(photoPath);
+            if (imageFile.exists()) {
+                try {
+                    // Verificar que sea una imagen válida y redimensionarla si es necesario
+                    Bitmap bitmap = BitmapFactory.decodeFile(photoPath);
+                    if (bitmap != null) {
+                        // Guardar la imagen redimensionada
+                        File optimizedFile = new File(requireContext().getCacheDir(), 
+                            "optimized_" + imageFile.getName());
+                        FileOutputStream fos = new FileOutputStream(optimizedFile);
+                        bitmap.compress(Bitmap.CompressFormat.JPEG, 85, fos);
+                        fos.close();
+
+                        // Agregar la foto optimizada al adapter
+                        PhotoAdapter.PhotoItem newPhoto = new PhotoAdapter.PhotoItem(
+                            optimizedFile.getAbsolutePath(), 
+                            false
+                        );
+                        photos.add(newPhoto);
+                        photoAdapter.updatePhotos(photos);
+                    } else {
+                        Toast.makeText(requireContext(), 
+                            "El archivo no es una imagen válida", 
+                            Toast.LENGTH_SHORT).show();
+                    }
+                } catch (Exception e) {
+                    Toast.makeText(requireContext(), 
+                        "Error al procesar la imagen", 
+                        Toast.LENGTH_SHORT).show();
+                    e.printStackTrace();
+                }
+            } else {
+                Toast.makeText(requireContext(), 
+                    "No se pudo acceder a la imagen", 
+                    Toast.LENGTH_SHORT).show();
+            }
         }
     }
 
