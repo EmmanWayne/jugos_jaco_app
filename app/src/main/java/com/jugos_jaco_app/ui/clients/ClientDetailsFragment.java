@@ -19,6 +19,7 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.jugos_jaco_app.Login;
 import com.jugos_jaco_app.R;
 
 import java.io.File;
@@ -63,6 +64,8 @@ import android.graphics.BitmapFactory;
 import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import android.content.SharedPreferences;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPhotoListener {
 
@@ -262,7 +265,7 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                 if (result.getResultCode() == getActivity().RESULT_OK) {
                     if (photoUri != null) {
                         // Solo agregar la foto al adapter sin subirla
-                        photoAdapter.addLocalPhoto(photoUri.toString());
+                        addPhotoToAdapter(photoUri.toString());
                     } else {
                         Toast.makeText(getContext(), "No se pudo obtener la foto", Toast.LENGTH_SHORT).show();
                     }
@@ -293,7 +296,7 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                             if (imageUri != null) {
                                 String realPath = getRealPathFromURI(imageUri);
                                 if (realPath != null) {
-                                    photoAdapter.addLocalPhoto(realPath);
+                                    addPhotoToAdapter(realPath);
                                 }
                             }
                         }
@@ -303,7 +306,7 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                         if (imageUri != null) {
                             String realPath = getRealPathFromURI(imageUri);
                             if (realPath != null) {
-                                photoAdapter.addLocalPhoto(realPath);
+                                addPhotoToAdapter(realPath);
                             }
                         }
                     }
@@ -561,7 +564,6 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
      */
     private void uploadPhoto(String imagePath) {
         try {
-            // Verificar si el archivo existe
             File imageFile = new File(imagePath);
             if (!imageFile.exists()) {
                 handleUploadError();
@@ -576,78 +578,82 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                 }
             }
 
-            // Cargar y procesar la imagen
-            Bitmap originalBitmap = null;
-            try {
-                // Intentar cargar la imagen usando diferentes métodos
-                originalBitmap = BitmapFactory.decodeFile(imageFile.getAbsolutePath());
-                
-                // Si falla el primer método, intentar con ContentResolver
-                if (originalBitmap == null && getContext() != null) {
-                    Uri imageUri = Uri.parse(imagePath);
-                    originalBitmap = MediaStore.Images.Media.getBitmap(
-                        requireContext().getContentResolver(), 
-                        imageUri
-                    );
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
-            // Verificar si se pudo cargar la imagen
+            // Comprimir la imagen
+            Bitmap originalBitmap = BitmapFactory.decodeFile(imageFile.getAbsolutePath());
             if (originalBitmap == null) {
-                Toast.makeText(requireContext(), 
-                    "No se pudo cargar la imagen", 
-                    Toast.LENGTH_SHORT).show();
+                Toast.makeText(requireContext(), "No se pudo cargar la imagen", Toast.LENGTH_SHORT).show();
                 handleUploadError();
                 return;
             }
 
-            // Comprimir la imagen para reducir el tamaño
+            // Comprimir imagen
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             originalBitmap.compress(Bitmap.CompressFormat.JPEG, 70, bos);
             
-            // Guardar la imagen comprimida en caché
-            File compressedFile = new File(requireContext().getCacheDir(), 
-                "compressed_" + imageFile.getName());
+            // Guardar imagen comprimida
+            File compressedFile = new File(requireContext().getCacheDir(), "compressed_" + imageFile.getName());
             FileOutputStream fos = new FileOutputStream(compressedFile);
             fos.write(bos.toByteArray());
             fos.flush();
             fos.close();
 
-            // Preparar la imagen para la subida
+            // Crear MultipartBody.Part
             RequestBody requestFile = RequestBody.create(
-                MediaType.parse("image/jpeg"),
+                MediaType.parse("image/*"),
                 compressedFile
             );
 
-            // Crear la parte multipart para la petición
-            MultipartBody.Part photoPart = MultipartBody.Part.createFormData(
-                "photo",
+            MultipartBody.Part imagePart = MultipartBody.Part.createFormData(
+                "image",
                 compressedFile.getName(),
                 requestFile
             );
 
-            // Obtener token de autorización
-            String token = "Bearer " + getAuthToken();
+            // Obtener token
+            String token = Login.getAuthorizationHeader(requireContext());
 
-            // Realizar la petición al servidor
+            // Hacer la petición
             RetrofitClient.getApiService()
-                .uploadPhoto(id, photoPart, token)
+                .uploadBusinessImage(id, imagePart, token)
                 .enqueue(new Callback<PhotoResponse>() {
                     @Override
                     public void onResponse(Call<PhotoResponse> call, Response<PhotoResponse> response) {
                         if (response.isSuccessful() && response.body() != null) {
-                            // Actualizar UI con la URL de la imagen subida
-                            String photoUrl = response.body().getUrl();
                             requireActivity().runOnUiThread(() -> {
                                 Toast.makeText(requireContext(), 
-                                    "Foto subida exitosamente", 
+                                    "Foto subida exitosamente",
                                     Toast.LENGTH_SHORT).show();
                                 int position = photos.size() - 1;
+                                String photoUrl = response.body().getUrl();
                                 photoAdapter.setPhotoUploaded(position, photoUrl);
                             });
                         } else {
+                            // Manejar errores de la API
+                            try {
+                                String errorBody = response.errorBody().string();
+                                JSONObject errorJson = new JSONObject(errorBody);
+                                String errorMessage = errorJson.getString("message");
+                                
+                                // Si hay errores específicos, mostrarlos
+                                if (errorJson.has("errors")) {
+                                    JSONObject errors = errorJson.getJSONObject("errors");
+                                    if (errors.has("image")) {
+                                        JSONArray imageErrors = errors.getJSONArray("image");
+                                        if (imageErrors.length() > 0) {
+                                            errorMessage = imageErrors.getString(0);
+                                        }
+                                    }
+                                }
+                                
+                                final String finalErrorMessage = errorMessage;
+                                requireActivity().runOnUiThread(() -> {
+                                    Toast.makeText(requireContext(), 
+                                        finalErrorMessage, 
+                                        Toast.LENGTH_LONG).show();
+                                });
+                            } catch (Exception e) {
+                                handleUploadError();
+                            }
                             handleUploadError();
                         }
                     }
@@ -669,9 +675,6 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
      */
     private void handleUploadError() {
         requireActivity().runOnUiThread(() -> {
-            Toast.makeText(requireContext(), 
-                "Error al subir la foto", 
-                Toast.LENGTH_SHORT).show();
             // Remover la última foto agregada si hubo error
             int position = photos.size() - 1;
             if (position >= 0) {
@@ -685,10 +688,7 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
      * Obtiene el token de autenticación almacenado
      * @return Token de autenticación
      */
-    private String getAuthToken() {
-        SharedPreferences prefs = requireContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
-        return prefs.getString("token", "");
-    }
+
 
     /**
      * Convierte una URI de contenido a una ruta de archivo real
@@ -719,16 +719,133 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
      * Sube todas las fotos pendientes al servidor
      */
     private void uploadPendingPhotos() {
-        // Obtener lista de fotos pendientes
         List<PhotoAdapter.PhotoItem> pendingPhotos = photoAdapter.getPendingPhotos();
         if (pendingPhotos.isEmpty()) {
-            Toast.makeText(requireContext(), "No hay fotos pendientes de subir", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), 
+                "No hay fotos pendientes de subir", 
+                Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // Subir cada foto pendiente
-        for (PhotoAdapter.PhotoItem photo : pendingPhotos) {
-            uploadPhoto(photo.getPath());
+        // Contador para rastrear las fotos subidas
+        final int[] uploadedCount = {0};
+        final int totalPhotos = pendingPhotos.size();
+
+        // Subir fotos secuencialmente
+        uploadNextPhoto(pendingPhotos, 0, uploadedCount, totalPhotos);
+    }
+
+    private void uploadNextPhoto(List<PhotoAdapter.PhotoItem> pendingPhotos, int currentIndex, 
+                               final int[] uploadedCount, final int totalPhotos) {
+        if (currentIndex >= pendingPhotos.size()) {
+            requireActivity().runOnUiThread(() -> {
+                Toast.makeText(requireContext(), 
+                    "Se subieron " + uploadedCount[0] + " de " + totalPhotos + " fotos", 
+                    Toast.LENGTH_LONG).show();
+            });
+            return;
+        }
+
+        PhotoAdapter.PhotoItem photo = pendingPhotos.get(currentIndex);
+        
+        // Mostrar progreso de subida
+        requireActivity().runOnUiThread(() -> {
+            photoAdapter.setPhotoUploading(currentIndex, true);
+            Toast.makeText(requireContext(), 
+                "Subiendo foto " + (currentIndex + 1) + " de " + totalPhotos, 
+                Toast.LENGTH_SHORT).show();
+        });
+
+        File imageFile = new File(photo.getPath());
+
+        if (!imageFile.exists()) {
+            uploadNextPhoto(pendingPhotos, currentIndex + 1, uploadedCount, totalPhotos);
+            return;
+        }
+
+        // Comprimir imagen
+        try {
+            Bitmap originalBitmap = BitmapFactory.decodeFile(imageFile.getAbsolutePath());
+            if (originalBitmap == null) {
+                uploadNextPhoto(pendingPhotos, currentIndex + 1, uploadedCount, totalPhotos);
+                return;
+            }
+
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            originalBitmap.compress(Bitmap.CompressFormat.JPEG, 70, bos);
+            
+            File compressedFile = new File(requireContext().getCacheDir(), 
+                "compressed_" + imageFile.getName());
+            FileOutputStream fos = new FileOutputStream(compressedFile);
+            fos.write(bos.toByteArray());
+            fos.flush();
+            fos.close();
+
+            // Crear MultipartBody.Part
+            RequestBody requestFile = RequestBody.create(
+                MediaType.parse("image/jpeg"),
+                compressedFile
+            );
+
+            MultipartBody.Part imagePart = MultipartBody.Part.createFormData(
+                "image",
+                "photo.jpg",
+                requestFile
+            );
+
+            // Obtener token
+            String token = Login.getAuthorizationHeader(requireContext());
+
+            // Hacer la petición
+            RetrofitClient.getApiService()
+                .uploadBusinessImage(id, imagePart, token)
+                .enqueue(new Callback<PhotoResponse>() {
+                    @Override
+                    public void onResponse(Call<PhotoResponse> call, Response<PhotoResponse> response) {
+                        requireActivity().runOnUiThread(() -> {
+                            photoAdapter.setPhotoUploading(currentIndex, false);
+                        });
+                        
+                        if (response.isSuccessful() && response.body() != null) {
+                            uploadedCount[0]++;
+                            requireActivity().runOnUiThread(() -> {
+                                photoAdapter.setPhotoUploaded(currentIndex, response.body().getUrl());
+                            });
+                        } else {
+                            handleUploadError(currentIndex);
+                        }
+                        uploadNextPhoto(pendingPhotos, currentIndex + 1, uploadedCount, totalPhotos);
+                    }
+
+                    @Override
+                    public void onFailure(Call<PhotoResponse> call, Throwable t) {
+                        requireActivity().runOnUiThread(() -> {
+                            photoAdapter.setPhotoUploading(currentIndex, false);
+                        });
+                        handleUploadError(currentIndex);
+                        uploadNextPhoto(pendingPhotos, currentIndex + 1, uploadedCount, totalPhotos);
+                    }
+                });
+
+        } catch (Exception e) {
+            handleUploadError(currentIndex);
+            uploadNextPhoto(pendingPhotos, currentIndex + 1, uploadedCount, totalPhotos);
+        }
+    }
+
+    private void handleUploadError(int position) {
+        requireActivity().runOnUiThread(() -> {
+            Toast.makeText(requireContext(), 
+                "Error al subir la foto " + (position + 1), 
+                Toast.LENGTH_SHORT).show();
+        });
+    }
+
+    private void addPhotoToAdapter(String photoPath) {
+        if (photoPath != null) {
+            PhotoAdapter.PhotoItem newPhoto = new PhotoAdapter.PhotoItem(photoPath, false);
+            photos.add(newPhoto);
+            photoAdapter.updatePhotos(photos);
         }
     }
 }

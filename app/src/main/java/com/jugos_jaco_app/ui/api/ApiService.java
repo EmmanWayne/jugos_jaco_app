@@ -10,10 +10,10 @@ import retrofit2.http.Path;
 
 public interface ApiService {
     @Multipart
-    @POST("clients/{clientId}/photos")
-    Call<PhotoResponse> uploadPhoto(
+    @POST("clients/{clientId}/image/business")
+    Call<PhotoResponse> uploadBusinessImage(
         @Path("clientId") String clientId,
-        @Part MultipartBody.Part photo,
+        @Part MultipartBody.Part image,
         @Header("Authorization") String token
     );
 } 

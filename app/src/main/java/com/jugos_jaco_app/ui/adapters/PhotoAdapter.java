@@ -1,6 +1,8 @@
 package com.jugos_jaco_app.ui.adapters;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -21,13 +23,22 @@ public class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.PhotoViewHol
 
     public static class PhotoItem {
         private String path;
+        private String serverUrl;
         private boolean isUploaded;
         private boolean isUploading;
+
+        public PhotoItem(String path) {
+            this.path = path;
+            this.isUploaded = false;
+            this.isUploading = false;
+            this.serverUrl = null;
+        }
 
         public PhotoItem(String path, boolean isUploaded) {
             this.path = path;
             this.isUploaded = isUploaded;
             this.isUploading = false;
+            this.serverUrl = null;
         }
 
         // Getters y setters
@@ -54,6 +65,14 @@ public class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.PhotoViewHol
         public void setUploading(boolean uploading) {
             isUploading = uploading;
         }
+
+        public String getServerUrl() {
+            return serverUrl;
+        }
+
+        public void setServerUrl(String serverUrl) {
+            this.serverUrl = serverUrl;
+        }
     }
 
     private List<PhotoItem> photos;
@@ -75,7 +94,8 @@ public class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.PhotoViewHol
     // Método para actualizar el estado de subida
     public void setPhotoUploading(int position, boolean uploading) {
         if (position >= 0 && position < photos.size()) {
-            photos.get(position).isUploading = uploading;
+            PhotoItem photo = photos.get(position);
+            photo.setUploading(uploading);
             notifyItemChanged(position);
         }
     }
@@ -84,9 +104,9 @@ public class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.PhotoViewHol
     public void setPhotoUploaded(int position, String serverUrl) {
         if (position >= 0 && position < photos.size()) {
             PhotoItem photo = photos.get(position);
-            photo.path = serverUrl;
-            photo.isUploaded = true;
-            photo.isUploading = false;
+            photo.setUploaded(true);
+            photo.setUploading(false);
+            photo.setServerUrl(serverUrl);
             notifyItemChanged(position);
         }
     }
@@ -128,62 +148,18 @@ public class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.PhotoViewHol
     @Override
     public void onBindViewHolder(@NonNull PhotoViewHolder holder, int position) {
         PhotoItem photoItem = photos.get(position);
-        String photoPath = photoItem.getPath();
-
-        // Cargar la imagen usando Glide
-        if (photoPath.startsWith("http")) {
-            // Es una URL
-            Glide.with(context)
-                .load(photoPath)
-                .placeholder(R.drawable.ic_placeholder)
-                .error(R.drawable.ic_error)
-                .centerCrop()
-                .into(holder.imageView);
-        } else {
-            // Es un archivo local
-            File imageFile = new File(photoPath);
-            if (imageFile.exists()) {
-                Glide.with(context)
-                    .load(imageFile)
-                    .placeholder(R.drawable.ic_placeholder)
-                    .error(R.drawable.ic_error)
-                    .centerCrop()
-                    .into(holder.imageView);
-            } else {
-                // Si el archivo no existe, intentar cargar directamente el URI
-                Uri imageUri = Uri.parse(photoPath);
-                Glide.with(context)
-                    .load(imageUri)
-                    .placeholder(R.drawable.ic_placeholder)
-                    .error(R.drawable.ic_error)
-                    .centerCrop()
-                    .into(holder.imageView);
-            }
-        }
-
-        // Mostrar estado de la foto
-        if (photoItem.isUploading()) {
-            holder.progressUpload.setVisibility(View.VISIBLE);
-            holder.statusIcon.setVisibility(View.GONE);
-        } else {
-            holder.progressUpload.setVisibility(View.GONE);
-            holder.statusIcon.setVisibility(View.VISIBLE);
-            
-            if (photoItem.isUploaded()) {
-                // Foto subida exitosamente
-                holder.statusIcon.setImageResource(R.drawable.ic_uploaded);
-                holder.statusIcon.setContentDescription("Foto subida");
-            } else {
-                // Foto pendiente de subir
-                holder.statusIcon.setImageResource(R.drawable.ic_pending);
-                holder.statusIcon.setContentDescription("Pendiente de subir");
-            }
-        }
+        
+        // Cargar imagen...
+        loadImage(holder, photoItem);
+        
+        // Actualizar estados de los indicadores
+        updateIndicators(holder, photoItem);
 
         // Configurar el clic para mostrar la imagen en pantalla completa
         holder.imageView.setOnClickListener(v -> {
             Uri imageUri;
             
+            String photoPath = photoItem.getPath();
             if (photoPath.startsWith("http")) {
                 // Es una URL
                 imageUri = Uri.parse(photoPath);
@@ -214,6 +190,46 @@ public class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.PhotoViewHol
         });
     }
 
+    private void loadImage(PhotoViewHolder holder, PhotoItem photoItem) {
+        String photoPath = photoItem.getPath();
+        if (photoPath == null) {
+            holder.imageView.setImageResource(R.drawable.product_placeholder);
+            return;
+        }
+
+        if (photoPath.startsWith("http")) {
+            Glide.with(holder.imageView.getContext())
+                .load(photoPath)
+                .placeholder(R.drawable.product_placeholder)
+                .error(R.drawable.product_placeholder)
+                .into(holder.imageView);
+        } else {
+            File imgFile = new File(photoPath);
+            if (imgFile.exists()) {
+                Bitmap myBitmap = BitmapFactory.decodeFile(imgFile.getAbsolutePath());
+                holder.imageView.setImageBitmap(myBitmap);
+            } else {
+                holder.imageView.setImageResource(R.drawable.product_placeholder);
+            }
+        }
+    }
+
+    private void updateIndicators(PhotoViewHolder holder, PhotoItem photoItem) {
+        // Ocultar todos los indicadores primero
+        holder.progressUpload.setVisibility(View.GONE);
+        holder.uploadIndicator.setVisibility(View.GONE);
+        holder.statusIcon.setVisibility(View.GONE);
+
+        // Mostrar el indicador correspondiente
+        if (photoItem.isUploading()) {
+            holder.progressUpload.setVisibility(View.VISIBLE);
+        } else if (photoItem.isUploaded()) {
+            holder.uploadIndicator.setVisibility(View.VISIBLE);
+        } else {
+            holder.statusIcon.setVisibility(View.VISIBLE);
+        }
+    }
+
     @Override
     public int getItemCount() {
         return photos.size();
@@ -223,12 +239,14 @@ public class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.PhotoViewHol
         ImageView imageView;
         ProgressBar progressUpload;
         ImageView statusIcon;
+        ImageView uploadIndicator;
 
         public PhotoViewHolder(@NonNull View itemView) {
             super(itemView);
             imageView = itemView.findViewById(R.id.ivPhoto);
             progressUpload = itemView.findViewById(R.id.progressUpload);
             statusIcon = itemView.findViewById(R.id.ivStatus);
+            uploadIndicator = itemView.findViewById(R.id.ivUploadIndicator);
         }
     }
 
