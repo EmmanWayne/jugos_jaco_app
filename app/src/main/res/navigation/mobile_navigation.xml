@@ -87,6 +87,10 @@
             android:id="@+id/action_clientDetailsFragment_to_editClientFragment"
             app:destination="@id/editClientFragment"
             />
+
+        <action
+            android:id="@+id/action_clientDetailsFragment_to_newSaleFragment"
+            app:destination="@id/newSaleFragment" />
     </fragment>
 
     <fragment
@@ -115,10 +119,10 @@
         tools:layout="@layout/fragment_new_sale">
         
         <argument
-            android:name="clientId"
+            android:name="client_id"
             app:argType="string" />
         <argument
-            android:name="clientName"
+            android:name="client_name"
             app:argType="string" />
     </fragment>
 

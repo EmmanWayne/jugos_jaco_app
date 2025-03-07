@@ -197,6 +197,19 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
         MaterialButton btnViewMap = view.findViewById(R.id.btnViewMap);
         btnViewMap.setOnClickListener(v -> checkLocationAndOpenMap());
 
+        // Dentro del método onCreateView, después de btnViewMap
+        MaterialButton btnNewSale = view.findViewById(R.id.fabNewSale);
+        btnNewSale.setOnClickListener(v -> {
+            Bundle bundle = new Bundle();
+            bundle.putString("clientId", id);
+            bundle.putString("clientName", clientFirstName + " " + clientLastName);
+
+            Log.i("TAGASIEMPRE",id +" "+clientFirstName );
+
+            NavController navController = Navigation.findNavController(v);
+            navController.navigate(R.id.action_clientDetailsFragment_to_newSaleFragment, bundle);
+        });
+
         return view;
     }
 
