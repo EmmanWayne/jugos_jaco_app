@@ -53,6 +53,8 @@ import android.util.Log;
 import com.jugos_jaco_app.ui.adapters.PhotoAdapter;
 import com.jugos_jaco_app.ui.api.RetrofitClient;
 import com.jugos_jaco_app.ui.api.PhotoResponse;
+import com.jugos_jaco_app.ui.api.ServerPhotosResponse;
+import com.jugos_jaco_app.ui.adapters.ServerPhotoAdapter;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
@@ -90,6 +92,13 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
     private String clientLastName;
     private String id;
     private String typePrice;
+
+    private RecyclerView rvLocalPhotos;
+    private RecyclerView rvServerPhotos;
+    private PhotoAdapter localPhotoAdapter;
+    private ServerPhotoAdapter serverPhotoAdapter;
+    private List<PhotoAdapter.PhotoItem> localPhotos = new ArrayList<>();
+    private List<ServerPhotosResponse.ServerPhoto> serverPhotos = new ArrayList<>();
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -212,6 +221,24 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
             NavController navController = Navigation.findNavController(v);
             navController.navigate(R.id.action_clientDetailsFragment_to_newSaleFragment, bundle);
         });
+
+        // Inicializar RecyclerViews
+        rvLocalPhotos = view.findViewById(R.id.rvLocalPhotos);
+        rvServerPhotos = view.findViewById(R.id.rvServerPhotos);
+        
+        // Configurar adapters
+        localPhotoAdapter = new PhotoAdapter(localPhotos, requireContext(), this);
+        serverPhotoAdapter = new ServerPhotoAdapter(serverPhotos, requireContext());
+        
+        // Configurar layouts
+        rvLocalPhotos.setLayoutManager(new GridLayoutManager(requireContext(), 3));
+        rvServerPhotos.setLayoutManager(new GridLayoutManager(requireContext(), 3));
+        
+        rvLocalPhotos.setAdapter(localPhotoAdapter);
+        rvServerPhotos.setAdapter(serverPhotoAdapter);
+
+        // Cargar fotos del servidor
+        loadServerPhotos();
 
         return view;
     }
@@ -847,5 +874,35 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
             photos.add(newPhoto);
             photoAdapter.updatePhotos(photos);
         }
+    }
+
+    private void loadServerPhotos() {
+        String token = Login.getAuthorizationHeader(requireContext());
+
+        RetrofitClient.getApiService()
+            .getClientImages(id, token)
+            .enqueue(new Callback<ServerPhotosResponse>() {
+                @Override
+                public void onResponse(Call<ServerPhotosResponse> call, Response<ServerPhotosResponse> response) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        serverPhotos.clear();
+                        serverPhotos.addAll(response.body().getPhotos());
+                        serverPhotoAdapter.notifyDataSetChanged();
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<ServerPhotosResponse> call, Throwable t) {
+                    Toast.makeText(requireContext(), 
+                        "Error al cargar las fotos del servidor", 
+                        Toast.LENGTH_SHORT).show();
+                }
+            });
+    }
+
+    // Después de subir una foto exitosamente
+    private void onPhotoUploaded() {
+        // Recargar las fotos del servidor
+        loadServerPhotos();
     }
 }

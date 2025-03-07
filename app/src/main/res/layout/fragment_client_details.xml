@@ -359,6 +359,34 @@
                         style="@style/Widget.MaterialComponents.Button.OutlinedButton"/>
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
+
+            <!-- Sección de fotos locales -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Fotos Pendientes"
+                android:textStyle="bold"
+                android:padding="16dp"/>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvLocalPhotos"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="8dp"/>
+
+            <!-- Sección de fotos del servidor -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Fotos Subidas"
+                android:textStyle="bold"
+                android:padding="16dp"/>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvServerPhotos"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="8dp"/>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
