@@ -35,7 +35,7 @@ public class ServerPhotoAdapter extends RecyclerView.Adapter<ServerPhotoAdapter.
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         ServerPhoto photo = photos.get(position);
-        String fullUrl = Utilities.URL + photo.getPath();
+        String fullUrl = Utilities.URL_FOTOS +"storage/" +photo.getPath();
         
         Glide.with(context)
             .load(fullUrl)
