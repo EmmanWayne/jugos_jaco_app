@@ -881,7 +881,7 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                     Log.d("PhotoCompression", "Tamaño original: " + originalSizeKB + " KB");
 
                     if (originalSizeKB <= 200 && rotation == 0) {
-                        // Si la imagen es pequeña y no necesita rotación, usarla directamente
+                        // Si la imagen ya es pequeña y no necesita rotación, usarla directamente
                         Log.d("PhotoCompression", "La imagen ya es suficientemente pequeña y no necesita rotación");
                         PhotoAdapter.PhotoItem newPhoto = new PhotoAdapter.PhotoItem(photoPath, false);
                         photos.add(newPhoto);
@@ -889,56 +889,87 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                         return;
                     }
 
-                    // Calcular factor de escala
-                    int maxDimension = 1280;
-                    int scaleFactor = Math.min(imageWidth / maxDimension, imageHeight / maxDimension);
-                    if (scaleFactor < 1) scaleFactor = 1;
+                    // Calcular el factor de escala óptimo manteniendo el aspect ratio
+                    int targetWidth = 1280; // Ancho objetivo
+                    float ratio = (float) imageWidth / imageHeight;
+                    int targetHeight = (int) (targetWidth / ratio);
 
+                    // Ajustar dimensiones si la altura es muy grande
+                    if (targetHeight > 1280) {
+                        targetHeight = 1280;
+                        targetWidth = (int) (targetHeight * ratio);
+                    }
+
+                    // Configurar opciones de decodificación
                     options = new BitmapFactory.Options();
-                    options.inSampleSize = scaleFactor;
                     options.inPreferredConfig = Bitmap.Config.ARGB_8888;
 
-                    // Decodificar y rotar la imagen si es necesario
-                    Bitmap bitmap = BitmapFactory.decodeFile(photoPath, options);
+                    // Decodificar la imagen original
+                    Bitmap originalBitmap = BitmapFactory.decodeFile(photoPath, options);
+                    
+                    // Escalar la imagen manteniendo la calidad
+                    Bitmap scaledBitmap = Bitmap.createScaledBitmap(
+                        originalBitmap, 
+                        targetWidth, 
+                        targetHeight, 
+                        true
+                    );
+                    originalBitmap.recycle(); // Liberar memoria
+
+                    // Rotar si es necesario
                     if (rotation != 0) {
                         Matrix matrix = new Matrix();
                         matrix.postRotate(rotation);
-                        bitmap = Bitmap.createBitmap(bitmap, 0, 0, 
-                            bitmap.getWidth(), bitmap.getHeight(), 
-                            matrix, true);
-                    }
-
-                    if (bitmap != null) {
-                        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                        int quality = 100;
-                        
-                        bitmap.compress(Bitmap.CompressFormat.JPEG, quality, bos);
-                        
-                        while (bos.size() > 200 * 1024 && quality > 25) {
-                            bos.reset();
-                            quality -= 5;
-                            bitmap.compress(Bitmap.CompressFormat.JPEG, quality, bos);
-                        }
-
-                        float finalSizeKB = bos.size() / 1024f;
-                        Log.d("PhotoCompression", String.format(
-                            "Tamaño final: %.2f KB, Calidad: %d%%, Dimensiones: %dx%d, Rotación: %d°", 
-                            finalSizeKB, quality, bitmap.getWidth(), bitmap.getHeight(), rotation
-                        ));
-
-                        File optimizedFile = new File(requireContext().getCacheDir(), 
-                            "optimized_" + imageFile.getName());
-                        FileOutputStream fos = new FileOutputStream(optimizedFile);
-                        fos.write(bos.toByteArray());
-                        fos.close();
-
-                        PhotoAdapter.PhotoItem newPhoto = new PhotoAdapter.PhotoItem(
-                            optimizedFile.getAbsolutePath(), 
-                            false
+                        Bitmap rotatedBitmap = Bitmap.createBitmap(
+                            scaledBitmap, 0, 0,
+                            scaledBitmap.getWidth(), scaledBitmap.getHeight(),
+                            matrix, true
                         );
-                        photos.add(newPhoto);
-                        photoAdapter.updatePhotos(photos);
+                        scaledBitmap.recycle();
+                        scaledBitmap = rotatedBitmap;
                     }
+
+                    // Comprimir con calidad progresiva
+                    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                    int quality = 100;
+                    scaledBitmap.compress(Bitmap.CompressFormat.JPEG, quality, bos);
+
+                    // Reducir calidad gradualmente si es necesario
+                    while (bos.size() > 200 * 1024 && quality > 60) { // Mantener calidad mínima de 60%
+                        bos.reset();
+                        quality -= 5;
+                        scaledBitmap.compress(Bitmap.CompressFormat.JPEG, quality, bos);
+                    }
+
+                    // Si aún es muy grande, intentar reducir más la calidad pero no tanto
+                    if (bos.size() > 200 * 1024) {
+                        while (bos.size() > 200 * 1024 && quality > 40) {
+                            bos.reset();
+                            quality -= 2; // Reducción más gradual
+                            scaledBitmap.compress(Bitmap.CompressFormat.JPEG, quality, bos);
+                        }
+                    }
+
+                    float finalSizeKB = bos.size() / 1024f;
+                    Log.d("PhotoCompression", String.format(
+                        "Tamaño final: %.2f KB, Calidad: %d%%, Dimensiones: %dx%d, Rotación: %d°", 
+                        finalSizeKB, quality, scaledBitmap.getWidth(), scaledBitmap.getHeight(), rotation
+                    ));
+
+                    File optimizedFile = new File(requireContext().getCacheDir(), 
+                        "optimized_" + imageFile.getName());
+                    FileOutputStream fos = new FileOutputStream(optimizedFile);
+                    fos.write(bos.toByteArray());
+                    fos.close();
+
+                    scaledBitmap.recycle(); // Liberar memoria
+
+                    PhotoAdapter.PhotoItem newPhoto = new PhotoAdapter.PhotoItem(
+                        optimizedFile.getAbsolutePath(), 
+                        false
+                    );
+                    photos.add(newPhoto);
+                    photoAdapter.updatePhotos(photos);
                 } catch (Exception e) {
                     Toast.makeText(requireContext(), 
                         "Error al procesar la imagen", 
