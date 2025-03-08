@@ -809,7 +809,6 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
             return;
         }
 
-        // Crear MultipartBody.Part directamente del archivo comprimido
         RequestBody requestFile = RequestBody.create(
             MediaType.parse("image/jpeg"),
             imageFile
@@ -833,14 +832,34 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                     });
                     
                     if (response.isSuccessful() && response.body() != null) {
+                        PhotoResponse photoResponse = response.body();
                         uploadedCount[0]++;
+                        
                         requireActivity().runOnUiThread(() -> {
-                            photoAdapter.setPhotoUploaded(currentIndex, response.body().getUrl());
+                            // Verificar que aún existan fotos antes de remover
+                            if (!photos.isEmpty() && currentIndex < photos.size()) {
+                                photos.remove(currentIndex);
+                                photoAdapter.updatePhotos(photos);
+                            }
+                            
+                            // Recargar fotos del servidor
+                            loadServerPhotos();
+
+                            // Mostrar mensaje de éxito si existe
+                            String message = photoResponse.getMessage();
+                            if (message != null && !message.isEmpty()) {
+                                Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+                            }
                         });
+
+                        // Continuar con la siguiente foto
+                        if (currentIndex < pendingPhotos.size() - 1) {
+                            uploadNextPhoto(pendingPhotos, currentIndex + 1, uploadedCount, totalPhotos);
+                        }
                     } else {
                         handleUploadError(currentIndex);
+                        uploadNextPhoto(pendingPhotos, currentIndex + 1, uploadedCount, totalPhotos);
                     }
-                    uploadNextPhoto(pendingPhotos, currentIndex + 1, uploadedCount, totalPhotos);
                 }
 
                 @Override
