@@ -864,34 +864,58 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
             File imageFile = new File(photoPath);
             if (imageFile.exists()) {
                 try {
-                    Bitmap bitmap = BitmapFactory.decodeFile(photoPath);
+                    // Obtener dimensiones de la imagen original
+                    BitmapFactory.Options options = new BitmapFactory.Options();
+                    options.inJustDecodeBounds = true;
+                    BitmapFactory.decodeFile(photoPath, options);
+                    int imageWidth = options.outWidth;
+                    int imageHeight = options.outHeight;
+
+                    // Calcular el tamaño del archivo original en KB
+                    float originalSizeKB = imageFile.length() / 1024f;
+                    Log.d("PhotoCompression", "Tamaño original: " + originalSizeKB + " KB");
+
+                    // Si la imagen ya es pequeña (menos de 200KB), usarla directamente
+                    if (originalSizeKB <= 200) {
+                        Log.d("PhotoCompression", "La imagen ya es suficientemente pequeña, no se comprime");
+                        PhotoAdapter.PhotoItem newPhoto = new PhotoAdapter.PhotoItem(photoPath, false);
+                        photos.add(newPhoto);
+                        photoAdapter.updatePhotos(photos);
+                        return;
+                    }
+
+                    // Calcular factor de escala basado en dimensiones máximas deseadas
+                    int maxDimension = 1280; // Dimensión máxima típica para fotos de WhatsApp
+                    int scaleFactor = Math.min(imageWidth / maxDimension, imageHeight / maxDimension);
+                    if (scaleFactor < 1) scaleFactor = 1;
+
+                    // Configurar opciones de decodificación
+                    options = new BitmapFactory.Options();
+                    options.inSampleSize = scaleFactor;
+                    options.inPreferredConfig = Bitmap.Config.ARGB_8888;
+
+                    // Decodificar la imagen con el factor de escala
+                    Bitmap bitmap = BitmapFactory.decodeFile(photoPath, options);
                     if (bitmap != null) {
                         ByteArrayOutputStream bos = new ByteArrayOutputStream();
                         int quality = 100;
-                        final int MIN_SIZE = 100 * 1024; // 100 KB
-                        final int MAX_SIZE = 200 * 1024; // 200 KB
-
-                        // Primera compresión con calidad 100
+                        
+                        // Primera compresión con calidad alta
                         bitmap.compress(Bitmap.CompressFormat.JPEG, quality, bos);
-
-                        // Si es mayor a 200KB, reducir calidad hasta estar entre 100KB y 200KB
-                        while (bos.size() > MAX_SIZE && quality > 10) {
+                        
+                        // Reducir calidad gradualmente si es necesario
+                        while (bos.size() > 200 * 1024 && quality > 25) { // Mínimo 25% de calidad
                             bos.reset();
-                            quality -= 5; // Reducción más gradual
+                            quality -= 5;
                             bitmap.compress(Bitmap.CompressFormat.JPEG, quality, bos);
                         }
 
-                        // Si es menor a 100KB, aumentar calidad
-                        while (bos.size() < MIN_SIZE && quality < 100) {
-                            bos.reset();
-                            quality += 5;
-                            bitmap.compress(Bitmap.CompressFormat.JPEG, quality, bos);
-                        }
-
-                        // Log del tamaño final
-                        float finalSizeInKB = bos.size() / 1024f;
-                        Log.d("PhotoCompression", String.format("Tamaño final: %.2f KB, Calidad: %d%%", 
-                            finalSizeInKB, quality));
+                        // Log del resultado final
+                        float finalSizeKB = bos.size() / 1024f;
+                        Log.d("PhotoCompression", String.format(
+                            "Tamaño final: %.2f KB, Calidad: %d%%, Dimensiones: %dx%d", 
+                            finalSizeKB, quality, bitmap.getWidth(), bitmap.getHeight()
+                        ));
 
                         // Guardar la imagen optimizada
                         File optimizedFile = new File(requireContext().getCacheDir(), 
@@ -900,17 +924,13 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                         fos.write(bos.toByteArray());
                         fos.close();
 
-                        // Agregar la foto optimizada al adapter
+                        // Agregar al adapter
                         PhotoAdapter.PhotoItem newPhoto = new PhotoAdapter.PhotoItem(
                             optimizedFile.getAbsolutePath(), 
                             false
                         );
                         photos.add(newPhoto);
                         photoAdapter.updatePhotos(photos);
-                    } else {
-                        Toast.makeText(requireContext(), 
-                            "El archivo no es una imagen válida", 
-                            Toast.LENGTH_SHORT).show();
                     }
                 } catch (Exception e) {
                     Toast.makeText(requireContext(), 
@@ -918,10 +938,6 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                         Toast.LENGTH_SHORT).show();
                     e.printStackTrace();
                 }
-            } else {
-                Toast.makeText(requireContext(), 
-                    "No se pudo acceder a la imagen", 
-                    Toast.LENGTH_SHORT).show();
             }
         }
     }
