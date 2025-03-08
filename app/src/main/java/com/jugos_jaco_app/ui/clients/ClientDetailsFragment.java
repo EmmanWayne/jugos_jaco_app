@@ -7,6 +7,9 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -113,9 +116,12 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
 
     private FloatingActionButton fabDeletePhotos;
 
+    private MenuItem deleteMenuItem;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setHasOptionsMenu(true);
 
         if (!hasPermissions()) {
             requestPermissions();
@@ -258,11 +264,33 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
 
         // Configurar el adaptador con listener para modo selección
         serverPhotoAdapter.setSelectionModeListener(isSelectionMode -> {
-            // Mostrar/ocultar FAB según el modo de selección
-            fabDeletePhotos.setVisibility(isSelectionMode ? View.VISIBLE : View.GONE);
+            if (deleteMenuItem != null) {
+                // Mostrar el botón solo si hay fotos seleccionadas
+                boolean hasSelectedPhotos = !serverPhotoAdapter.getSelectedPhotos().isEmpty();
+                deleteMenuItem.setVisible(isSelectionMode && hasSelectedPhotos);
+            }
         });
 
         return view;
+    }
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        // Limpiar el menú anterior si existe
+        menu.clear();
+        // Inflar el nuevo menú
+        inflater.inflate(R.menu.menu_client_details, menu);
+        deleteMenuItem = menu.findItem(R.id.action_delete_photos);
+        super.onCreateOptionsMenu(menu, inflater);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == R.id.action_delete_photos) {
+            deleteSelectedPhotos();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     // Mostrar cuadro de diálogo con opciones para tomar foto o seleccionar de la galería
@@ -982,41 +1010,36 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
             .setMessage("¿Está seguro que desea eliminar las " + selectedIds.size() + " fotos seleccionadas?")
             .setPositiveButton("Eliminar", (dialog, which) -> {
                 String token = Login.getAuthorizationHeader(requireContext());
-                AtomicInteger deletedCount = new AtomicInteger(0);
-                AtomicInteger errorCount = new AtomicInteger(0);
 
-                for (Integer id : selectedIds) {
+                for (Integer photoId : selectedIds) {
+                    serverPhotoAdapter.setPhotoDeleting(photoId, true);
+                    
                     RetrofitClient.getApiService()
-                        .deleteMedia(id, token)
+                        .deleteMedia(photoId, token)
                         .enqueue(new Callback<MessageResponse>() {
                             @Override
                             public void onResponse(Call<MessageResponse> call, Response<MessageResponse> response) {
-                                if (response.isSuccessful()) {
-                                    deletedCount.incrementAndGet();
-                                } else {
-                                    errorCount.incrementAndGet();
-                                }
+                                requireActivity().runOnUiThread(() -> {
+                                    if (response.isSuccessful()) {
+                                        serverPhotoAdapter.removePhoto(photoId);
 
-                                // Cuando todas las peticiones han terminado
-                                if (deletedCount.get() + errorCount.get() == selectedIds.size()) {
-                                    requireActivity().runOnUiThread(() -> {
-                                        String message = String.format(
-                                            "Se eliminaron %d de %d fotos", 
-                                            deletedCount.get(), 
-                                            selectedIds.size()
-                                        );
-                                        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
-                                        
-                                        // Recargar fotos y salir del modo selección
-                                        loadServerPhotos();
-                                        serverPhotoAdapter.toggleSelectionMode();
-                                    });
-                                }
+                                    } else {
+                                        serverPhotoAdapter.setPhotoDeleting(photoId, false);
+                                        Toast.makeText(requireContext(),
+                                            "Error al eliminar la foto",
+                                            Toast.LENGTH_SHORT).show();
+                                    }
+                                });
                             }
 
                             @Override
                             public void onFailure(Call<MessageResponse> call, Throwable t) {
-                                errorCount.incrementAndGet();
+                                requireActivity().runOnUiThread(() -> {
+                                    serverPhotoAdapter.setPhotoDeleting(photoId, false);
+                                    Toast.makeText(requireContext(),
+                                        "Error de conexión al eliminar la foto",
+                                        Toast.LENGTH_SHORT).show();
+                                });
                             }
                         });
                 }

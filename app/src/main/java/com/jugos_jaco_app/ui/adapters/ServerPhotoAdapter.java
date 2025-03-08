@@ -6,6 +6,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
@@ -22,6 +23,7 @@ public class ServerPhotoAdapter extends RecyclerView.Adapter<ServerPhotoAdapter.
     private Context context;
     private Set<Integer> selectedPhotos = new HashSet<>();
     private boolean isSelectionMode = false;
+    private Set<Integer> deletingPhotos = new HashSet<>();
 
     public interface SelectionModeListener {
         void onSelectionModeChanged(boolean isSelectionMode);
@@ -47,6 +49,11 @@ public class ServerPhotoAdapter extends RecyclerView.Adapter<ServerPhotoAdapter.
         ServerPhoto photo = photos.get(position);
         String fullUrl = Utilities.URL_FOTOS +"storage/" +photo.getPath();
         
+        // Mostrar/ocultar progress según estado de eliminación
+        holder.progressBar.setVisibility(
+            deletingPhotos.contains(photo.getId()) ? View.VISIBLE : View.GONE
+        );
+
         Glide.with(context)
             .load(fullUrl)
             .placeholder(R.drawable.product_placeholder)
@@ -110,22 +117,54 @@ public class ServerPhotoAdapter extends RecyclerView.Adapter<ServerPhotoAdapter.
             selectedPhotos.add(photo.getId());
         }
         notifyItemChanged(position);
+        
+        // Notificar cambio en el estado de selección
+        if (selectionModeListener != null) {
+            selectionModeListener.onSelectionModeChanged(isSelectionMode);
+        }
     }
 
     public Set<Integer> getSelectedPhotos() {
         return new HashSet<>(selectedPhotos);
     }
 
+    public void setPhotoDeleting(int photoId, boolean isDeleting) {
+        if (isDeleting) {
+            deletingPhotos.add(photoId);
+        } else {
+            deletingPhotos.remove(photoId);
+        }
+        notifyDataSetChanged();
+    }
+
+    public void removePhoto(int photoId) {
+        for (int i = 0; i < photos.size(); i++) {
+            if (photos.get(i).getId() == photoId) {
+                photos.remove(i);
+                selectedPhotos.remove(photoId);
+                deletingPhotos.remove(photoId);
+                notifyItemRemoved(i);
+                break;
+            }
+        }
+        // Si no quedan fotos seleccionadas, salir del modo selección
+        if (selectedPhotos.isEmpty()) {
+            toggleSelectionMode();
+        }
+    }
+
     static class ViewHolder extends RecyclerView.ViewHolder {
         ImageView imageView;
         View selectionOverlay;
         View selectionCheck;
+        ProgressBar progressBar;
 
         ViewHolder(@NonNull View itemView) {
             super(itemView);
             imageView = itemView.findViewById(R.id.ivServerPhoto);
             selectionOverlay = itemView.findViewById(R.id.selectionOverlay);
             selectionCheck = itemView.findViewById(R.id.selectionCheck);
+            progressBar = itemView.findViewById(R.id.progressBar);
         }
     }
 } 
