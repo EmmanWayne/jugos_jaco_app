@@ -1,15 +1,16 @@
 package com.jugos_jaco_app.ui.utilities;
 
+
+
+
 import static com.jugos_jaco_app.Login.KEY_TOKEN;
 import static com.jugos_jaco_app.Login.PREFS_NAME;
 import static com.jugos_jaco_app.Login.TOKEN_TYPE;
 
 import android.Manifest;
-import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -18,7 +19,6 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.Looper;
-import android.os.SystemClock;
 import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
@@ -36,7 +36,6 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.jugos_jaco_app.R;
-
 
 import java.util.HashMap;
 import java.util.Map;
@@ -92,20 +91,9 @@ public class LocationService extends Service {
             fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper());
         }
 
-        // Indicar que el servicio debe reiniciarse si es destruido
-        return START_STICKY;
+        return START_STICKY; // Para que el servicio se reinicie si el sistema lo mata
     }
 
-    @Override
-    public void onTaskRemoved(Intent rootIntent) {
-        super.onTaskRemoved(rootIntent);
-        // Reiniciar el servicio si la app es removida de recientes
-        Intent restartServiceIntent = new Intent(getApplicationContext(), LocationService.class);
-        PendingIntent restartServicePendingIntent = PendingIntent.getService(
-            getApplicationContext(), 1, restartServiceIntent, PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_IMMUTABLE);
-        AlarmManager alarmService = (AlarmManager) getApplicationContext().getSystemService(Context.ALARM_SERVICE);
-        alarmService.set(AlarmManager.ELAPSED_REALTIME, SystemClock.elapsedRealtime() + 1000, restartServicePendingIntent);
-    }
 
     private void startForegroundService() {
         String channelId = "location_channel";
