@@ -382,6 +382,18 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:padding="8dp"/>
+
+            <!-- Botón flotante para eliminar -->
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fabDeletePhotos"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|end"
+                android:layout_margin="16dp"
+                android:src="@drawable/ic_delete"
+                android:visibility="gone"
+                app:backgroundTint="@color/error_color"
+                app:tint="@color/white"/>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 

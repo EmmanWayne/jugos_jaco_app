@@ -8,6 +8,7 @@ import retrofit2.http.POST;
 import retrofit2.http.Part;
 import retrofit2.http.Path;
 import retrofit2.http.GET;
+import retrofit2.http.DELETE;
 
 public interface ApiService {
     @Multipart
@@ -21,6 +22,12 @@ public interface ApiService {
     @GET("clients/{id}/images/business")
     Call<ServerPhotosResponse> getClientImages(
         @Path("id") String clientId,
+        @Header("Authorization") String token
+    );
+
+    @DELETE("media/{id}")
+    Call<MessageResponse> deleteMedia(
+        @Path("id") int mediaId,
         @Header("Authorization") String token
     );
 } 

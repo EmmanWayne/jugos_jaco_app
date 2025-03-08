@@ -72,6 +72,11 @@ import org.json.JSONObject;
 import android.media.ExifInterface;
 import android.graphics.Matrix;
 
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import com.jugos_jaco_app.ui.api.MessageResponse;
+
 public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPhotoListener {
 
     private static final int REQUEST_CODE_PERMISSIONS = 100;
@@ -105,6 +110,8 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
 
     // Agregar variable para guardar el path de la foto actual
     private String currentPhotoPath;
+
+    private FloatingActionButton fabDeletePhotos;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -245,6 +252,15 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
 
         // Cargar fotos del servidor
         loadServerPhotos();
+
+        fabDeletePhotos = view.findViewById(R.id.fabDeletePhotos);
+        fabDeletePhotos.setOnClickListener(v -> deleteSelectedPhotos());
+
+        // Configurar el adaptador con listener para modo selección
+        serverPhotoAdapter.setSelectionModeListener(isSelectionMode -> {
+            // Mostrar/ocultar FAB según el modo de selección
+            fabDeletePhotos.setVisibility(isSelectionMode ? View.VISIBLE : View.GONE);
+        });
 
         return view;
     }
@@ -954,5 +970,59 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
             });
     }
 
-  
+    private void deleteSelectedPhotos() {
+        Set<Integer> selectedIds = serverPhotoAdapter.getSelectedPhotos();
+        if (selectedIds.isEmpty()) {
+            Toast.makeText(requireContext(), "No hay fotos seleccionadas", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        new AlertDialog.Builder(requireContext())
+            .setTitle("Eliminar fotos")
+            .setMessage("¿Está seguro que desea eliminar las " + selectedIds.size() + " fotos seleccionadas?")
+            .setPositiveButton("Eliminar", (dialog, which) -> {
+                String token = Login.getAuthorizationHeader(requireContext());
+                AtomicInteger deletedCount = new AtomicInteger(0);
+                AtomicInteger errorCount = new AtomicInteger(0);
+
+                for (Integer id : selectedIds) {
+                    RetrofitClient.getApiService()
+                        .deleteMedia(id, token)
+                        .enqueue(new Callback<MessageResponse>() {
+                            @Override
+                            public void onResponse(Call<MessageResponse> call, Response<MessageResponse> response) {
+                                if (response.isSuccessful()) {
+                                    deletedCount.incrementAndGet();
+                                } else {
+                                    errorCount.incrementAndGet();
+                                }
+
+                                // Cuando todas las peticiones han terminado
+                                if (deletedCount.get() + errorCount.get() == selectedIds.size()) {
+                                    requireActivity().runOnUiThread(() -> {
+                                        String message = String.format(
+                                            "Se eliminaron %d de %d fotos", 
+                                            deletedCount.get(), 
+                                            selectedIds.size()
+                                        );
+                                        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+                                        
+                                        // Recargar fotos y salir del modo selección
+                                        loadServerPhotos();
+                                        serverPhotoAdapter.toggleSelectionMode();
+                                    });
+                                }
+                            }
+
+                            @Override
+                            public void onFailure(Call<MessageResponse> call, Throwable t) {
+                                errorCount.incrementAndGet();
+                            }
+                        });
+                }
+            })
+            .setNegativeButton("Cancelar", null)
+            .show();
+    }
+
 }

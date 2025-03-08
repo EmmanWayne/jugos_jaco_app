@@ -18,6 +18,22 @@
             android:layout_height="match_parent"
             android:scaleType="centerCrop"/>
 
+        <View
+            android:id="@+id/selectionOverlay"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#66000000"
+            android:visibility="gone"/>
+
+        <ImageView
+            android:id="@+id/selectionCheck"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_gravity="center"
+            android:src="@drawable/ic_check"
+            android:visibility="gone"
+            android:tint="@color/white"/>
+
     </FrameLayout>
 
 </androidx.cardview.widget.CardView> 
