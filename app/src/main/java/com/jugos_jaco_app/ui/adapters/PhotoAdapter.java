@@ -63,7 +63,7 @@ public class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.PhotoViewHol
         }
 
         public void setUploading(boolean uploading) {
-            isUploading = uploading;
+            this.isUploading = uploading;
         }
 
         public String getServerUrl() {

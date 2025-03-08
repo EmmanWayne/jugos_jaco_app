@@ -793,14 +793,29 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                 Toast.makeText(requireContext(), 
                     "Se subieron " + uploadedCount[0] + " de " + totalPhotos + " fotos", 
                     Toast.LENGTH_LONG).show();
+                photoAdapter.updatePhotos(photos);
             });
             return;
         }
 
         PhotoAdapter.PhotoItem photo = pendingPhotos.get(currentIndex);
         
+        // Encontrar el índice correcto en la lista principal
+        int mainListIndex = -1;
+        for (int i = 0; i < photos.size(); i++) {
+            if (photos.get(i).getPath().equals(photo.getPath())) {
+                mainListIndex = i;
+                break;
+            }
+        }
+
+        final int photoIndex = mainListIndex;
+        
         requireActivity().runOnUiThread(() -> {
-            photoAdapter.setPhotoUploading(currentIndex, true);
+            if (photoIndex != -1) {
+                photos.get(photoIndex).setUploading(true);
+                photoAdapter.notifyItemChanged(photoIndex);
+            }
         });
 
         File imageFile = new File(photo.getPath());
@@ -828,7 +843,10 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                 @Override
                 public void onResponse(Call<PhotoResponse> call, Response<PhotoResponse> response) {
                     requireActivity().runOnUiThread(() -> {
-                        photoAdapter.setPhotoUploading(currentIndex, false);
+                        if (photoIndex != -1) {
+                            photos.get(photoIndex).setUploading(false);
+                            photoAdapter.notifyItemChanged(photoIndex);
+                        }
                     });
                     
                     if (response.isSuccessful() && response.body() != null) {
@@ -836,26 +854,24 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                         uploadedCount[0]++;
                         
                         requireActivity().runOnUiThread(() -> {
-                            // Verificar que aún existan fotos antes de remover
-                            if (!photos.isEmpty() && currentIndex < photos.size()) {
-                                photos.remove(currentIndex);
-                                photoAdapter.updatePhotos(photos);
-                            }
-                            
-                            // Recargar fotos del servidor
-                            loadServerPhotos();
+                            try {
+                                if (photoIndex != -1) {
+                                    photos.remove(photoIndex);
+                                    photoAdapter.updatePhotos(photos);
+                                }
+                                
+                                loadServerPhotos();
 
-                            // Mostrar mensaje de éxito si existe
-                            String message = photoResponse.getMessage();
-                            if (message != null && !message.isEmpty()) {
-                                Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+                                String message = photoResponse.getMessage();
+                                if (message != null && !message.isEmpty()) {
+                                    Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+                                }
+                            } catch (Exception e) {
+                                Log.e("PhotoUpload", "Error al remover foto: " + e.getMessage());
                             }
                         });
 
-                        // Continuar con la siguiente foto
-                        if (currentIndex < pendingPhotos.size() - 1) {
-                            uploadNextPhoto(pendingPhotos, currentIndex + 1, uploadedCount, totalPhotos);
-                        }
+                        uploadNextPhoto(pendingPhotos, currentIndex + 1, uploadedCount, totalPhotos);
                     } else {
                         handleUploadError(currentIndex);
                         uploadNextPhoto(pendingPhotos, currentIndex + 1, uploadedCount, totalPhotos);
@@ -865,9 +881,12 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                 @Override
                 public void onFailure(Call<PhotoResponse> call, Throwable t) {
                     requireActivity().runOnUiThread(() -> {
-                        photoAdapter.setPhotoUploading(currentIndex, false);
+                        if (photoIndex != -1) {
+                            photos.get(photoIndex).setUploading(false);
+                            photoAdapter.notifyItemChanged(photoIndex);
+                        }
+                        handleUploadError(currentIndex);
                     });
-                    handleUploadError(currentIndex);
                     uploadNextPhoto(pendingPhotos, currentIndex + 1, uploadedCount, totalPhotos);
                 }
             });
