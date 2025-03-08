@@ -69,6 +69,9 @@ import android.content.SharedPreferences;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import android.media.ExifInterface;
+import android.graphics.Matrix;
+
 public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPhotoListener {
 
     private static final int REQUEST_CODE_PERMISSIONS = 100;
@@ -864,6 +867,9 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
             File imageFile = new File(photoPath);
             if (imageFile.exists()) {
                 try {
+                    // Obtener la orientación EXIF de la imagen
+                    int rotation = getImageRotation(photoPath);
+                    
                     // Obtener dimensiones de la imagen original
                     BitmapFactory.Options options = new BitmapFactory.Options();
                     options.inJustDecodeBounds = true;
@@ -871,60 +877,61 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                     int imageWidth = options.outWidth;
                     int imageHeight = options.outHeight;
 
-                    // Calcular el tamaño del archivo original en KB
                     float originalSizeKB = imageFile.length() / 1024f;
                     Log.d("PhotoCompression", "Tamaño original: " + originalSizeKB + " KB");
 
-                    // Si la imagen ya es pequeña (menos de 200KB), usarla directamente
-                    if (originalSizeKB <= 200) {
-                        Log.d("PhotoCompression", "La imagen ya es suficientemente pequeña, no se comprime");
+                    if (originalSizeKB <= 200 && rotation == 0) {
+                        // Si la imagen es pequeña y no necesita rotación, usarla directamente
+                        Log.d("PhotoCompression", "La imagen ya es suficientemente pequeña y no necesita rotación");
                         PhotoAdapter.PhotoItem newPhoto = new PhotoAdapter.PhotoItem(photoPath, false);
                         photos.add(newPhoto);
                         photoAdapter.updatePhotos(photos);
                         return;
                     }
 
-                    // Calcular factor de escala basado en dimensiones máximas deseadas
-                    int maxDimension = 1280; // Dimensión máxima típica para fotos de WhatsApp
+                    // Calcular factor de escala
+                    int maxDimension = 1280;
                     int scaleFactor = Math.min(imageWidth / maxDimension, imageHeight / maxDimension);
                     if (scaleFactor < 1) scaleFactor = 1;
 
-                    // Configurar opciones de decodificación
                     options = new BitmapFactory.Options();
                     options.inSampleSize = scaleFactor;
                     options.inPreferredConfig = Bitmap.Config.ARGB_8888;
 
-                    // Decodificar la imagen con el factor de escala
+                    // Decodificar y rotar la imagen si es necesario
                     Bitmap bitmap = BitmapFactory.decodeFile(photoPath, options);
+                    if (rotation != 0) {
+                        Matrix matrix = new Matrix();
+                        matrix.postRotate(rotation);
+                        bitmap = Bitmap.createBitmap(bitmap, 0, 0, 
+                            bitmap.getWidth(), bitmap.getHeight(), 
+                            matrix, true);
+                    }
+
                     if (bitmap != null) {
                         ByteArrayOutputStream bos = new ByteArrayOutputStream();
                         int quality = 100;
                         
-                        // Primera compresión con calidad alta
                         bitmap.compress(Bitmap.CompressFormat.JPEG, quality, bos);
                         
-                        // Reducir calidad gradualmente si es necesario
-                        while (bos.size() > 200 * 1024 && quality > 25) { // Mínimo 25% de calidad
+                        while (bos.size() > 200 * 1024 && quality > 25) {
                             bos.reset();
                             quality -= 5;
                             bitmap.compress(Bitmap.CompressFormat.JPEG, quality, bos);
                         }
 
-                        // Log del resultado final
                         float finalSizeKB = bos.size() / 1024f;
                         Log.d("PhotoCompression", String.format(
-                            "Tamaño final: %.2f KB, Calidad: %d%%, Dimensiones: %dx%d", 
-                            finalSizeKB, quality, bitmap.getWidth(), bitmap.getHeight()
+                            "Tamaño final: %.2f KB, Calidad: %d%%, Dimensiones: %dx%d, Rotación: %d°", 
+                            finalSizeKB, quality, bitmap.getWidth(), bitmap.getHeight(), rotation
                         ));
 
-                        // Guardar la imagen optimizada
                         File optimizedFile = new File(requireContext().getCacheDir(), 
                             "optimized_" + imageFile.getName());
                         FileOutputStream fos = new FileOutputStream(optimizedFile);
                         fos.write(bos.toByteArray());
                         fos.close();
 
-                        // Agregar al adapter
                         PhotoAdapter.PhotoItem newPhoto = new PhotoAdapter.PhotoItem(
                             optimizedFile.getAbsolutePath(), 
                             false
@@ -939,6 +946,29 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                     e.printStackTrace();
                 }
             }
+        }
+    }
+
+    private int getImageRotation(String photoPath) {
+        try {
+            ExifInterface exif = new ExifInterface(photoPath);
+            int orientation = exif.getAttributeInt(
+                ExifInterface.TAG_ORIENTATION,
+                ExifInterface.ORIENTATION_NORMAL);
+
+            switch (orientation) {
+                case ExifInterface.ORIENTATION_ROTATE_90:
+                    return 90;
+                case ExifInterface.ORIENTATION_ROTATE_180:
+                    return 180;
+                case ExifInterface.ORIENTATION_ROTATE_270:
+                    return 270;
+                default:
+                    return 0;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            return 0;
         }
     }
 
