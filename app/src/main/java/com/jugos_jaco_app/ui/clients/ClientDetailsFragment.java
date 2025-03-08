@@ -796,89 +796,59 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
 
         PhotoAdapter.PhotoItem photo = pendingPhotos.get(currentIndex);
         
-        // Mostrar progreso de subida
         requireActivity().runOnUiThread(() -> {
             photoAdapter.setPhotoUploading(currentIndex, true);
-            Toast.makeText(requireContext(), 
-                "Subiendo foto " + (currentIndex + 1) + " de " + totalPhotos, 
-                Toast.LENGTH_SHORT).show();
         });
 
         File imageFile = new File(photo.getPath());
-
         if (!imageFile.exists()) {
             uploadNextPhoto(pendingPhotos, currentIndex + 1, uploadedCount, totalPhotos);
             return;
         }
 
-        // Comprimir imagen
-        try {
-            Bitmap originalBitmap = BitmapFactory.decodeFile(imageFile.getAbsolutePath());
-            if (originalBitmap == null) {
-                uploadNextPhoto(pendingPhotos, currentIndex + 1, uploadedCount, totalPhotos);
-                return;
-            }
+        // Crear MultipartBody.Part directamente del archivo comprimido
+        RequestBody requestFile = RequestBody.create(
+            MediaType.parse("image/jpeg"),
+            imageFile
+        );
 
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            originalBitmap.compress(Bitmap.CompressFormat.JPEG, 70, bos);
-            
-            File compressedFile = new File(requireContext().getCacheDir(), 
-                "compressed_" + imageFile.getName());
-            FileOutputStream fos = new FileOutputStream(compressedFile);
-            fos.write(bos.toByteArray());
-            fos.flush();
-            fos.close();
+        MultipartBody.Part imagePart = MultipartBody.Part.createFormData(
+            "image",
+            "photo.jpg",
+            requestFile
+        );
 
-            // Crear MultipartBody.Part
-            RequestBody requestFile = RequestBody.create(
-                MediaType.parse("image/jpeg"),
-                compressedFile
-            );
+        String token = Login.getAuthorizationHeader(requireContext());
 
-            MultipartBody.Part imagePart = MultipartBody.Part.createFormData(
-                "image",
-                "photo.jpg",
-                requestFile
-            );
-
-            // Obtener token
-            String token = Login.getAuthorizationHeader(requireContext());
-
-            // Hacer la petición
-            RetrofitClient.getApiService()
-                .uploadBusinessImage(id, imagePart, token)
-                .enqueue(new Callback<PhotoResponse>() {
-                    @Override
-                    public void onResponse(Call<PhotoResponse> call, Response<PhotoResponse> response) {
+        RetrofitClient.getApiService()
+            .uploadBusinessImage(id, imagePart, token)
+            .enqueue(new Callback<PhotoResponse>() {
+                @Override
+                public void onResponse(Call<PhotoResponse> call, Response<PhotoResponse> response) {
+                    requireActivity().runOnUiThread(() -> {
+                        photoAdapter.setPhotoUploading(currentIndex, false);
+                    });
+                    
+                    if (response.isSuccessful() && response.body() != null) {
+                        uploadedCount[0]++;
                         requireActivity().runOnUiThread(() -> {
-                            photoAdapter.setPhotoUploading(currentIndex, false);
+                            photoAdapter.setPhotoUploaded(currentIndex, response.body().getUrl());
                         });
-                        
-                        if (response.isSuccessful() && response.body() != null) {
-                            uploadedCount[0]++;
-                            requireActivity().runOnUiThread(() -> {
-                                photoAdapter.setPhotoUploaded(currentIndex, response.body().getUrl());
-                            });
-                        } else {
-                            handleUploadError(currentIndex);
-                        }
-                        uploadNextPhoto(pendingPhotos, currentIndex + 1, uploadedCount, totalPhotos);
-                    }
-
-                    @Override
-                    public void onFailure(Call<PhotoResponse> call, Throwable t) {
-                        requireActivity().runOnUiThread(() -> {
-                            photoAdapter.setPhotoUploading(currentIndex, false);
-                        });
+                    } else {
                         handleUploadError(currentIndex);
-                        uploadNextPhoto(pendingPhotos, currentIndex + 1, uploadedCount, totalPhotos);
                     }
-                });
+                    uploadNextPhoto(pendingPhotos, currentIndex + 1, uploadedCount, totalPhotos);
+                }
 
-        } catch (Exception e) {
-            handleUploadError(currentIndex);
-            uploadNextPhoto(pendingPhotos, currentIndex + 1, uploadedCount, totalPhotos);
-        }
+                @Override
+                public void onFailure(Call<PhotoResponse> call, Throwable t) {
+                    requireActivity().runOnUiThread(() -> {
+                        photoAdapter.setPhotoUploading(currentIndex, false);
+                    });
+                    handleUploadError(currentIndex);
+                    uploadNextPhoto(pendingPhotos, currentIndex + 1, uploadedCount, totalPhotos);
+                }
+            });
     }
 
     private void handleUploadError(int position) {
@@ -894,14 +864,40 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
             File imageFile = new File(photoPath);
             if (imageFile.exists()) {
                 try {
-                    // Verificar que sea una imagen válida y redimensionarla si es necesario
                     Bitmap bitmap = BitmapFactory.decodeFile(photoPath);
                     if (bitmap != null) {
-                        // Guardar la imagen redimensionada
+                        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                        int quality = 100;
+                        final int MIN_SIZE = 100 * 1024; // 100 KB
+                        final int MAX_SIZE = 200 * 1024; // 200 KB
+
+                        // Primera compresión con calidad 100
+                        bitmap.compress(Bitmap.CompressFormat.JPEG, quality, bos);
+
+                        // Si es mayor a 200KB, reducir calidad hasta estar entre 100KB y 200KB
+                        while (bos.size() > MAX_SIZE && quality > 10) {
+                            bos.reset();
+                            quality -= 5; // Reducción más gradual
+                            bitmap.compress(Bitmap.CompressFormat.JPEG, quality, bos);
+                        }
+
+                        // Si es menor a 100KB, aumentar calidad
+                        while (bos.size() < MIN_SIZE && quality < 100) {
+                            bos.reset();
+                            quality += 5;
+                            bitmap.compress(Bitmap.CompressFormat.JPEG, quality, bos);
+                        }
+
+                        // Log del tamaño final
+                        float finalSizeInKB = bos.size() / 1024f;
+                        Log.d("PhotoCompression", String.format("Tamaño final: %.2f KB, Calidad: %d%%", 
+                            finalSizeInKB, quality));
+
+                        // Guardar la imagen optimizada
                         File optimizedFile = new File(requireContext().getCacheDir(), 
                             "optimized_" + imageFile.getName());
                         FileOutputStream fos = new FileOutputStream(optimizedFile);
-                        bitmap.compress(Bitmap.CompressFormat.JPEG, 85, fos);
+                        fos.write(bos.toByteArray());
                         fos.close();
 
                         // Agregar la foto optimizada al adapter
