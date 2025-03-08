@@ -52,11 +52,14 @@ import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
 
+    private static final String PREFS_NAME = "LocationServicePrefs";
+    private static final String KEY_RESTART_SERVICE = "restart_service";
 
     @Override
     protected void onResume() {
         super.onResume();
         verificarPermisosUbicacion();
+        verificarGPSActivado();
     }
 
 
@@ -110,33 +113,38 @@ public class MainActivity extends AppCompatActivity {
         boolean isGPSOn = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
 
         if (!isGPSOn) {
+            // Guardar flag para reiniciar el servicio
+            SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            prefs.edit().putBoolean(KEY_RESTART_SERVICE, true).apply();
+
             if (gpsAlertDialog != null && gpsAlertDialog.isShowing()) {
                 gpsAlertDialog.cancel();
             }
             gpsAlertDialog = new AlertDialog.Builder(this)
                     .setTitle("Activar GPS")
                     .setMessage("Debe activar la ubicación para continuar")
-                    .setPositiveButton("Activar", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
-                        }
+                    .setPositiveButton("Activar", (dialog, which) -> {
+                        startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
                     })
-                    .setNegativeButton("Cancelar", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-
-                            Toast.makeText(MainActivity.this, "El GPS es necesario para esta función", Toast.LENGTH_SHORT).show();
-                            finish();
-
-                        }
+                    .setNegativeButton("Cancelar", (dialog, which) -> {
+                        Toast.makeText(MainActivity.this, "El GPS es necesario para esta función", Toast.LENGTH_SHORT).show();
+                        finish();
                     })
                     .setCancelable(false)
                     .show();
         } else {
-            startLocationService();
+            // Verificar si necesitamos reiniciar el servicio
+            SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            if (prefs.getBoolean(KEY_RESTART_SERVICE, false)) {
+                // Reiniciar el servicio
+                startLocationService();
+                // Limpiar el flag
+                prefs.edit().putBoolean(KEY_RESTART_SERVICE, false).apply();
+            }
         }
-    }    private boolean isLocationServiceRunning() {
+    }
+
+    private boolean isLocationServiceRunning() {
         ActivityManager activityManager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
         if (activityManager != null) {
             for (ActivityManager.RunningServiceInfo service : activityManager.getRunningServices(Integer.MAX_VALUE)) {
@@ -147,16 +155,13 @@ public class MainActivity extends AppCompatActivity {
         }
         return false;
     }
+
     private void startLocationService() {
-        if (!isLocationServiceRunning()) { // Verifica si el servicio ya está activo
-            Intent serviceIntent = new Intent(this, LocationService.class);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                startForegroundService(serviceIntent);
-            } else {
-                startService(serviceIntent);
-            }
+        Intent serviceIntent = new Intent(this, LocationService.class);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(serviceIntent);
         } else {
-            Log.i("ServiceLocation", "El servicio de ubicación ya está en ejecución.");
+            startService(serviceIntent);
         }
     }
 
