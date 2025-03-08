@@ -45,6 +45,7 @@
                     android:id="@+id/etFirstName"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:inputType="textCapWords"
                     android:hint="Nombre" />
             </com.google.android.material.textfield.TextInputLayout>
 
@@ -60,6 +61,7 @@
                     android:id="@+id/etLastName"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:inputType="textCapWords"
                     android:hint="Apellido" />
             </com.google.android.material.textfield.TextInputLayout>
 

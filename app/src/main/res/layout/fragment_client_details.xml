@@ -361,12 +361,7 @@
             </androidx.cardview.widget.CardView>
 
             <!-- Sección de fotos locales -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Fotos Pendientes"
-                android:textStyle="bold"
-                android:padding="16dp"/>
+
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvLocalPhotos"
