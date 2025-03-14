@@ -80,8 +80,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.jugos_jaco_app.ui.api.MessageResponse;
 
-import java.util.HashSet;
-
 public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPhotoListener {
 
     private static final int REQUEST_CODE_PERMISSIONS = 100;
@@ -716,61 +714,41 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
             return;
         }
 
-        // Crear un conjunto para rastrear las fotos que ya se están subiendo
-        Set<String> uploadingPaths = new HashSet<>();
-        List<PhotoAdapter.PhotoItem> uniquePendingPhotos = new ArrayList<>();
-
-        // Filtrar fotos duplicadas
-        for (PhotoAdapter.PhotoItem photo : pendingPhotos) {
-            if (!uploadingPaths.contains(photo.getPath()) && !photo.isUploading()) {
-                uploadingPaths.add(photo.getPath());
-                uniquePendingPhotos.add(photo);
-            }
-        }
-
+        // Contador para rastrear las fotos subidas
         final int[] uploadedCount = {0};
-        final int totalPhotos = uniquePendingPhotos.size();
+        final int totalPhotos = pendingPhotos.size();
 
-        // Subir fotos únicas secuencialmente
-        uploadNextPhoto(uniquePendingPhotos, 0, uploadedCount, totalPhotos);
+        // Subir fotos secuencialmente
+        uploadNextPhoto(pendingPhotos, 0, uploadedCount, totalPhotos);
     }
 
     private void uploadNextPhoto(List<PhotoAdapter.PhotoItem> pendingPhotos, int currentIndex, 
                                final int[] uploadedCount, final int totalPhotos) {
         if (currentIndex >= pendingPhotos.size()) {
             requireActivity().runOnUiThread(() -> {
-                Toast.makeText(requireContext(), 
-                    "Se completó la subida de fotos", 
-                    Toast.LENGTH_SHORT).show();
-                loadServerPhotos(); // Recargar fotos del servidor
+
+                photoAdapter.updatePhotos(photos);
             });
             return;
         }
 
         PhotoAdapter.PhotoItem photo = pendingPhotos.get(currentIndex);
         
-        // Verificar si la foto ya está siendo subida
-        if (photo.isUploading()) {
-            uploadNextPhoto(pendingPhotos, currentIndex + 1, uploadedCount, totalPhotos);
-            return;
-        }
-
-        // Encontrar el índice en la lista principal
-        int photoIndex = -1;
+        // Encontrar el índice correcto en la lista principal
+        int mainListIndex = -1;
         for (int i = 0; i < photos.size(); i++) {
             if (photos.get(i).getPath().equals(photo.getPath())) {
-                photoIndex = i;
+                mainListIndex = i;
                 break;
             }
         }
 
-        final int finalPhotoIndex = photoIndex;
+        final int photoIndex = mainListIndex;
         
-        // Marcar la foto como "subiendo"
         requireActivity().runOnUiThread(() -> {
-            if (finalPhotoIndex != -1) {
-                photos.get(finalPhotoIndex).setUploading(true);
-                photoAdapter.notifyItemChanged(finalPhotoIndex);
+            if (photoIndex != -1) {
+                photos.get(photoIndex).setUploading(true);
+                photoAdapter.notifyItemChanged(photoIndex);
             }
         });
 
@@ -798,14 +776,21 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
             .enqueue(new Callback<PhotoResponse>() {
                 @Override
                 public void onResponse(Call<PhotoResponse> call, Response<PhotoResponse> response) {
+                    requireActivity().runOnUiThread(() -> {
+                        if (photoIndex != -1) {
+                            photos.get(photoIndex).setUploading(false);
+                            photoAdapter.notifyItemChanged(photoIndex);
+                        }
+                    });
+                    
                     if (response.isSuccessful() && response.body() != null) {
                         PhotoResponse photoResponse = response.body();
                         uploadedCount[0]++;
                         
                         requireActivity().runOnUiThread(() -> {
                             try {
-                                if (finalPhotoIndex != -1) {
-                                    photos.remove(finalPhotoIndex);
+                                if (photoIndex != -1) {
+                                    photos.remove(photoIndex);
                                     photoAdapter.updatePhotos(photos);
                                 }
                                 
@@ -815,30 +800,25 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                                 if (message != null && !message.isEmpty()) {
                                  }
                             } catch (Exception e) {
-                                Log.e("PhotoUpload", "Error al procesar respuesta: " + e.getMessage());
+                                Log.e("PhotoUpload", "Error al remover foto: " + e.getMessage());
                             }
                         });
+
+                        uploadNextPhoto(pendingPhotos, currentIndex + 1, uploadedCount, totalPhotos);
                     } else {
-                        requireActivity().runOnUiThread(() -> {
-                            if (finalPhotoIndex != -1) {
-                                photos.get(finalPhotoIndex).setUploading(false);
-                                photoAdapter.notifyItemChanged(finalPhotoIndex);
-                            }
-                        });
+                        handleUploadError(currentIndex);
+                        uploadNextPhoto(pendingPhotos, currentIndex + 1, uploadedCount, totalPhotos);
                     }
-                    
-                    // Continuar con la siguiente foto
-                    uploadNextPhoto(pendingPhotos, currentIndex + 1, uploadedCount, totalPhotos);
                 }
 
                 @Override
                 public void onFailure(Call<PhotoResponse> call, Throwable t) {
                     requireActivity().runOnUiThread(() -> {
-                        if (finalPhotoIndex != -1) {
-                            photos.get(finalPhotoIndex).setUploading(false);
-                            photoAdapter.notifyItemChanged(finalPhotoIndex);
+                        if (photoIndex != -1) {
+                            photos.get(photoIndex).setUploading(false);
+                            photoAdapter.notifyItemChanged(photoIndex);
                         }
-                        handleUploadError();
+                        handleUploadError(currentIndex);
                     });
                     uploadNextPhoto(pendingPhotos, currentIndex + 1, uploadedCount, totalPhotos);
                 }
