@@ -74,6 +74,7 @@ public class ClientsViewModel extends ViewModel {
                                     clientJson.getString("township"),
                                     locationJson.getString("latitude"),
                                     locationJson.getString("longitude"),
+                                    locationJson.getString("plus_code"),
                                     typePrice
                             );
 

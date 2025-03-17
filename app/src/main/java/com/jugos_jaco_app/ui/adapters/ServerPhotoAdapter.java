@@ -2,6 +2,7 @@ package com.jugos_jaco_app.ui.adapters;
 
 import android.content.Context;
 import android.net.Uri;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -48,8 +49,7 @@ public class ServerPhotoAdapter extends RecyclerView.Adapter<ServerPhotoAdapter.
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         ServerPhoto photo = photos.get(position);
         String fullUrl = Utilities.URL_FOTOS +"storage/" +photo.getPath();
-        
-        // Mostrar/ocultar progress según estado de eliminación
+         // Mostrar/ocultar progress según estado de eliminación
         holder.progressBar.setVisibility(
             deletingPhotos.contains(photo.getId()) ? View.VISIBLE : View.GONE
         );

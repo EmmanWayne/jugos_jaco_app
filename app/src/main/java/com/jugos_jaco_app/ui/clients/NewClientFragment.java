@@ -404,6 +404,8 @@ public class NewClientFragment extends Fragment {
 
                             // Obtener type_price, manejando el caso de null
                             String typePrice = "";
+                            String plus_code = "";
+
                             if (dataJson.has("type_price") && !dataJson.isNull("type_price")) {
                                 typePrice = dataJson.getString("type_price");
                             }
@@ -419,8 +421,11 @@ public class NewClientFragment extends Fragment {
                                     dataJson.getString("township"),
                                     locationJson.getString("latitude"),
                                     locationJson.getString("longitude"),
+                                    locationJson.getString("plus_code"),
                                     typePrice
                             );
+                            Toast.makeText(requireContext(), locationJson.getString("plus_code")
+                                    , Toast.LENGTH_SHORT).show();
 
                             // Actualizar el ViewModel con el nuevo cliente
                             ClientsViewModel viewModel = new ViewModelProvider(requireActivity())

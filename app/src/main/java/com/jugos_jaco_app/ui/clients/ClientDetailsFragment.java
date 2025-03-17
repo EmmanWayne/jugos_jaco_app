@@ -27,6 +27,8 @@ import com.jugos_jaco_app.R;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -79,6 +81,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.jugos_jaco_app.ui.api.MessageResponse;
+import android.content.pm.ResolveInfo;
 
 public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPhotoListener {
 
@@ -117,6 +120,7 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
     private FloatingActionButton fabDeletePhotos;
 
     private MenuItem deleteMenuItem;
+    private String plus_code;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -142,6 +146,8 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
             // Recuperar las coordenadas como String
             clientLatitude = getArguments().getString("latitude", "0.0");
             clientLongitude = getArguments().getString("longitude", "0.0");
+            plus_code = getArguments().getString("plus_code", "");
+
             // Aquí puedes convertir las coordenadas a double si lo necesitas
             try {
                 double latitude = Double.parseDouble(clientLatitude);
@@ -335,11 +341,20 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
     }
     // Abrir la galería para seleccionar una o varias fotos
     private void openGallery() {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.setType("image/*");
+        intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.putExtra(Intent.EXTRA_LOCAL_ONLY, true);
+        intent.putExtra("android.intent.extra.GALLERY", true);
 
-        Intent galleryIntent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-        galleryIntent.setType("image/*");
-        galleryIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true); // Permitir selección múltiple
-        galleryLauncher.launch(galleryIntent);
+        try {
+            galleryLauncher.launch(Intent.createChooser(intent, "Seleccionar fotos de la galería"));
+        } catch (Exception e) {
+            Toast.makeText(requireContext(), 
+                "No se pudo abrir la galería", 
+                Toast.LENGTH_SHORT).show();
+        }
     }
 
     // Nueva API para manejar la actividad de la cámara
@@ -608,29 +623,25 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
 
     private void openGoogleMaps() {
         try {
-            // Crear URI para Google Maps con las coordenadas del cliente
-            Uri gmmIntentUri = Uri.parse("google.navigation:q=" + clientLatitude + "," + clientLongitude);
+            // Codificar el Plus Code para asegurarse de que el signo '+' se maneje correctamente
+            String encodedPlusCode = URLEncoder.encode(plus_code, "UTF-8");
+
+            // Crear URI para Google Maps con el Plus Code codificado
+            Uri gmmIntentUri = Uri.parse("geo:0,0?q=" + encodedPlusCode);;
 
             // Crear intent para abrir Google Maps
             Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
             mapIntent.setPackage("com.google.android.apps.maps");
+                 startActivity(mapIntent);
 
-            // Verificar si Google Maps está instalado
-            if (mapIntent.resolveActivity(requireContext().getPackageManager()) != null) {
-                startActivity(mapIntent);
-            } else {
-                // Si Google Maps no está instalado, abrir en el navegador
-                Uri browserUri = Uri.parse("https://www.google.com/maps/dir/?api=1&destination=" +
-                        clientLatitude + "," + clientLongitude);
-                Intent browserIntent = new Intent(Intent.ACTION_VIEW, browserUri);
-                startActivity(browserIntent);
-            }
+        } catch (UnsupportedEncodingException e) {
+            // Si ocurre un error en la codificación, mostrar mensaje de error
+            Toast.makeText(getContext(), "Error al codificar el Plus Code", Toast.LENGTH_SHORT).show();
         } catch (Exception e) {
+            // Si ocurre cualquier otro error, mostrar mensaje genérico
             Toast.makeText(getContext(), "Error al abrir el mapa", Toast.LENGTH_SHORT).show();
         }
-    }
-
-    @Override
+    }    @Override
     public void onPhotoClick(int position) {
         if (position >= 0 && position < photos.size()) {
             PhotoAdapter.PhotoItem photoItem = photos.get(position);
@@ -724,9 +735,9 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
 
     private void uploadNextPhoto(List<PhotoAdapter.PhotoItem> pendingPhotos, int currentIndex, 
                                final int[] uploadedCount, final int totalPhotos) {
+        // Verificar si hemos terminado de procesar todas las fotos
         if (currentIndex >= pendingPhotos.size()) {
             requireActivity().runOnUiThread(() -> {
-
                 photoAdapter.updatePhotos(photos);
             });
             return;
@@ -745,6 +756,7 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
 
         final int photoIndex = mainListIndex;
         
+        // Actualizar UI para mostrar que la foto está en proceso de subida
         requireActivity().runOnUiThread(() -> {
             if (photoIndex != -1) {
                 photos.get(photoIndex).setUploading(true);
@@ -752,12 +764,14 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
             }
         });
 
+        // Verificar si el archivo existe
         File imageFile = new File(photo.getPath());
         if (!imageFile.exists()) {
             uploadNextPhoto(pendingPhotos, currentIndex + 1, uploadedCount, totalPhotos);
             return;
         }
 
+        // Preparar el archivo para la subida
         RequestBody requestFile = RequestBody.create(
             MediaType.parse("image/jpeg"),
             imageFile
@@ -771,11 +785,13 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
 
         String token = Login.getAuthorizationHeader(requireContext());
 
+        // Realizar la petición al servidor
         RetrofitClient.getApiService()
             .uploadBusinessImage(id, imagePart, token)
             .enqueue(new Callback<PhotoResponse>() {
                 @Override
                 public void onResponse(Call<PhotoResponse> call, Response<PhotoResponse> response) {
+                    // Actualizar UI para mostrar que la foto ya no está en proceso de subida
                     requireActivity().runOnUiThread(() -> {
                         if (photoIndex != -1) {
                             photos.get(photoIndex).setUploading(false);
@@ -783,36 +799,47 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                         }
                     });
                     
+                    // Verificar si la respuesta del servidor fue exitosa
                     if (response.isSuccessful() && response.body() != null) {
                         PhotoResponse photoResponse = response.body();
+                        // Incrementar contador de fotos subidas exitosamente
                         uploadedCount[0]++;
                         
+                        // Actualizar la interfaz de usuario en el hilo principal
                         requireActivity().runOnUiThread(() -> {
                             try {
+                                // Eliminar la foto de la lista local si existe
                                 if (photoIndex != -1) {
                                     photos.remove(photoIndex);
                                     photoAdapter.updatePhotos(photos);
                                 }
                                 
+                                // Recargar las fotos del servidor para mostrar la nueva foto
                                 loadServerPhotos();
 
+                                // Procesar mensaje de respuesta si existe
                                 String message = photoResponse.getMessage();
                                 if (message != null && !message.isEmpty()) {
-                                 }
+                                    // Aquí podrías mostrar el mensaje al usuario
+                                }
                             } catch (Exception e) {
                                 Log.e("PhotoUpload", "Error al remover foto: " + e.getMessage());
                             }
                         });
 
+                        // Continuar con la siguiente foto
                         uploadNextPhoto(pendingPhotos, currentIndex + 1, uploadedCount, totalPhotos);
                     } else {
+                        // Manejar error en la respuesta
                         handleUploadError(currentIndex);
+                        // Continuar con la siguiente foto a pesar del error
                         uploadNextPhoto(pendingPhotos, currentIndex + 1, uploadedCount, totalPhotos);
                     }
                 }
 
                 @Override
                 public void onFailure(Call<PhotoResponse> call, Throwable t) {
+                    // Manejar error de conexión
                     requireActivity().runOnUiThread(() -> {
                         if (photoIndex != -1) {
                             photos.get(photoIndex).setUploading(false);
@@ -820,6 +847,7 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                         }
                         handleUploadError(currentIndex);
                     });
+                    // Continuar con la siguiente foto a pesar del error
                     uploadNextPhoto(pendingPhotos, currentIndex + 1, uploadedCount, totalPhotos);
                 }
             });
@@ -986,11 +1014,34 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                         serverPhotos.clear();
                         serverPhotos.addAll(response.body().getPhotos());
                         serverPhotoAdapter.notifyDataSetChanged();
+                        
+                        // Imprimir en el log cuando la respuesta es exitosa
+                        Log.d("LoadServerPhotos", "Fotos cargadas exitosamente. Total: " + serverPhotos.size());
+
+                        // Construir una cadena de texto para representar el arreglo
+                        StringBuilder photosInfo = new StringBuilder("Fotos: [");
+                        for (ServerPhotosResponse.ServerPhoto photo : serverPhotos) {
+                            photosInfo.append("{ID: ").append(photo.getId())
+                                      .append(", Path: ").append(photo.getPath())
+                                      .append("}, ");
+                        }
+                        if (!serverPhotos.isEmpty()) {
+                            photosInfo.setLength(photosInfo.length() - 2); // Eliminar la última coma y espacio
+                        }
+                        photosInfo.append("]");
+                        
+                        // Imprimir el arreglo en el log
+                        Log.d("LoadServerPhotos", photosInfo.toString());
+                    } else {
+                        // Imprimir en el log si la respuesta no es exitosa
+                        Log.e("LoadServerPhotos", "Error al cargar fotos: " + response.code());
                     }
                 }
 
                 @Override
                 public void onFailure(Call<ServerPhotosResponse> call, Throwable t) {
+                    // Imprimir en el log si hay un fallo en la solicitud
+                    Log.e("LoadServerPhotos", "Fallo al cargar fotos del servidor: " + t.getMessage());
                     Toast.makeText(requireContext(), 
                         "Error al cargar las fotos del servidor", 
                         Toast.LENGTH_SHORT).show();

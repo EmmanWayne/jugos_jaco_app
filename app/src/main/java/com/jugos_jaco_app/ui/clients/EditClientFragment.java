@@ -329,6 +329,8 @@ public class EditClientFragment extends Fragment {
                 response -> {
                     try {
                         // Obtener el mensaje
+
+
                         String message = response.getString("message");
                         Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
                         // Verificar si la respuesta contiene la clave "data"
@@ -339,9 +341,11 @@ public class EditClientFragment extends Fragment {
                             JSONObject locationJson = dataJson.getJSONObject("location");
                             // Obtener type_price
                             String typePrice = "";
+                            String plus_code = "";
                             if (dataJson.has("type_price") && !dataJson.isNull("type_price")) {
                                 typePrice = dataJson.getString("type_price");
                             }
+
                             // Crear un nuevo objeto Client con los datos
                             Client updatedClient = new Client(
                                     String.valueOf(dataJson.getInt("id")),
@@ -353,6 +357,7 @@ public class EditClientFragment extends Fragment {
                                     dataJson.getString("township"),
                                     locationJson.getString("latitude"),
                                     locationJson.getString("longitude"),
+                                    locationJson.getString("plus_code"),
                                     typePrice
                             );
                             // Actualizar el ViewModel
@@ -455,9 +460,9 @@ public class EditClientFragment extends Fragment {
         // Validar coordenadas (opcional pero con advertencia)
         String latitude = etLatitude.getText().toString().trim();
         String longitude = etLongitude.getText().toString().trim();
-        if (latitude.isEmpty() || longitude.isEmpty()) {
-            Toast.makeText(requireContext(), 
-                "Se recomienda capturar las coordenadas del cliente", 
+        if (latitude.equals("0.0") || longitude.equals("0.0")) {
+            Toast.makeText(requireContext(),
+                "Se recomienda capturar las coordenadas del cliente",
                 Toast.LENGTH_SHORT).show();
         } else {
             try {

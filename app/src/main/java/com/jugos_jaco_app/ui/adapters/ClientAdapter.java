@@ -8,6 +8,7 @@ import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,6 +25,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.jugos_jaco_app.R;
 import com.jugos_jaco_app.ui.models.Client;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.List;
 import android.Manifest;
 
@@ -126,7 +129,9 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
                  if (client.hasCoordinates()) {
                      bundle.putString("latitude", client.getLatitude() != null ? client.getLatitude() : null);
                      bundle.putString("longitude", client.getLongitude() != null ? client.getLongitude() : null);
-                }
+                     bundle.putString("plus_code", client.getPlus_code() != null ? client.getPlus_code() : null);
+
+                 }
 
             NavController navController = Navigation.findNavController(v);
 
@@ -185,31 +190,28 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
 
     private void openGoogleMaps(Client client) {
         try {
-            // Crear URI para Google Maps con las coordenadas del cliente
-            Uri gmmIntentUri = Uri.parse("google.navigation:q=" + 
-                client.getLatitude() + "," + client.getLongitude());
-            
+            // Obtener el Plus Code del cliente
+            String plusCode = client.getPlus_code();
+
+            // Codificar el Plus Code para asegurarse de que el signo '+' se maneje correctamente
+            String encodedPlusCode = URLEncoder.encode(plusCode, "UTF-8");
+            Toast.makeText(context, ""+encodedPlusCode, Toast.LENGTH_SHORT).show();
+            // Crear URI para Google Maps con el Plus Code codificado
+             Uri gmmIntentUri = Uri.parse("geo:0,0?q=" + encodedPlusCode);;
             // Crear intent para abrir Google Maps
             Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
             mapIntent.setPackage("com.google.android.apps.maps");
 
-            // Verificar si Google Maps está instalado
-            if (mapIntent.resolveActivity(context.getPackageManager()) != null) {
-                context.startActivity(mapIntent);
-            } else {
+                 context.startActivity(mapIntent);
 
-                 // Si Google Maps no está instalado, abrir en el navegador
-                Uri browserUri = Uri.parse("https://www.google.com/maps/dir/?api=1&destination=" + 
-                    client.getLatitude() + "," + client.getLongitude());
-                Intent browserIntent = new Intent(Intent.ACTION_VIEW, browserUri);
-                context.startActivity(browserIntent);
-            }
+        } catch (UnsupportedEncodingException e) {
+            // Si ocurre un error en la codificación, mostrar mensaje de error
+            Toast.makeText(context, "Error al codificar el Plus Code", Toast.LENGTH_SHORT).show();
         } catch (Exception e) {
+            // Si ocurre cualquier otro error, mostrar mensaje genérico
             Toast.makeText(context, "Error al abrir el mapa", Toast.LENGTH_SHORT).show();
         }
-    }
-
-    private void makePhoneCall(String phoneNumber) {
+    }    private void makePhoneCall(String phoneNumber) {
         try {
             Intent intent = new Intent(Intent.ACTION_CALL);
             intent.setData(Uri.parse("tel:" + phoneNumber));
