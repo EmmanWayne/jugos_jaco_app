@@ -6,6 +6,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import androidx.annotation.NonNull;
@@ -51,14 +52,18 @@ public class ServerPhotoAdapter extends RecyclerView.Adapter<ServerPhotoAdapter.
         ServerPhoto photo = photos.get(position);
         String path = photo.getPath();
         
-        // Determinar si es una ruta local o una URL
+        // Determinar si es una ruta local o una URL del servidor
         Object imageSource;
-        if (path.startsWith("file://")) {
-            // Es un archivo local
-            imageSource = new File(path.substring(7)); // Remover el prefijo "file://"
+        String fullImageUrl;
+        
+        if (path.startsWith("file://") || path.startsWith("/")) {
+            // Es una ruta local
+            imageSource = new File(path.startsWith("file://") ? path.substring(7) : path);
+            fullImageUrl = path;
         } else {
             // Es una URL del servidor
             imageSource = Utilities.URL_FOTOS + "storage/" + path;
+            fullImageUrl = Utilities.URL_FOTOS + "storage/" + path;
         }
         
         // Mostrar/ocultar progress según estado de eliminación
@@ -66,39 +71,40 @@ public class ServerPhotoAdapter extends RecyclerView.Adapter<ServerPhotoAdapter.
             deletingPhotos.contains(photo.getId()) ? View.VISIBLE : View.GONE
         );
 
+        // Cargar la imagen usando Glide
         Glide.with(context)
             .load(imageSource)
             .placeholder(R.drawable.product_placeholder)
             .error(R.drawable.product_placeholder)
             .into(holder.imageView);
 
-        // Mostrar indicador de selección si está en modo selección
-        holder.selectionOverlay.setVisibility(
-            isSelectionMode ? View.VISIBLE : View.GONE
-        );
-        
-        holder.selectionCheck.setVisibility(
-            selectedPhotos.contains(photo.getId()) ? View.VISIBLE : View.GONE
-        );
-
-        holder.itemView.setOnLongClickListener(v -> {
-            if (!isSelectionMode) {
-                toggleSelectionMode();
-                togglePhotoSelection(position);
-                return true;
-            }
-            return false;
-        });
-
+        // Configurar el click en la imagen
         holder.itemView.setOnClickListener(v -> {
             if (isSelectionMode) {
                 togglePhotoSelection(position);
             } else {
-                Uri imageUri = Uri.parse(path);
+                // Usar la URL o ruta completa para mostrar la imagen en grande
+                Uri imageUri = Uri.parse(fullImageUrl);
                 FullscreenImageDialog dialog = new FullscreenImageDialog(context, imageUri);
                 dialog.show();
             }
         });
+
+        // Configurar la selección
+        holder.itemView.setOnLongClickListener(v -> {
+            if (!isSelectionMode) {
+                isSelectionMode = true;
+                if (selectionModeListener != null) {
+                    selectionModeListener.onSelectionModeChanged(true);
+                }
+                togglePhotoSelection(position);
+            }
+            return true;
+        });
+
+        // Actualizar el estado visual de selección
+        holder.checkBox.setVisibility(isSelectionMode ? View.VISIBLE : View.GONE);
+        holder.checkBox.setChecked(selectedPhotos.contains(photo.getId()));
     }
 
     @Override
@@ -170,6 +176,7 @@ public class ServerPhotoAdapter extends RecyclerView.Adapter<ServerPhotoAdapter.
         View selectionOverlay;
         View selectionCheck;
         ProgressBar progressBar;
+        CheckBox checkBox;
 
         ViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -177,6 +184,7 @@ public class ServerPhotoAdapter extends RecyclerView.Adapter<ServerPhotoAdapter.
             selectionOverlay = itemView.findViewById(R.id.selectionOverlay);
             selectionCheck = itemView.findViewById(R.id.selectionCheck);
             progressBar = itemView.findViewById(R.id.progressBar);
+            checkBox = itemView.findViewById(R.id.checkBox);
         }
     }
 } 
