@@ -30,4 +30,12 @@ public interface ApiService {
         @Path("id") int mediaId,
         @Header("Authorization") String token
     );
+
+    @Multipart
+    @POST("{id}/image/profile")
+    Call<PhotoResponse> uploadProfileImage(
+        @Path("id") String clientId,
+        @Part MultipartBody.Part image,
+        @Header("Authorization") String token
+    );
 } 
