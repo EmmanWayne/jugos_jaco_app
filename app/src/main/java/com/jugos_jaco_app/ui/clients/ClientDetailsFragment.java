@@ -1320,18 +1320,6 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                     fos.write(bos.toByteArray());
                     fos.close();
 
-                    // Mostrar la imagen optimizada
-                    Glide.with(requireContext())
-                        .load(optimizedFile)
-                        .placeholder(R.drawable.cliente_icon)
-                        .error(R.drawable.cliente_icon)
-                        .into(clientHeaderImage);
-
-                    // Liberar memoria del último bitmap
-                    if (workingBitmap != originalBitmap) {
-                        workingBitmap.recycle();
-                    }
-
                     // Subir la imagen al servidor
                     uploadHeaderPhoto(optimizedFile);
 
@@ -1348,6 +1336,9 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
     }
 
     private void uploadHeaderPhoto(File imageFile) {
+        // Mostrar un indicador de progreso
+        // Puedes agregar un ProgressBar en tu layout y mostrarlo aquí
+        
         RequestBody requestFile = RequestBody.create(
             MediaType.parse("image/jpeg"),
             imageFile
@@ -1367,7 +1358,22 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                 @Override
                 public void onResponse(Call<PhotoResponse> call, Response<PhotoResponse> response) {
                     if (response.isSuccessful() && response.body() != null) {
-                        // Mostrar mensaje de éxito del servidor
+                        // La subida fue exitosa, obtener la URL del servidor
+                        if (response.body().getData() != null && response.body().getData().getPath() != null) {
+                            String serverImagePath = response.body().getData().getPath();
+                            String imageUrl = Utilities.URL_FOTOS + "storage/" + serverImagePath;
+                            
+                            // Cargar la imagen desde el servidor
+                            requireActivity().runOnUiThread(() -> {
+                                Glide.with(requireContext())
+                                    .load(imageUrl)
+                                    .placeholder(R.drawable.cliente_icon)
+                                    .error(R.drawable.cliente_icon)
+                                    .into(clientHeaderImage);
+                            });
+                        }
+                        
+                        // Mostrar mensaje de éxito
                         String message = response.body().getMessage();
                         if (message != null && !message.isEmpty()) {
                             Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
@@ -1375,13 +1381,11 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                     } else {
                         resetHeaderImage();
                         try {
-                            // Intentar obtener mensaje de error del servidor
                             if (response.errorBody() != null) {
                                 String errorBody = response.errorBody().string();
                                 Log.e("UploadError", "Error response: " + errorBody);
                                 JSONObject errorJson = new JSONObject(errorBody);
                                 
-                                // Intentar obtener el mensaje de error específico
                                 String errorMessage;
                                 if (errorJson.has("errors") && errorJson.getJSONObject("errors").has("image")) {
                                     JSONArray imageErrors = errorJson.getJSONObject("errors").getJSONArray("image");
