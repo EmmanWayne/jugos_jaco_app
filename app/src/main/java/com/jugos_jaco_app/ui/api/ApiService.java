@@ -32,16 +32,10 @@ public interface ApiService {
     );
 
     @Multipart
-    @POST("clients/{id}/image/profile")
+    @POST("{id}/image/profile")
     Call<PhotoResponse> uploadProfileImage(
         @Path("id") String clientId,
         @Part MultipartBody.Part image,
-        @Header("Authorization") String token
-    );
-
-    @GET("clients/{id}/image/profile")
-    Call<PhotoResponse> getProfileImage(
-        @Path("id") String clientId,
         @Header("Authorization") String token
     );
 } 

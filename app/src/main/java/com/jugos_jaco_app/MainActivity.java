@@ -49,7 +49,6 @@ import com.jugos_jaco_app.ui.utilities.VolleySingleton;
 
 import java.util.HashMap;
 import java.util.Map;
-import android.content.pm.ActivityInfo;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -69,11 +68,11 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         // Forzar modo claro
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
         
+        super.onCreate(savedInstanceState);
+
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
