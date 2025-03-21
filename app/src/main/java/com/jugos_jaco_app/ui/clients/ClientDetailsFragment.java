@@ -83,6 +83,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.jugos_jaco_app.ui.api.MessageResponse;
 import android.content.pm.ResolveInfo;
 
+import android.widget.ImageView;
+import com.bumptech.glide.Glide;
+import com.jugos_jaco_app.ui.utilities.Utilities;
+
+import android.content.pm.ActivityInfo;
+
 public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPhotoListener {
 
     private static final int REQUEST_CODE_PERMISSIONS = 100;
@@ -122,9 +128,14 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
     private MenuItem deleteMenuItem;
     private String plus_code;
 
+    private ImageView clientHeaderImage;
+    private Uri headerPhotoUri;
+    private String currentHeaderPhotoPath;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        requireActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         setHasOptionsMenu(true);
 
         if (!hasPermissions()) {
@@ -133,7 +144,7 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
         if (getArguments() != null) {
             clientName = getArguments().getString("firstName") + " " + getArguments().getString("lastName");
             clientFirstName = getArguments().getString("firstName") ;
-             clientLastName = getArguments().getString("lastName");
+            clientLastName = getArguments().getString("lastName");
             id = getArguments().getString("id");
             typePrice = getArguments().getString("typePrice");
 
@@ -182,7 +193,7 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
         tvName.setText(clientName);
         tvtownship.setText(township);
         tvadress.setText(adress);
-         tvdepartment.setText(department);
+        tvdepartment.setText(department);
         tvPhone.setText(clientPhone);
         tvTypePrice.setText(typePrice);
 
@@ -209,8 +220,8 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                 bundle.putString("township", township);
                 bundle.putString("latitude", clientLatitude);
                 bundle.putString("longitude", clientLongitude);
-                 bundle.putString("client_id", id);
-               // bundle.putString("type_price", typePrice);
+                bundle.putString("client_id", id);
+                // bundle.putString("type_price", typePrice);
 
                 try {
                     NavController navController = Navigation.findNavController(v);
@@ -250,15 +261,15 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
         // Inicializar RecyclerViews
         rvLocalPhotos = view.findViewById(R.id.rvLocalPhotos);
         rvServerPhotos = view.findViewById(R.id.rvServerPhotos);
-        
+
         // Configurar adapters
         localPhotoAdapter = new PhotoAdapter(localPhotos, requireContext(), this);
         serverPhotoAdapter = new ServerPhotoAdapter(serverPhotos, requireContext());
-        
+
         // Configurar layouts
         rvLocalPhotos.setLayoutManager(new GridLayoutManager(requireContext(), 3));
         rvServerPhotos.setLayoutManager(new GridLayoutManager(requireContext(), 3));
-        
+
         rvLocalPhotos.setAdapter(localPhotoAdapter);
         rvServerPhotos.setAdapter(serverPhotoAdapter);
 
@@ -277,7 +288,21 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
             }
         });
 
+        // Configurar la imagen de cabecera
+        clientHeaderImage = view.findViewById(R.id.clientHeaderImage);
+        clientHeaderImage.setOnClickListener(v -> showHeaderPhotoDialog());
+
+        // Cargar la imagen de perfil
+        loadProfileImage();
+
         return view;
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        // Restaurar la orientación automática cuando se destruye el fragmento
+        requireActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
     }
 
     @Override
@@ -322,20 +347,20 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                 photoFile = createImageFile();
                 if (photoFile != null) {
                     photoUri = FileProvider.getUriForFile(requireContext(),
-                        requireContext().getPackageName() + ".fileprovider",
-                        photoFile);
-                    
+                            requireContext().getPackageName() + ".fileprovider",
+                            photoFile);
+
                     // Agregar flags para dar permisos de lectura/escritura
                     takePictureIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                     takePictureIntent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
                     takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoUri);
-                    
+
                     cameraLauncher.launch(takePictureIntent);
                 }
             } catch (IOException ex) {
-                Toast.makeText(requireContext(), 
-                    "Error al crear el archivo de imagen", 
-                    Toast.LENGTH_SHORT).show();
+                Toast.makeText(requireContext(),
+                        "Error al crear el archivo de imagen",
+                        Toast.LENGTH_SHORT).show();
             }
         }
     }
@@ -351,9 +376,9 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
         try {
             galleryLauncher.launch(Intent.createChooser(intent, "Seleccionar fotos de la galería"));
         } catch (Exception e) {
-            Toast.makeText(requireContext(), 
-                "No se pudo abrir la galería", 
-                Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(),
+                    "No se pudo abrir la galería",
+                    Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -367,9 +392,9 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                         if (file.exists()) {
                             addPhotoToAdapter(currentPhotoPath);
                         } else {
-                            Toast.makeText(getContext(), 
-                                "No se pudo acceder a la imagen", 
-                                Toast.LENGTH_SHORT).show();
+                            Toast.makeText(getContext(),
+                                    "No se pudo acceder a la imagen",
+                                    Toast.LENGTH_SHORT).show();
                         }
                     }
                 }
@@ -377,7 +402,7 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
     private File createImageFile() throws IOException {
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
         String imageFileName = "JPEG_" + timeStamp + "_";
-        
+
         // Usar el directorio de caché interno de la app
         File storageDir = new File(requireContext().getCacheDir(), "camera_photos");
         if (!storageDir.exists()) {
@@ -385,9 +410,9 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
         }
 
         File image = File.createTempFile(
-            imageFileName,
-            ".jpg",
-            storageDir
+                imageFileName,
+                ".jpg",
+                storageDir
         );
 
         currentPhotoPath = image.getAbsolutePath();
@@ -423,6 +448,7 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                 }
             });
 
+
     private boolean hasPermissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             return ContextCompat.checkSelfPermission(getContext(), Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED &&
@@ -446,7 +472,7 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                 if (allGranted) {
                     Toast.makeText(getContext(), "Permisos concedidos", Toast.LENGTH_SHORT).show();
                 } else {
-                 }
+                }
             });
 
     private void requestPermissions() {
@@ -632,7 +658,7 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
             // Crear intent para abrir Google Maps
             Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
             mapIntent.setPackage("com.google.android.apps.maps");
-                 startActivity(mapIntent);
+            startActivity(mapIntent);
 
         } catch (UnsupportedEncodingException e) {
             // Si ocurre un error en la codificación, mostrar mensaje de error
@@ -646,7 +672,7 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
         if (position >= 0 && position < photos.size()) {
             PhotoAdapter.PhotoItem photoItem = photos.get(position);
             String photoPath = photoItem.getPath();
-            
+
             // Eliminar el archivo si es local
             if (!photoPath.startsWith("http")) {
                 File photoFile = new File(photoPath);
@@ -654,13 +680,13 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                     photoFile.delete();
                 }
             }
-            
+
             // Eliminar de la lista y actualizar el adaptador
             photos.remove(position);
             photoAdapter.updatePhotos(photos);
 
             // Mostrar mensaje de confirmación
-         }
+        }
     }
 
     /**
@@ -719,9 +745,9 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
     private void uploadPendingPhotos() {
         List<PhotoAdapter.PhotoItem> pendingPhotos = photoAdapter.getPendingPhotos();
         if (pendingPhotos.isEmpty()) {
-            Toast.makeText(requireContext(), 
-                "No hay fotos pendientes de subir", 
-                Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(),
+                    "No hay fotos pendientes de subir",
+                    Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -733,8 +759,8 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
         uploadNextPhoto(pendingPhotos, 0, uploadedCount, totalPhotos);
     }
 
-    private void uploadNextPhoto(List<PhotoAdapter.PhotoItem> pendingPhotos, int currentIndex, 
-                               final int[] uploadedCount, final int totalPhotos) {
+    private void uploadNextPhoto(List<PhotoAdapter.PhotoItem> pendingPhotos, int currentIndex,
+                                 final int[] uploadedCount, final int totalPhotos) {
         // Verificar si hemos terminado de procesar todas las fotos
         if (currentIndex >= pendingPhotos.size()) {
             requireActivity().runOnUiThread(() -> {
@@ -744,7 +770,7 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
         }
 
         PhotoAdapter.PhotoItem photo = pendingPhotos.get(currentIndex);
-        
+
         // Encontrar el índice correcto en la lista principal
         int mainListIndex = -1;
         for (int i = 0; i < photos.size(); i++) {
@@ -755,7 +781,7 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
         }
 
         final int photoIndex = mainListIndex;
-        
+
         // Actualizar UI para mostrar que la foto está en proceso de subida
         requireActivity().runOnUiThread(() -> {
             if (photoIndex != -1) {
@@ -773,94 +799,94 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
 
         // Preparar el archivo para la subida
         RequestBody requestFile = RequestBody.create(
-            MediaType.parse("image/jpeg"),
-            imageFile
+                MediaType.parse("image/jpeg"),
+                imageFile
         );
 
         MultipartBody.Part imagePart = MultipartBody.Part.createFormData(
-            "image",
-            "photo.jpg",
-            requestFile
+                "image",
+                "photo.jpg",
+                requestFile
         );
 
         String token = Login.getAuthorizationHeader(requireContext());
 
         // Realizar la petición al servidor
         RetrofitClient.getApiService()
-            .uploadBusinessImage(id, imagePart, token)
-            .enqueue(new Callback<PhotoResponse>() {
-                @Override
-                public void onResponse(Call<PhotoResponse> call, Response<PhotoResponse> response) {
-                    // Actualizar UI para mostrar que la foto ya no está en proceso de subida
-                    requireActivity().runOnUiThread(() -> {
-                        if (photoIndex != -1) {
-                            photos.get(photoIndex).setUploading(false);
-                            photoAdapter.notifyItemChanged(photoIndex);
-                        }
-                    });
-                    
-                    // Verificar si la respuesta del servidor fue exitosa
-                    if (response.isSuccessful() && response.body() != null) {
-                        PhotoResponse photoResponse = response.body();
-                        uploadedCount[0]++;
-                        
+                .uploadBusinessImage(id, imagePart, token)
+                .enqueue(new Callback<PhotoResponse>() {
+                    @Override
+                    public void onResponse(Call<PhotoResponse> call, Response<PhotoResponse> response) {
+                        // Actualizar UI para mostrar que la foto ya no está en proceso de subida
                         requireActivity().runOnUiThread(() -> {
-                            try {
-                                if (photoIndex != -1) {
-                                    // Obtener la foto antes de removerla
-                                    PhotoAdapter.PhotoItem localPhoto = photos.get(photoIndex);
-                                    
-                                    // Crear nueva foto para el servidor usando el ID de la respuesta y manteniendo el path local
-                                    ServerPhotosResponse.ServerPhoto newServerPhoto = new ServerPhotosResponse.ServerPhoto(
-                                        photoResponse.getData().getId(), // Usar el ID de la respuesta
-                                        "business",
-                                        "file://" + localPhoto.getPath() // Mantener el path local
-                                    );
-                                    
-                                    // Agregar al adapter del servidor
-                                    serverPhotos.add(newServerPhoto);
-                                    serverPhotoAdapter.notifyItemInserted(serverPhotos.size() - 1);
-                                    
-                                    // Remover del adapter local
-                                    photos.remove(photoIndex);
-                                    photoAdapter.updatePhotos(photos);
-                                }
-                            } catch (Exception e) {
-                                Log.e("PhotoUpload", "Error al mover foto entre adapters: " + e.getMessage());
+                            if (photoIndex != -1) {
+                                photos.get(photoIndex).setUploading(false);
+                                photoAdapter.notifyItemChanged(photoIndex);
                             }
                         });
 
-                        // Continuar con la siguiente foto
-                        uploadNextPhoto(pendingPhotos, currentIndex + 1, uploadedCount, totalPhotos);
-                    } else {
-                        // Manejar error en la respuesta
-                        handleUploadError();
+                        // Verificar si la respuesta del servidor fue exitosa
+                        if (response.isSuccessful() && response.body() != null) {
+                            PhotoResponse photoResponse = response.body();
+                            uploadedCount[0]++;
+
+                            requireActivity().runOnUiThread(() -> {
+                                try {
+                                    if (photoIndex != -1) {
+                                        // Obtener la foto antes de removerla
+                                        PhotoAdapter.PhotoItem localPhoto = photos.get(photoIndex);
+
+                                        // Crear nueva foto para el servidor usando el ID de la respuesta y manteniendo el path local
+                                        ServerPhotosResponse.ServerPhoto newServerPhoto = new ServerPhotosResponse.ServerPhoto(
+                                                photoResponse.getData().getId(), // Usar el ID de la respuesta
+                                                "business",
+                                                "file://" + localPhoto.getPath() // Mantener el path local
+                                        );
+
+                                        // Agregar al adapter del servidor
+                                        serverPhotos.add(newServerPhoto);
+                                        serverPhotoAdapter.notifyItemInserted(serverPhotos.size() - 1);
+
+                                        // Remover del adapter local
+                                        photos.remove(photoIndex);
+                                        photoAdapter.updatePhotos(photos);
+                                    }
+                                } catch (Exception e) {
+                                    Log.e("PhotoUpload", "Error al mover foto entre adapters: " + e.getMessage());
+                                }
+                            });
+
+                            // Continuar con la siguiente foto
+                            uploadNextPhoto(pendingPhotos, currentIndex + 1, uploadedCount, totalPhotos);
+                        } else {
+                            // Manejar error en la respuesta
+                            handleUploadError();
+                            // Continuar con la siguiente foto a pesar del error
+                            uploadNextPhoto(pendingPhotos, currentIndex + 1, uploadedCount, totalPhotos);
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<PhotoResponse> call, Throwable t) {
+                        // Manejar error de conexión
+                        requireActivity().runOnUiThread(() -> {
+                            if (photoIndex != -1) {
+                                photos.get(photoIndex).setUploading(false);
+                                photoAdapter.notifyItemChanged(photoIndex);
+                            }
+                            handleUploadError();
+                        });
                         // Continuar con la siguiente foto a pesar del error
                         uploadNextPhoto(pendingPhotos, currentIndex + 1, uploadedCount, totalPhotos);
                     }
-                }
-
-                @Override
-                public void onFailure(Call<PhotoResponse> call, Throwable t) {
-                    // Manejar error de conexión
-                    requireActivity().runOnUiThread(() -> {
-                        if (photoIndex != -1) {
-                            photos.get(photoIndex).setUploading(false);
-                            photoAdapter.notifyItemChanged(photoIndex);
-                        }
-                        handleUploadError();
-                    });
-                    // Continuar con la siguiente foto a pesar del error
-                    uploadNextPhoto(pendingPhotos, currentIndex + 1, uploadedCount, totalPhotos);
-                }
-            });
+                });
     }
 
     private void handleUploadError(int position) {
         requireActivity().runOnUiThread(() -> {
-            Toast.makeText(requireContext(), 
-                "Error al subir la foto " + (position + 1), 
-                Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(),
+                    "Error al subir la foto " + (position + 1),
+                    Toast.LENGTH_SHORT).show();
         });
     }
 
@@ -871,7 +897,7 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                 try {
                     // Obtener la orientación EXIF de la imagen
                     int rotation = getImageRotation(photoPath);
-                    
+
                     // Obtener dimensiones de la imagen original
                     BitmapFactory.Options options = new BitmapFactory.Options();
                     options.inJustDecodeBounds = true;
@@ -908,86 +934,95 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
 
                     // Decodificar la imagen original
                     Bitmap originalBitmap = BitmapFactory.decodeFile(photoPath, options);
-                    
+                    Bitmap workingBitmap = originalBitmap;
+
                     // Escalar la imagen manteniendo la calidad
-                    Bitmap scaledBitmap = Bitmap.createScaledBitmap(
-                        originalBitmap, 
-                        targetWidth, 
-                        targetHeight, 
-                        true
-                    );
-                    originalBitmap.recycle(); // Liberar memoria
+                    if (imageWidth > targetWidth || imageHeight > targetHeight) {
+                        workingBitmap = Bitmap.createScaledBitmap(
+                            originalBitmap,
+                            targetWidth,
+                            targetHeight,
+                            true
+                        );
+                        originalBitmap.recycle(); // Liberar memoria del bitmap original
+                    }
 
                     // Rotar si es necesario
                     if (rotation != 0) {
                         Matrix matrix = new Matrix();
                         matrix.postRotate(rotation);
                         Bitmap rotatedBitmap = Bitmap.createBitmap(
-                            scaledBitmap, 0, 0,
-                            scaledBitmap.getWidth(), scaledBitmap.getHeight(),
+                            workingBitmap, 0, 0,
+                            workingBitmap.getWidth(), workingBitmap.getHeight(),
                             matrix, true
                         );
-                        scaledBitmap.recycle();
-                        scaledBitmap = rotatedBitmap;
+                        if (workingBitmap != originalBitmap) {
+                            workingBitmap.recycle();
+                        }
+                        workingBitmap = rotatedBitmap;
                     }
 
                     // Comprimir con calidad progresiva
                     ByteArrayOutputStream bos = new ByteArrayOutputStream();
                     int quality = 100;
-                    scaledBitmap.compress(Bitmap.CompressFormat.JPEG, quality, bos);
+                    workingBitmap.compress(Bitmap.CompressFormat.JPEG, quality, bos);
 
                     // Reducir calidad gradualmente si es necesario
-                    while (bos.size() > 200 * 1024 && quality > 60) { // Mantener calidad mínima de 60%
+                    while (bos.size() > 200 * 1024 && quality > 60) {
                         bos.reset();
                         quality -= 5;
-                        scaledBitmap.compress(Bitmap.CompressFormat.JPEG, quality, bos);
+                        workingBitmap.compress(Bitmap.CompressFormat.JPEG, quality, bos);
                     }
 
                     // Si aún es muy grande, intentar reducir más la calidad pero no tanto
                     if (bos.size() > 200 * 1024) {
                         while (bos.size() > 200 * 1024 && quality > 40) {
                             bos.reset();
-                            quality -= 2; // Reducción más gradual
-                            scaledBitmap.compress(Bitmap.CompressFormat.JPEG, quality, bos);
+                            quality -= 2;
+                            workingBitmap.compress(Bitmap.CompressFormat.JPEG, quality, bos);
                         }
                     }
 
                     float finalSizeKB = bos.size() / 1024f;
                     Log.d("PhotoCompression", String.format(
-                        "Tamaño final: %.2f KB, Calidad: %d%%, Dimensiones: %dx%d, Rotación: %d°", 
-                        finalSizeKB, quality, scaledBitmap.getWidth(), scaledBitmap.getHeight(), rotation
+                        "Tamaño final: %.2f KB, Calidad: %d%%, Dimensiones: %dx%d, Rotación: %d°",
+                        finalSizeKB, quality, workingBitmap.getWidth(), workingBitmap.getHeight(), rotation
                     ));
 
-                    File optimizedFile = new File(requireContext().getCacheDir(), 
+                    File optimizedFile = new File(requireContext().getCacheDir(),
                         "optimized_" + imageFile.getName());
                     FileOutputStream fos = new FileOutputStream(optimizedFile);
                     fos.write(bos.toByteArray());
                     fos.close();
 
-                    scaledBitmap.recycle(); // Liberar memoria
+                    // Liberar memoria del último bitmap
+                    if (workingBitmap != originalBitmap) {
+                        workingBitmap.recycle();
+                    }
 
                     PhotoAdapter.PhotoItem newPhoto = new PhotoAdapter.PhotoItem(
-                        optimizedFile.getAbsolutePath(), 
+                        optimizedFile.getAbsolutePath(),
                         false
                     );
                     photos.add(newPhoto);
                     photoAdapter.updatePhotos(photos);
+
                 } catch (Exception e) {
-                    Toast.makeText(requireContext(), 
-                        "Error al procesar la imagen", 
+                    Log.e("TAGASIEMPRE", e.toString());
+                    Toast.makeText(requireContext(),
+                        "Error al procesar la imagen",
                         Toast.LENGTH_SHORT).show();
                     e.printStackTrace();
                 }
             }
         }
     }
-
     private int getImageRotation(String photoPath) {
         try {
             ExifInterface exif = new ExifInterface(photoPath);
             int orientation = exif.getAttributeInt(
-                ExifInterface.TAG_ORIENTATION,
-                ExifInterface.ORIENTATION_NORMAL);
+                    ExifInterface.TAG_ORIENTATION,
+                    ExifInterface.ORIENTATION_NORMAL);
 
             switch (orientation) {
                 case ExifInterface.ORIENTATION_ROTATE_90:
@@ -1009,47 +1044,47 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
         String token = Login.getAuthorizationHeader(requireContext());
 
         RetrofitClient.getApiService()
-            .getClientImages(id, token)
-            .enqueue(new Callback<ServerPhotosResponse>() {
-                @Override
-                public void onResponse(Call<ServerPhotosResponse> call, Response<ServerPhotosResponse> response) {
-                    if (response.isSuccessful() && response.body() != null) {
-                        serverPhotos.clear();
-                        serverPhotos.addAll(response.body().getPhotos());
-                        serverPhotoAdapter.notifyDataSetChanged();
-                        
-                        // Imprimir en el log cuando la respuesta es exitosa
-                        Log.d("LoadServerPhotos", "Fotos cargadas exitosamente. Total: " + serverPhotos.size());
+                .getClientImages(id, token)
+                .enqueue(new Callback<ServerPhotosResponse>() {
+                    @Override
+                    public void onResponse(Call<ServerPhotosResponse> call, Response<ServerPhotosResponse> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            serverPhotos.clear();
+                            serverPhotos.addAll(response.body().getPhotos());
+                            serverPhotoAdapter.notifyDataSetChanged();
 
-                        // Construir una cadena de texto para representar el arreglo
-                        StringBuilder photosInfo = new StringBuilder("Fotos: [");
-                        for (ServerPhotosResponse.ServerPhoto photo : serverPhotos) {
-                            photosInfo.append("{ID: ").append(photo.getId())
-                                      .append(", Path: ").append(photo.getPath())
-                                      .append("}, ");
+                            // Imprimir en el log cuando la respuesta es exitosa
+                            Log.d("LoadServerPhotos", "Fotos cargadas exitosamente. Total: " + serverPhotos.size());
+
+                            // Construir una cadena de texto para representar el arreglo
+                            StringBuilder photosInfo = new StringBuilder("Fotos: [");
+                            for (ServerPhotosResponse.ServerPhoto photo : serverPhotos) {
+                                photosInfo.append("{ID: ").append(photo.getId())
+                                        .append(", Path: ").append(photo.getPath())
+                                        .append("}, ");
+                            }
+                            if (!serverPhotos.isEmpty()) {
+                                photosInfo.setLength(photosInfo.length() - 2); // Eliminar la última coma y espacio
+                            }
+                            photosInfo.append("]");
+
+                            // Imprimir el arreglo en el log
+                            Log.d("LoadServerPhotos", photosInfo.toString());
+                        } else {
+                            // Imprimir en el log si la respuesta no es exitosa
+                            Log.e("LoadServerPhotos", "Error al cargar fotos: " + response.code());
                         }
-                        if (!serverPhotos.isEmpty()) {
-                            photosInfo.setLength(photosInfo.length() - 2); // Eliminar la última coma y espacio
-                        }
-                        photosInfo.append("]");
-                        
-                        // Imprimir el arreglo en el log
-                        Log.d("LoadServerPhotos", photosInfo.toString());
-                    } else {
-                        // Imprimir en el log si la respuesta no es exitosa
-                        Log.e("LoadServerPhotos", "Error al cargar fotos: " + response.code());
                     }
-                }
 
-                @Override
-                public void onFailure(Call<ServerPhotosResponse> call, Throwable t) {
-                    // Imprimir en el log si hay un fallo en la solicitud
-                    Log.e("LoadServerPhotos", "Fallo al cargar fotos del servidor: " + t.getMessage());
-                    Toast.makeText(requireContext(), 
-                        "Error al cargar las fotos del servidor", 
-                        Toast.LENGTH_SHORT).show();
-                }
-            });
+                    @Override
+                    public void onFailure(Call<ServerPhotosResponse> call, Throwable t) {
+                        // Imprimir en el log si hay un fallo en la solicitud
+                        Log.e("LoadServerPhotos", "Fallo al cargar fotos del servidor: " + t.getMessage());
+                        Toast.makeText(requireContext(),
+                                "Error al cargar las fotos del servidor",
+                                Toast.LENGTH_SHORT).show();
+                    }
+                });
     }
 
     private void deleteSelectedPhotos() {
@@ -1060,46 +1095,378 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
         }
 
         new AlertDialog.Builder(requireContext())
-            .setTitle("Eliminar fotos")
-            .setMessage("¿Está seguro que desea eliminar las " + selectedIds.size() + " fotos seleccionadas?")
-            .setPositiveButton("Eliminar", (dialog, which) -> {
-                String token = Login.getAuthorizationHeader(requireContext());
+                .setTitle("Eliminar fotos")
+                .setMessage("¿Está seguro que desea eliminar las " + selectedIds.size() + " fotos seleccionadas?")
+                .setPositiveButton("Eliminar", (dialog, which) -> {
+                    String token = Login.getAuthorizationHeader(requireContext());
 
-                for (Integer photoId : selectedIds) {
-                    serverPhotoAdapter.setPhotoDeleting(photoId, true);
-                    
-                    RetrofitClient.getApiService()
-                        .deleteMedia(photoId, token)
-                        .enqueue(new Callback<MessageResponse>() {
-                            @Override
-                            public void onResponse(Call<MessageResponse> call, Response<MessageResponse> response) {
-                                requireActivity().runOnUiThread(() -> {
-                                    if (response.isSuccessful()) {
-                                        serverPhotoAdapter.removePhoto(photoId);
+                    for (Integer photoId : selectedIds) {
+                        serverPhotoAdapter.setPhotoDeleting(photoId, true);
 
-                                    } else {
-                                        serverPhotoAdapter.setPhotoDeleting(photoId, false);
-                                        Toast.makeText(requireContext(),
-                                            "Error al eliminar la foto",
-                                            Toast.LENGTH_SHORT).show();
+                        RetrofitClient.getApiService()
+                                .deleteMedia(photoId, token)
+                                .enqueue(new Callback<MessageResponse>() {
+                                    @Override
+                                    public void onResponse(Call<MessageResponse> call, Response<MessageResponse> response) {
+                                        requireActivity().runOnUiThread(() -> {
+                                            if (response.isSuccessful()) {
+                                                serverPhotoAdapter.removePhoto(photoId);
+
+                                            } else {
+                                                serverPhotoAdapter.setPhotoDeleting(photoId, false);
+                                                Toast.makeText(requireContext(),
+                                                        "Error al eliminar la foto",
+                                                        Toast.LENGTH_SHORT).show();
+                                            }
+                                        });
+                                    }
+
+                                    @Override
+                                    public void onFailure(Call<MessageResponse> call, Throwable t) {
+                                        requireActivity().runOnUiThread(() -> {
+                                            serverPhotoAdapter.setPhotoDeleting(photoId, false);
+                                            Toast.makeText(requireContext(),
+                                                    "Error de conexión al eliminar la foto",
+                                                    Toast.LENGTH_SHORT).show();
+                                        });
                                     }
                                 });
-                            }
+                    }
+                })
+                .setNegativeButton("Cancelar", null)
+                .show();
+    }
 
-                            @Override
-                            public void onFailure(Call<MessageResponse> call, Throwable t) {
+    private void showHeaderPhotoDialog() {
+        new AlertDialog.Builder(getContext())
+                .setTitle("Foto de perfil")
+                .setItems(new String[]{"Tomar Foto", "Seleccionar de Galería"}, (dialog, which) -> {
+                    if (which == 0) {
+                        openHeaderCamera();
+                    } else {
+                        openHeaderGallery();
+                    }
+                })
+                .show();
+    }
+
+    private void openHeaderCamera() {
+        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        if (takePictureIntent.resolveActivity(requireActivity().getPackageManager()) != null) {
+            File photoFile = null;
+            try {
+                photoFile = createHeaderImageFile();
+                if (photoFile != null) {
+                    headerPhotoUri = FileProvider.getUriForFile(requireContext(),
+                            requireContext().getPackageName() + ".fileprovider",
+                            photoFile);
+
+                    takePictureIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    takePictureIntent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                    takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, headerPhotoUri);
+
+                    headerCameraLauncher.launch(takePictureIntent);
+                }
+            } catch (IOException ex) {
+                Toast.makeText(requireContext(),
+                        "Error al crear el archivo de imagen",
+                        Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    private void openHeaderGallery() {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.setType("image/*");
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        headerGalleryLauncher.launch(intent);
+    }
+
+    private File createHeaderImageFile() throws IOException {
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+        String imageFileName = "HEADER_" + timeStamp + "_";
+
+        File storageDir = new File(requireContext().getCacheDir(), "profile_photos");
+        if (!storageDir.exists()) {
+            storageDir.mkdirs();
+        }
+
+        File image = File.createTempFile(
+                imageFileName,
+                ".jpg",
+                storageDir
+        );
+
+        currentHeaderPhotoPath = image.getAbsolutePath();
+        return image;
+    }
+
+    private final ActivityResultLauncher<Intent> headerCameraLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == getActivity().RESULT_OK) {
+                    if (currentHeaderPhotoPath != null) {
+                        processAndUploadHeaderPhoto(currentHeaderPhotoPath);
+                    }
+                }
+            }
+    );
+
+    private final ActivityResultLauncher<Intent> headerGalleryLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == getActivity().RESULT_OK && result.getData() != null) {
+                    Uri selectedImageUri = result.getData().getData();
+                    if (selectedImageUri != null) {
+                        String realPath = getRealPathFromURI(selectedImageUri);
+                        if (realPath != null) {
+                            processAndUploadHeaderPhoto(realPath);
+                        }
+                    }
+                }
+            }
+    );
+
+    private void processAndUploadHeaderPhoto(String photoPath) {
+        if (photoPath != null) {
+            File imageFile = new File(photoPath);
+            if (imageFile.exists()) {
+                try {
+                    // Obtener la orientación EXIF de la imagen
+                    int rotation = getImageRotation(photoPath);
+
+                    // Obtener dimensiones de la imagen original
+                    BitmapFactory.Options options = new BitmapFactory.Options();
+                    options.inJustDecodeBounds = true;
+                    BitmapFactory.decodeFile(photoPath, options);
+                    int imageWidth = options.outWidth;
+                    int imageHeight = options.outHeight;
+
+                    float originalSizeKB = imageFile.length() / 1024f;
+                    Log.d("PhotoCompression", "Tamaño original: " + originalSizeKB + " KB");
+
+                    if (originalSizeKB <= 200 && rotation == 0) {
+                        // Si la imagen ya es pequeña y no necesita rotación, usarla directamente
+                        Log.d("PhotoCompression", "La imagen ya es suficientemente pequeña y no necesita rotación");
+                        uploadHeaderPhoto(imageFile);
+                        return;
+                    }
+
+                    // Calcular el factor de escala óptimo manteniendo el aspect ratio
+                    int targetWidth = 1280; // Ancho objetivo
+                    float ratio = (float) imageWidth / imageHeight;
+                    int targetHeight = (int) (targetWidth / ratio);
+
+                    // Ajustar dimensiones si la altura es muy grande
+                    if (targetHeight > 1280) {
+                        targetHeight = 1280;
+                        targetWidth = (int) (targetHeight * ratio);
+                    }
+
+                    // Configurar opciones de decodificación
+                    options = new BitmapFactory.Options();
+                    options.inPreferredConfig = Bitmap.Config.ARGB_8888;
+
+                    // Decodificar la imagen original
+                    Bitmap originalBitmap = BitmapFactory.decodeFile(photoPath, options);
+                    Bitmap workingBitmap = originalBitmap;
+
+                    // Escalar la imagen manteniendo la calidad
+                    if (imageWidth > targetWidth || imageHeight > targetHeight) {
+                        workingBitmap = Bitmap.createScaledBitmap(
+                            originalBitmap,
+                            targetWidth,
+                            targetHeight,
+                            true
+                        );
+                        originalBitmap.recycle(); // Liberar memoria del bitmap original
+                    }
+
+                    // Rotar si es necesario
+                    if (rotation != 0) {
+                        Matrix matrix = new Matrix();
+                        matrix.postRotate(rotation);
+                        Bitmap rotatedBitmap = Bitmap.createBitmap(
+                            workingBitmap, 0, 0,
+                            workingBitmap.getWidth(), workingBitmap.getHeight(),
+                            matrix, true
+                        );
+                        if (workingBitmap != originalBitmap) {
+                            workingBitmap.recycle();
+                        }
+                        workingBitmap = rotatedBitmap;
+                    }
+
+                    // Comprimir con calidad progresiva
+                    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                    int quality = 100;
+                    workingBitmap.compress(Bitmap.CompressFormat.JPEG, quality, bos);
+
+                    // Reducir calidad gradualmente si es necesario
+                    while (bos.size() > 200 * 1024 && quality > 60) {
+                        bos.reset();
+                        quality -= 5;
+                        workingBitmap.compress(Bitmap.CompressFormat.JPEG, quality, bos);
+                    }
+
+                    // Si aún es muy grande, intentar reducir más la calidad pero no tanto
+                    if (bos.size() > 200 * 1024) {
+                        while (bos.size() > 200 * 1024 && quality > 40) {
+                            bos.reset();
+                            quality -= 2;
+                            workingBitmap.compress(Bitmap.CompressFormat.JPEG, quality, bos);
+                        }
+                    }
+
+                    float finalSizeKB = bos.size() / 1024f;
+                    Log.d("PhotoCompression", String.format(
+                        "Tamaño final: %.2f KB, Calidad: %d%%, Dimensiones: %dx%d, Rotación: %d°",
+                        finalSizeKB, quality, workingBitmap.getWidth(), workingBitmap.getHeight(), rotation
+                    ));
+
+                    File optimizedFile = new File(requireContext().getCacheDir(),
+                        "profile_" + imageFile.getName());
+                    FileOutputStream fos = new FileOutputStream(optimizedFile);
+                    fos.write(bos.toByteArray());
+                    fos.close();
+
+                    // Subir la imagen al servidor
+                    uploadHeaderPhoto(optimizedFile);
+
+                } catch (Exception e) {
+                    resetHeaderImage();
+                    Log.e("TAGASIEMPRE", e.toString());
+                    Toast.makeText(requireContext(),
+                        "Error al procesar la imagen",
+                        Toast.LENGTH_SHORT).show();
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    private void uploadHeaderPhoto(File imageFile) {
+        // Mostrar un indicador de progreso
+        // Puedes agregar un ProgressBar en tu layout y mostrarlo aquí
+
+        RequestBody requestFile = RequestBody.create(
+                MediaType.parse("image/jpeg"),
+                imageFile
+        );
+
+        MultipartBody.Part imagePart = MultipartBody.Part.createFormData(
+                "image",
+                imageFile.getName(),
+                requestFile
+        );
+
+        String token = Login.getAuthorizationHeader(requireContext());
+
+        RetrofitClient.getApiService()
+                .uploadProfileImage(id, imagePart, token)
+                .enqueue(new Callback<PhotoResponse>() {
+                    @Override
+                    public void onResponse(Call<PhotoResponse> call, Response<PhotoResponse> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            // La subida fue exitosa, obtener la URL del servidor
+                            if (response.body().getData() != null && response.body().getData().getPath() != null) {
+                                String serverImagePath = response.body().getData().getPath();
+                                String imageUrl = Utilities.URL_FOTOS + "storage/" + serverImagePath;
+
+                                // Cargar la imagen desde el servidor
                                 requireActivity().runOnUiThread(() -> {
-                                    serverPhotoAdapter.setPhotoDeleting(photoId, false);
-                                    Toast.makeText(requireContext(),
-                                        "Error de conexión al eliminar la foto",
-                                        Toast.LENGTH_SHORT).show();
+                                    Glide.with(requireContext())
+                                            .load(imageUrl)
+                                            .placeholder(R.drawable.cliente_icon)
+                                            .error(R.drawable.cliente_icon)
+                                            .into(clientHeaderImage);
                                 });
                             }
-                        });
-                }
-            })
-            .setNegativeButton("Cancelar", null)
-            .show();
+
+                            // Mostrar mensaje de éxito
+                            String message = response.body().getMessage();
+                            if (message != null && !message.isEmpty()) {
+                                Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+                            }
+                        } else {
+                            resetHeaderImage();
+                            try {
+                                if (response.errorBody() != null) {
+                                    String errorBody = response.errorBody().string();
+                                    Log.e("UploadError", "Error response: " + errorBody);
+                                    JSONObject errorJson = new JSONObject(errorBody);
+
+                                    String errorMessage;
+                                    if (errorJson.has("errors") && errorJson.getJSONObject("errors").has("image")) {
+                                        JSONArray imageErrors = errorJson.getJSONObject("errors").getJSONArray("image");
+                                        errorMessage = imageErrors.getString(0);
+                                    } else {
+                                        errorMessage = errorJson.optString("message", "Error al subir la imagen de perfil");
+                                    }
+
+                                    Toast.makeText(requireContext(), errorMessage, Toast.LENGTH_SHORT).show();
+                                } else {
+                                    Toast.makeText(requireContext(),
+                                            "Error al subir la imagen de perfil",
+                                            Toast.LENGTH_SHORT).show();
+                                }
+                            } catch (Exception e) {
+                                Log.e("UploadError", "Error parsing error response: " + e.getMessage());
+                                Toast.makeText(requireContext(),
+                                        "Error al subir la imagen de perfil",
+                                        Toast.LENGTH_SHORT).show();
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<PhotoResponse> call, Throwable t) {
+                        resetHeaderImage();
+                        Log.e("UploadError", "Network error: " + t.getMessage());
+                        Toast.makeText(requireContext(),
+                                "Error de conexión al subir la imagen: " + t.getMessage(),
+                                Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
+
+    private void resetHeaderImage() {
+        requireActivity().runOnUiThread(() -> {
+            clientHeaderImage.setImageResource(R.drawable.cliente_icon);
+        });
+    }
+
+    private void loadProfileImage() {
+        String token = Login.getAuthorizationHeader(requireContext());
+
+        RetrofitClient.getApiService()
+                .getProfileImage(id, token)
+                .enqueue(new Callback<PhotoResponse>() {
+                    @Override
+                    public void onResponse(Call<PhotoResponse> call, Response<PhotoResponse> response) {
+                        if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
+                            String imagePath = response.body().getData().getPath();
+                            if (imagePath != null && !imagePath.isEmpty()) {
+                                // Construir la URL completa de la imagen
+                                String imageUrl = Utilities.URL_FOTOS + "storage/" + imagePath;
+
+                                // Cargar la imagen usando Glide
+                                Glide.with(requireContext())
+                                        .load(imageUrl)
+                                        .placeholder(R.drawable.cliente_icon)
+                                        .error(R.drawable.cliente_icon)
+                                        .into(clientHeaderImage);
+                            }
+                        } else {
+                            Log.d("ProfileImage", "No profile image found or error in response");
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<PhotoResponse> call, Throwable t) {
+                        Log.e("ProfileImage", "Error loading profile image: " + t.getMessage());
+                    }
+                });
     }
 
 }

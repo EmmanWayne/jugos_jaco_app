@@ -14,20 +14,34 @@ public interface ApiService {
     @Multipart
     @POST("clients/{clientId}/image/business")
     Call<PhotoResponse> uploadBusinessImage(
-        @Path("clientId") String clientId,
-        @Part MultipartBody.Part image,
-        @Header("Authorization") String token
+            @Path("clientId") String clientId,
+            @Part MultipartBody.Part image,
+            @Header("Authorization") String token
     );
 
     @GET("clients/{id}/images/business")
     Call<ServerPhotosResponse> getClientImages(
-        @Path("id") String clientId,
-        @Header("Authorization") String token
+            @Path("id") String clientId,
+            @Header("Authorization") String token
     );
 
     @DELETE("media/{id}")
     Call<MessageResponse> deleteMedia(
-        @Path("id") int mediaId,
-        @Header("Authorization") String token
+            @Path("id") int mediaId,
+            @Header("Authorization") String token
     );
-} 
+
+    @Multipart
+    @POST("clients/{id}/image/profile")
+    Call<PhotoResponse> uploadProfileImage(
+            @Path("id") String clientId,
+            @Part MultipartBody.Part image,
+            @Header("Authorization") String token
+    );
+
+    @GET("clients/{id}/image/profile")
+    Call<PhotoResponse> getProfileImage(
+            @Path("id") String clientId,
+            @Header("Authorization") String token
+    );
+}
