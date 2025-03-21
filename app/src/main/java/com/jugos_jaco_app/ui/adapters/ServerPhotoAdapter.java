@@ -130,10 +130,17 @@ public class ServerPhotoAdapter extends RecyclerView.Adapter<ServerPhotoAdapter.
         ServerPhoto photo = photos.get(position);
         if (selectedPhotos.contains(photo.getId())) {
             selectedPhotos.remove(photo.getId());
+            // Si no quedan fotos seleccionadas, salir del modo selección
+            if (selectedPhotos.isEmpty()) {
+                isSelectionMode = false;
+                notifyDataSetChanged(); // Actualizar todas las vistas
+            } else {
+                notifyItemChanged(position);
+            }
         } else {
             selectedPhotos.add(photo.getId());
+            notifyItemChanged(position);
         }
-        notifyItemChanged(position);
         
         // Notificar cambio en el estado de selección
         if (selectionModeListener != null) {
