@@ -6,7 +6,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import androidx.annotation.NonNull;
@@ -78,33 +77,33 @@ public class ServerPhotoAdapter extends RecyclerView.Adapter<ServerPhotoAdapter.
             .error(R.drawable.product_placeholder)
             .into(holder.imageView);
 
-        // Configurar el click en la imagen
+        // Mostrar indicador de selección si está en modo selección
+        holder.selectionOverlay.setVisibility(
+            selectedPhotos.contains(photo.getId()) ? View.VISIBLE : View.GONE
+        );
+        
+        holder.selectionCheck.setVisibility(
+            selectedPhotos.contains(photo.getId()) ? View.VISIBLE : View.GONE
+        );
+
+        holder.itemView.setOnLongClickListener(v -> {
+            if (!isSelectionMode) {
+                toggleSelectionMode();
+                togglePhotoSelection(position);
+                return true;
+            }
+            return false;
+        });
+
         holder.itemView.setOnClickListener(v -> {
             if (isSelectionMode) {
                 togglePhotoSelection(position);
             } else {
-                // Usar la URL o ruta completa para mostrar la imagen en grande
                 Uri imageUri = Uri.parse(fullImageUrl);
                 FullscreenImageDialog dialog = new FullscreenImageDialog(context, imageUri);
                 dialog.show();
             }
         });
-
-        // Configurar la selección
-        holder.itemView.setOnLongClickListener(v -> {
-            if (!isSelectionMode) {
-                isSelectionMode = true;
-                if (selectionModeListener != null) {
-                    selectionModeListener.onSelectionModeChanged(true);
-                }
-                togglePhotoSelection(position);
-            }
-            return true;
-        });
-
-        // Actualizar el estado visual de selección
-        holder.checkBox.setVisibility(isSelectionMode ? View.VISIBLE : View.GONE);
-        holder.checkBox.setChecked(selectedPhotos.contains(photo.getId()));
     }
 
     @Override
@@ -176,7 +175,6 @@ public class ServerPhotoAdapter extends RecyclerView.Adapter<ServerPhotoAdapter.
         View selectionOverlay;
         View selectionCheck;
         ProgressBar progressBar;
-        CheckBox checkBox;
 
         ViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -184,7 +182,6 @@ public class ServerPhotoAdapter extends RecyclerView.Adapter<ServerPhotoAdapter.
             selectionOverlay = itemView.findViewById(R.id.selectionOverlay);
             selectionCheck = itemView.findViewById(R.id.selectionCheck);
             progressBar = itemView.findViewById(R.id.progressBar);
-            checkBox = itemView.findViewById(R.id.checkBox);
         }
     }
 } 
