@@ -85,6 +85,9 @@ import android.content.pm.ResolveInfo;
 
 import android.widget.ImageView;
 import com.bumptech.glide.Glide;
+import com.jugos_jaco_app.ui.utilities.Utilities;
+
+import android.content.pm.ActivityInfo;
 
 public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPhotoListener {
 
@@ -132,6 +135,7 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        requireActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         setHasOptionsMenu(true);
 
         if (!hasPermissions()) {
@@ -287,8 +291,18 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
         // Configurar la imagen de cabecera
         clientHeaderImage = view.findViewById(R.id.clientHeaderImage);
         clientHeaderImage.setOnClickListener(v -> showHeaderPhotoDialog());
+        
+        // Cargar la imagen de perfil
+        loadProfileImage();
 
         return view;
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        // Restaurar la orientación automática cuando se destruye el fragmento
+        requireActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
     }
 
     @Override
@@ -1245,54 +1259,59 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
 
                     // Decodificar la imagen original
                     Bitmap originalBitmap = BitmapFactory.decodeFile(photoPath, options);
+                    Bitmap workingBitmap = originalBitmap;
                     
                     // Escalar la imagen manteniendo la calidad
-                    Bitmap scaledBitmap = Bitmap.createScaledBitmap(
-                        originalBitmap, 
-                        targetWidth, 
-                        targetHeight, 
-                        true
-                    );
-                    originalBitmap.recycle(); // Liberar memoria
+                    if (imageWidth > targetWidth || imageHeight > targetHeight) {
+                        workingBitmap = Bitmap.createScaledBitmap(
+                            originalBitmap, 
+                            targetWidth, 
+                            targetHeight, 
+                            true
+                        );
+                        originalBitmap.recycle(); // Liberar memoria del bitmap original
+                    }
 
                     // Rotar si es necesario
                     if (rotation != 0) {
                         Matrix matrix = new Matrix();
                         matrix.postRotate(rotation);
                         Bitmap rotatedBitmap = Bitmap.createBitmap(
-                            scaledBitmap, 0, 0,
-                            scaledBitmap.getWidth(), scaledBitmap.getHeight(),
+                            workingBitmap, 0, 0,
+                            workingBitmap.getWidth(), workingBitmap.getHeight(),
                             matrix, true
                         );
-                        scaledBitmap.recycle();
-                        scaledBitmap = rotatedBitmap;
+                        if (workingBitmap != originalBitmap) {
+                            workingBitmap.recycle();
+                        }
+                        workingBitmap = rotatedBitmap;
                     }
 
                     // Comprimir con calidad progresiva
                     ByteArrayOutputStream bos = new ByteArrayOutputStream();
                     int quality = 100;
-                    scaledBitmap.compress(Bitmap.CompressFormat.JPEG, quality, bos);
+                    workingBitmap.compress(Bitmap.CompressFormat.JPEG, quality, bos);
 
                     // Reducir calidad gradualmente si es necesario
-                    while (bos.size() > 200 * 1024 && quality > 60) { // Mantener calidad mínima de 60%
+                    while (bos.size() > 200 * 1024 && quality > 60) {
                         bos.reset();
                         quality -= 5;
-                        scaledBitmap.compress(Bitmap.CompressFormat.JPEG, quality, bos);
+                        workingBitmap.compress(Bitmap.CompressFormat.JPEG, quality, bos);
                     }
 
                     // Si aún es muy grande, intentar reducir más la calidad pero no tanto
                     if (bos.size() > 200 * 1024) {
                         while (bos.size() > 200 * 1024 && quality > 40) {
                             bos.reset();
-                            quality -= 2; // Reducción más gradual
-                            scaledBitmap.compress(Bitmap.CompressFormat.JPEG, quality, bos);
+                            quality -= 2;
+                            workingBitmap.compress(Bitmap.CompressFormat.JPEG, quality, bos);
                         }
                     }
 
                     float finalSizeKB = bos.size() / 1024f;
                     Log.d("PhotoCompression", String.format(
                         "Tamaño final: %.2f KB, Calidad: %d%%, Dimensiones: %dx%d, Rotación: %d°", 
-                        finalSizeKB, quality, scaledBitmap.getWidth(), scaledBitmap.getHeight(), rotation
+                        finalSizeKB, quality, workingBitmap.getWidth(), workingBitmap.getHeight(), rotation
                     ));
 
                     File optimizedFile = new File(requireContext().getCacheDir(), 
@@ -1301,8 +1320,6 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                     fos.write(bos.toByteArray());
                     fos.close();
 
-                    scaledBitmap.recycle(); // Liberar memoria
-
                     // Mostrar la imagen optimizada
                     Glide.with(requireContext())
                         .load(optimizedFile)
@@ -1310,13 +1327,19 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                         .error(R.drawable.cliente_icon)
                         .into(clientHeaderImage);
 
+                    // Liberar memoria del último bitmap
+                    if (workingBitmap != originalBitmap) {
+                        workingBitmap.recycle();
+                    }
+
                     // Subir la imagen al servidor
                     uploadHeaderPhoto(optimizedFile);
 
                 } catch (Exception e) {
                     resetHeaderImage();
+                    Log.e("TAGASIEMPRE", e.toString());
                     Toast.makeText(requireContext(), 
-                        "Error al procesar la imagen", 
+                        "Error al procesar la imagen",
                         Toast.LENGTH_SHORT).show();
                     e.printStackTrace();
                 }
@@ -1331,7 +1354,7 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
         );
 
         MultipartBody.Part imagePart = MultipartBody.Part.createFormData(
-            "profile_image",
+            "image",
             imageFile.getName(),
             requestFile
         );
@@ -1343,19 +1366,51 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
             .enqueue(new Callback<PhotoResponse>() {
                 @Override
                 public void onResponse(Call<PhotoResponse> call, Response<PhotoResponse> response) {
-                    if (!response.isSuccessful() || response.body() == null) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        // Mostrar mensaje de éxito del servidor
+                        String message = response.body().getMessage();
+                        if (message != null && !message.isEmpty()) {
+                            Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+                        }
+                    } else {
                         resetHeaderImage();
-                        Toast.makeText(requireContext(),
-                            "Error al subir la imagen de perfil",
-                            Toast.LENGTH_SHORT).show();
+                        try {
+                            // Intentar obtener mensaje de error del servidor
+                            if (response.errorBody() != null) {
+                                String errorBody = response.errorBody().string();
+                                Log.e("UploadError", "Error response: " + errorBody);
+                                JSONObject errorJson = new JSONObject(errorBody);
+                                
+                                // Intentar obtener el mensaje de error específico
+                                String errorMessage;
+                                if (errorJson.has("errors") && errorJson.getJSONObject("errors").has("image")) {
+                                    JSONArray imageErrors = errorJson.getJSONObject("errors").getJSONArray("image");
+                                    errorMessage = imageErrors.getString(0);
+                                } else {
+                                    errorMessage = errorJson.optString("message", "Error al subir la imagen de perfil");
+                                }
+                                
+                                Toast.makeText(requireContext(), errorMessage, Toast.LENGTH_SHORT).show();
+                            } else {
+                                Toast.makeText(requireContext(),
+                                    "Error al subir la imagen de perfil",
+                                    Toast.LENGTH_SHORT).show();
+                            }
+                        } catch (Exception e) {
+                            Log.e("UploadError", "Error parsing error response: " + e.getMessage());
+                            Toast.makeText(requireContext(),
+                                "Error al subir la imagen de perfil",
+                                Toast.LENGTH_SHORT).show();
+                        }
                     }
                 }
 
                 @Override
                 public void onFailure(Call<PhotoResponse> call, Throwable t) {
                     resetHeaderImage();
+                    Log.e("UploadError", "Network error: " + t.getMessage());
                     Toast.makeText(requireContext(),
-                        "Error de conexión al subir la imagen",
+                        "Error de conexión al subir la imagen: " + t.getMessage(),
                         Toast.LENGTH_SHORT).show();
                 }
             });
@@ -1365,6 +1420,39 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
         requireActivity().runOnUiThread(() -> {
             clientHeaderImage.setImageResource(R.drawable.cliente_icon);
         });
+    }
+
+    private void loadProfileImage() {
+        String token = Login.getAuthorizationHeader(requireContext());
+        
+        RetrofitClient.getApiService()
+            .getProfileImage(id, token)
+            .enqueue(new Callback<PhotoResponse>() {
+                @Override
+                public void onResponse(Call<PhotoResponse> call, Response<PhotoResponse> response) {
+                    if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
+                        String imagePath = response.body().getData().getPath();
+                        if (imagePath != null && !imagePath.isEmpty()) {
+                            // Construir la URL completa de la imagen
+                            String imageUrl = Utilities.URL_FOTOS + "storage/" + imagePath;
+                            
+                            // Cargar la imagen usando Glide
+                            Glide.with(requireContext())
+                                .load(imageUrl)
+                                .placeholder(R.drawable.cliente_icon)
+                                .error(R.drawable.cliente_icon)
+                                .into(clientHeaderImage);
+                        }
+                    } else {
+                        Log.d("ProfileImage", "No profile image found or error in response");
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<PhotoResponse> call, Throwable t) {
+                    Log.e("ProfileImage", "Error loading profile image: " + t.getMessage());
+                }
+            });
     }
 
 }
