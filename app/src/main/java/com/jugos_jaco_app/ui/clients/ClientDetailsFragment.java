@@ -802,28 +802,31 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                     // Verificar si la respuesta del servidor fue exitosa
                     if (response.isSuccessful() && response.body() != null) {
                         PhotoResponse photoResponse = response.body();
-                        // Incrementar contador de fotos subidas exitosamente
                         uploadedCount[0]++;
                         
-                        // Actualizar la interfaz de usuario en el hilo principal
                         requireActivity().runOnUiThread(() -> {
                             try {
-                                // Eliminar la foto de la lista local si existe
                                 if (photoIndex != -1) {
+                                    // Obtener la foto antes de removerla
+                                    PhotoAdapter.PhotoItem localPhoto = photos.get(photoIndex);
+                                    
+                                    // Crear nueva foto para el servidor usando el ID de la respuesta y manteniendo el path local
+                                    ServerPhotosResponse.ServerPhoto newServerPhoto = new ServerPhotosResponse.ServerPhoto(
+                                        photoResponse.getData().getId(), // Usar el ID de la respuesta
+                                        "business",
+                                        "file://" + localPhoto.getPath() // Mantener el path local
+                                    );
+                                    
+                                    // Agregar al adapter del servidor
+                                    serverPhotos.add(newServerPhoto);
+                                    serverPhotoAdapter.notifyItemInserted(serverPhotos.size() - 1);
+                                    
+                                    // Remover del adapter local
                                     photos.remove(photoIndex);
                                     photoAdapter.updatePhotos(photos);
                                 }
-                                
-                                // Recargar las fotos del servidor para mostrar la nueva foto
-                                loadServerPhotos();
-
-                                // Procesar mensaje de respuesta si existe
-                                String message = photoResponse.getMessage();
-                                if (message != null && !message.isEmpty()) {
-                                    // Aquí podrías mostrar el mensaje al usuario
-                                }
                             } catch (Exception e) {
-                                Log.e("PhotoUpload", "Error al remover foto: " + e.getMessage());
+                                Log.e("PhotoUpload", "Error al mover foto entre adapters: " + e.getMessage());
                             }
                         });
 
@@ -831,7 +834,7 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                         uploadNextPhoto(pendingPhotos, currentIndex + 1, uploadedCount, totalPhotos);
                     } else {
                         // Manejar error en la respuesta
-                        handleUploadError(currentIndex);
+                        handleUploadError();
                         // Continuar con la siguiente foto a pesar del error
                         uploadNextPhoto(pendingPhotos, currentIndex + 1, uploadedCount, totalPhotos);
                     }
@@ -845,7 +848,7 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                             photos.get(photoIndex).setUploading(false);
                             photoAdapter.notifyItemChanged(photoIndex);
                         }
-                        handleUploadError(currentIndex);
+                        handleUploadError();
                     });
                     // Continuar con la siguiente foto a pesar del error
                     uploadNextPhoto(pendingPhotos, currentIndex + 1, uploadedCount, totalPhotos);

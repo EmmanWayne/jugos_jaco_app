@@ -15,6 +15,7 @@ import com.jugos_jaco_app.R;
 import com.jugos_jaco_app.ui.api.ServerPhotosResponse.ServerPhoto;
 import com.jugos_jaco_app.ui.clients.FullscreenImageDialog;
 import com.jugos_jaco_app.ui.utilities.Utilities;
+import java.io.File;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -48,14 +49,25 @@ public class ServerPhotoAdapter extends RecyclerView.Adapter<ServerPhotoAdapter.
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         ServerPhoto photo = photos.get(position);
-        String fullUrl = Utilities.URL_FOTOS +"storage/" +photo.getPath();
-         // Mostrar/ocultar progress según estado de eliminación
+        String path = photo.getPath();
+        
+        // Determinar si es una ruta local o una URL
+        Object imageSource;
+        if (path.startsWith("file://")) {
+            // Es un archivo local
+            imageSource = new File(path.substring(7)); // Remover el prefijo "file://"
+        } else {
+            // Es una URL del servidor
+            imageSource = Utilities.URL_FOTOS + "storage/" + path;
+        }
+        
+        // Mostrar/ocultar progress según estado de eliminación
         holder.progressBar.setVisibility(
             deletingPhotos.contains(photo.getId()) ? View.VISIBLE : View.GONE
         );
 
         Glide.with(context)
-            .load(fullUrl)
+            .load(imageSource)
             .placeholder(R.drawable.product_placeholder)
             .error(R.drawable.product_placeholder)
             .into(holder.imageView);
@@ -82,7 +94,7 @@ public class ServerPhotoAdapter extends RecyclerView.Adapter<ServerPhotoAdapter.
             if (isSelectionMode) {
                 togglePhotoSelection(position);
             } else {
-                Uri imageUri = Uri.parse(fullUrl);
+                Uri imageUri = Uri.parse(path);
                 FullscreenImageDialog dialog = new FullscreenImageDialog(context, imageUri);
                 dialog.show();
             }

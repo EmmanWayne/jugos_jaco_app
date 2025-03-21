@@ -21,6 +21,12 @@ public class ServerPhotosResponse {
         @SerializedName("path")
         private String path;
 
+        public ServerPhoto(int id, String type, String path) {
+            this.id = id;
+            this.type = type;
+            this.path = path;
+        }
+
         public int getId() {
             return id;
         }

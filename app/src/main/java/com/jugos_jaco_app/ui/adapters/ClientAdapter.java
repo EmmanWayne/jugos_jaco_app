@@ -68,7 +68,6 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
 
         holder.ivCoordinatesIcon.setOnClickListener(v -> {
             if (client.hasCoordinates()) {
-                Toast.makeText(context, ""+client.getLatitude()+" "+client.getLongitude(), Toast.LENGTH_SHORT).show();
 
                 checkLocationAndOpenMap(client);
             } else {
@@ -195,8 +194,7 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
 
             // Codificar el Plus Code para asegurarse de que el signo '+' se maneje correctamente
             String encodedPlusCode = URLEncoder.encode(plusCode, "UTF-8");
-            Toast.makeText(context, ""+encodedPlusCode, Toast.LENGTH_SHORT).show();
-            // Crear URI para Google Maps con el Plus Code codificado
+             // Crear URI para Google Maps con el Plus Code codificado
              Uri gmmIntentUri = Uri.parse("geo:0,0?q=" + encodedPlusCode);;
             // Crear intent para abrir Google Maps
             Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
