@@ -88,6 +88,13 @@ import com.bumptech.glide.Glide;
 import com.jugos_jaco_app.ui.utilities.Utilities;
 
 import android.content.pm.ActivityInfo;
+import android.widget.ProgressBar;
+import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.target.Target;
+import android.graphics.drawable.Drawable;
+import androidx.annotation.Nullable;
 
 public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPhotoListener {
 
@@ -292,10 +299,15 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
         clientHeaderImage = view.findViewById(R.id.clientHeaderImage);
         clientHeaderImage.setOnClickListener(v -> showHeaderPhotoDialog());
 
-        // Cargar la imagen de perfil
-        loadProfileImage();
-
         return view;
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        
+        // Ahora llamamos a loadProfileImage() aquí, después de que la vista está creada
+        loadProfileImage();
     }
 
     @Override
@@ -1346,8 +1358,9 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
     }
 
     private void uploadHeaderPhoto(File imageFile) {
-        // Mostrar un indicador de progreso
-        // Puedes agregar un ProgressBar en tu layout y mostrarlo aquí
+        // Mostrar el ProgressBar
+        ProgressBar headerProgress = clientHeaderImage.getRootView().findViewById(R.id.headerImageProgress);
+        headerProgress.setVisibility(View.VISIBLE);
 
         RequestBody requestFile = RequestBody.create(
                 MediaType.parse("image/jpeg"),
@@ -1367,6 +1380,8 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                 .enqueue(new Callback<PhotoResponse>() {
                     @Override
                     public void onResponse(Call<PhotoResponse> call, Response<PhotoResponse> response) {
+                        // Ocultar el ProgressBar
+
                         if (response.isSuccessful() && response.body() != null) {
                             // La subida fue exitosa, obtener la URL del servidor
                             if (response.body().getData() != null && response.body().getData().getPath() != null) {
@@ -1377,8 +1392,21 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                                 requireActivity().runOnUiThread(() -> {
                                     Glide.with(requireContext())
                                             .load(imageUrl)
-                                            .placeholder(R.drawable.cliente_icon)
-                                            .error(R.drawable.cliente_icon)
+                                            .placeholder(R.drawable.product_placeholder)
+                                            .error(R.drawable.product_placeholder)
+                                            .listener(new RequestListener<Drawable>() {
+                                                @Override
+                                                public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
+                                                    headerProgress.setVisibility(View.GONE);
+                                                    return false;
+                                                }
+
+                                                @Override
+                                                public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
+                                                    headerProgress.setVisibility(View.GONE);
+                                                    return false;
+                                                }
+                                            })
                                             .into(clientHeaderImage);
                                 });
                             }
@@ -1421,6 +1449,9 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
 
                     @Override
                     public void onFailure(Call<PhotoResponse> call, Throwable t) {
+                        // Ocultar el ProgressBar
+                        headerProgress.setVisibility(View.GONE);
+                        
                         resetHeaderImage();
                         Log.e("UploadError", "Network error: " + t.getMessage());
                         Toast.makeText(requireContext(),
@@ -1438,6 +1469,10 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
 
     private void loadProfileImage() {
         String token = Login.getAuthorizationHeader(requireContext());
+        
+        // Ahora es seguro obtener el ProgressBar porque la vista ya existe
+        ProgressBar headerProgress = requireView().findViewById(R.id.headerImageProgress);
+        headerProgress.setVisibility(View.VISIBLE);
 
         RetrofitClient.getApiService()
                 .getProfileImage(id, token)
@@ -1447,24 +1482,40 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                         if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
                             String imagePath = response.body().getData().getPath();
                             if (imagePath != null && !imagePath.isEmpty()) {
-                                // Construir la URL completa de la imagen
                                 String imageUrl = Utilities.URL_FOTOS + "storage/" + imagePath;
 
                                 // Cargar la imagen usando Glide
                                 Glide.with(requireContext())
                                         .load(imageUrl)
-                                        .placeholder(R.drawable.cliente_icon)
-                                        .error(R.drawable.cliente_icon)
+                                        .placeholder(R.drawable.product_placeholder)
+                                        .error(R.drawable.product_placeholder)
+                                        .listener(new RequestListener<Drawable>() {
+                                            @Override
+                                            public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
+                                                headerProgress.setVisibility(View.GONE);
+                                                 return false;
+                                            }
+
+                                            @Override
+                                            public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
+                                                headerProgress.setVisibility(View.GONE);
+                                                 return false;
+                                            }
+                                        })
                                         .into(clientHeaderImage);
-                            }
+                            } else {
+                                headerProgress.setVisibility(View.GONE);
+                             }
                         } else {
-                            Log.d("ProfileImage", "No profile image found or error in response");
+                            headerProgress.setVisibility(View.GONE);
+                             Log.d("ProfileImage", "No profile image found or error in response");
                         }
                     }
 
                     @Override
                     public void onFailure(Call<PhotoResponse> call, Throwable t) {
-                        Log.e("ProfileImage", "Error loading profile image: " + t.getMessage());
+                        headerProgress.setVisibility(View.GONE);
+                         Log.e("ProfileImage", "Error loading profile image: " + t.getMessage());
                     }
                 });
     }

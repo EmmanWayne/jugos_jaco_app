@@ -18,13 +18,27 @@
             app:contentScrim="@color/primary"
             app:layout_scrollFlags="scroll|exitUntilCollapsed">
 
-            <ImageView
-                android:id="@+id/clientHeaderImage"
+            <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:scaleType="centerCrop"
-                android:src="@drawable/cliente_icon"
-                app:layout_collapseMode="parallax"/>
+                app:layout_collapseMode="parallax">
+
+                <ImageView
+                    android:id="@+id/clientHeaderImage"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/product_placeholder"/>
+
+                <ProgressBar
+                    android:id="@+id/headerImageProgress"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:indeterminateTint="@color/white"
+                    android:visibility="gone"/>
+
+            </FrameLayout>
 
             <androidx.appcompat.widget.Toolbar
                 android:id="@+id/toolbar"
