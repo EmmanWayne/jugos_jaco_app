@@ -95,6 +95,7 @@ import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.target.Target;
 import android.graphics.drawable.Drawable;
 import androidx.annotation.Nullable;
+import android.graphics.drawable.ColorDrawable;
 
 public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPhotoListener {
 
@@ -1150,16 +1151,78 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
     }
 
     private void showHeaderPhotoDialog() {
+        // Crear array de opciones dependiendo si hay imagen o no
+        String[] options;
+        if (clientHeaderImage.getDrawable() != null && 
+            !(clientHeaderImage.getDrawable() instanceof ColorDrawable)) {
+            options = new String[]{"Ver Foto", "Tomar Foto", "Seleccionar de Galería"};
+        } else {
+            options = new String[]{"Tomar Foto", "Seleccionar de Galería"};
+        }
+
         new AlertDialog.Builder(getContext())
                 .setTitle("Foto de perfil")
-                .setItems(new String[]{"Tomar Foto", "Seleccionar de Galería"}, (dialog, which) -> {
-                    if (which == 0) {
-                        openHeaderCamera();
+                .setItems(options, (dialog, which) -> {
+                    if (options.length == 3) {
+                        // Si hay 3 opciones, "Ver Foto" es la primera
+                        switch (which) {
+                            case 0:
+                                showFullscreenImage();
+                                break;
+                            case 1:
+                                openHeaderCamera();
+                                break;
+                            case 2:
+                                openHeaderGallery();
+                                break;
+                        }
                     } else {
-                        openHeaderGallery();
+                        // Si hay 2 opciones, no hay "Ver Foto"
+                        if (which == 0) {
+                            openHeaderCamera();
+                        } else {
+                            openHeaderGallery();
+                        }
                     }
                 })
                 .show();
+    }
+
+    private void showFullscreenImage() {
+        // Obtener la URL actual de la imagen
+        String token = Login.getAuthorizationHeader(requireContext());
+        RetrofitClient.getApiService()
+                .getProfileImage(id, token)
+                .enqueue(new Callback<PhotoResponse>() {
+                    @Override
+                    public void onResponse(Call<PhotoResponse> call, Response<PhotoResponse> response) {
+                        if (response.isSuccessful() && response.body() != null && 
+                            response.body().getData() != null && 
+                            response.body().getData().getPath() != null) {
+                            
+                            String imagePath = response.body().getData().getPath();
+                            String imageUrl = Utilities.URL_FOTOS + "storage/" + imagePath;
+                            
+                            // Mostrar la imagen en pantalla completa
+                            requireActivity().runOnUiThread(() -> {
+                                Uri imageUri = Uri.parse(imageUrl);
+                                FullscreenImageDialog dialog = new FullscreenImageDialog(requireContext(), imageUri);
+                                dialog.show();
+                            });
+                        } else {
+                            Toast.makeText(requireContext(), 
+                                "No se pudo cargar la imagen", 
+                                Toast.LENGTH_SHORT).show();
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<PhotoResponse> call, Throwable t) {
+                        Toast.makeText(requireContext(), 
+                            "Error al cargar la imagen", 
+                            Toast.LENGTH_SHORT).show();
+                    }
+                });
     }
 
     private void openHeaderCamera() {
