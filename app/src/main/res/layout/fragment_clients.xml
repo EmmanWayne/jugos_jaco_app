@@ -139,12 +139,107 @@
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardDaySelector"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp"
+        android:visibility="gone"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="4dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Filtrar por día de la semana"
+                android:textSize="16sp"
+                android:textColor="@color/primary"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp"/>
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chipGroupDays"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:singleSelection="true"
+                app:singleLine="false"
+                app:chipSpacing="8dp">
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipMonday"
+                    style="@style/Widget.MaterialComponents.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Lunes"
+                    app:chipBackgroundColor="@color/primary"
+                    app:chipStrokeColor="@color/primary"
+                    app:chipStrokeWidth="1dp"/>
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipTuesday"
+                    style="@style/Widget.MaterialComponents.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Martes"
+                    app:chipBackgroundColor="@color/primary"
+                    app:chipStrokeColor="@color/primary"
+                    app:chipStrokeWidth="1dp"/>
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipWednesday"
+                    style="@style/Widget.MaterialComponents.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Miércoles"
+                    app:chipBackgroundColor="@color/primary"
+                    app:chipStrokeColor="@color/primary"
+                    app:chipStrokeWidth="1dp"/>
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipThursday"
+                    style="@style/Widget.MaterialComponents.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Jueves"
+                    app:chipBackgroundColor="@color/primary"
+                    app:chipStrokeColor="@color/primary"
+                    app:chipStrokeWidth="1dp"/>
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipFriday"
+                    style="@style/Widget.MaterialComponents.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Viernes"
+                    app:chipBackgroundColor="@color/primary"
+                    app:chipStrokeColor="@color/primary"
+                    app:chipStrokeWidth="1dp"/>
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipSaturday"
+                    style="@style/Widget.MaterialComponents.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Sábado"
+                    app:chipBackgroundColor="@color/primary"
+                    app:chipStrokeColor="@color/primary"
+                    app:chipStrokeWidth="1dp"/>
+
+            </com.google.android.material.chip.ChipGroup>
+
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
 
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipeRefreshLayout"
         android:layout_width="match_parent"
         android:layout_marginTop="200dp"
-
         android:layout_height="match_parent">
 
     <androidx.recyclerview.widget.RecyclerView

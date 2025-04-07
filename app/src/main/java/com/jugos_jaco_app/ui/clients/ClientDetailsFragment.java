@@ -156,9 +156,8 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
             clientLastName = getArguments().getString("lastName");
             id = getArguments().getString("id");
             typePrice = getArguments().getString("typePrice");
-            businessName = getArguments().getString("business_name");
-
-            clientPhone = getArguments().getString("phoneNumber");
+            businessName = getArguments().getString("businessName");
+             clientPhone = getArguments().getString("phoneNumber");
             adress = getArguments().getString("adress");
             department = getArguments().getString("department");
             township = getArguments().getString("township");

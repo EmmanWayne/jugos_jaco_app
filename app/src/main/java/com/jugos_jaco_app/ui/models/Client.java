@@ -14,11 +14,12 @@ public class Client implements Serializable {
     private String id;
     private String typePrice;
     private String plus_code;
+    private String businessName;
 
 
 
 
-    public Client(String id,String firstName,  String lastName,String phoneNumber, String adress, String departament, String township, String latitude, String longitude,String plus_code ,String typePrice) {
+    public Client(String id,String firstName,  String lastName,String phoneNumber, String adress, String departament, String township, String latitude, String longitude,String plus_code ,String typePrice, String businessName) {
         this.id = id;
         this.firstName = firstName;
         this.lastName = lastName;
@@ -30,7 +31,7 @@ public class Client implements Serializable {
         this.township = township;
         this.typePrice = typePrice;
         this.plus_code = plus_code;
-
+        this.businessName = businessName;
     }
 
     public String getId() {
@@ -71,6 +72,10 @@ public class Client implements Serializable {
     }
     public String getTownship() {
         return township;
+    }
+
+    public String getBusinessName() {
+        return businessName;
     }
 
     public boolean hasCoordinates() {

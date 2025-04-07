@@ -65,6 +65,10 @@
         <argument
             android:name="township"
             app:argType="string" />
+
+        <argument
+            android:name="business_name"
+            app:argType="string" />
         <argument
             android:name="latitude"
             app:argType="string"

@@ -14,6 +14,9 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
@@ -31,11 +34,16 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import androidx.lifecycle.ViewModelProvider;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.chip.Chip;
+import com.google.android.material.chip.ChipGroup;
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.card.MaterialCardView;
 import com.jugos_jaco_app.R;
 import com.jugos_jaco_app.ui.adapters.ClientAdapter;
 import com.jugos_jaco_app.ui.utilities.Utilities;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 
 public class ClientsFragment extends Fragment {
 
@@ -62,11 +70,34 @@ public class ClientsFragment extends Fragment {
     );
 
     private View loadingOverlay;
+    private ChipGroup chipGroupDays;
+    private Chip chipMonday, chipTuesday, chipWednesday, chipThursday, chipFriday, chipSaturday;
+    private MaterialCardView cardDaySelector;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setHasOptionsMenu(true);
         viewModel = new ViewModelProvider(requireActivity()).get(ClientsViewModel.class);
+    }
+
+    @Override
+    public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
+        inflater.inflate(R.menu.main, menu);
+        super.onCreateOptionsMenu(menu, inflater);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if (item.getItemId() == R.id.action_select_day) {
+            if (cardDaySelector.getVisibility() == View.VISIBLE) {
+                cardDaySelector.setVisibility(View.GONE);
+            } else {
+                cardDaySelector.setVisibility(View.VISIBLE);
+            }
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     @Override
@@ -113,6 +144,12 @@ public class ClientsFragment extends Fragment {
         // Cargar clientes solo si es necesario
         viewModel.loadClientsIfNeeded(requireContext());
 
+        // Configurar listeners
+        setupListeners();
+
+        // Establecer día actual por defecto
+        setCurrentDay();
+
         return root;
     }
 
@@ -136,6 +173,80 @@ public class ClientsFragment extends Fragment {
             NavController navController = Navigation.findNavController(v);
             navController.navigate(R.id.newClientFragment);
         });
+
+        // Inicializar chips
+        cardDaySelector = root.findViewById(R.id.cardDaySelector);
+        chipGroupDays = root.findViewById(R.id.chipGroupDays);
+        chipMonday = root.findViewById(R.id.chipMonday);
+        chipTuesday = root.findViewById(R.id.chipTuesday);
+        chipWednesday = root.findViewById(R.id.chipWednesday);
+        chipThursday = root.findViewById(R.id.chipThursday);
+        chipFriday = root.findViewById(R.id.chipFriday);
+        chipSaturday = root.findViewById(R.id.chipSaturday);
+    }
+
+    private void setupListeners() {
+        // Configurar listeners para los chips
+        chipGroupDays.setOnCheckedChangeListener((group, checkedId) -> {
+            String selectedDay = "";
+            if (checkedId == R.id.chipMonday) {
+                selectedDay = "lunes";
+            } else if (checkedId == R.id.chipTuesday) {
+                selectedDay = "martes";
+            } else if (checkedId == R.id.chipWednesday) {
+                selectedDay = "miercoles";
+            } else if (checkedId == R.id.chipThursday) {
+                selectedDay = "jueves";
+            } else if (checkedId == R.id.chipFriday) {
+                selectedDay = "viernes";
+            } else if (checkedId == R.id.chipSaturday) {
+                selectedDay = "sabado";
+            }
+            viewModel.setSelectedDay(selectedDay);
+            viewModel.loadClients(requireContext());
+            cardDaySelector.setVisibility(View.GONE);
+        });
+    }
+
+    private void setCurrentDay() {
+        Calendar calendar = Calendar.getInstance();
+        int dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK);
+        String currentDay = "";
+
+        switch (dayOfWeek) {
+            case Calendar.MONDAY:
+                currentDay = "lunes";
+                chipMonday.setChecked(true);
+                break;
+            case Calendar.TUESDAY:
+                currentDay = "martes";
+                chipTuesday.setChecked(true);
+                break;
+            case Calendar.WEDNESDAY:
+                currentDay = "miercoles";
+                chipWednesday.setChecked(true);
+                break;
+            case Calendar.THURSDAY:
+                currentDay = "jueves";
+                chipThursday.setChecked(true);
+                break;
+            case Calendar.FRIDAY:
+                currentDay = "viernes";
+                chipFriday.setChecked(true);
+                break;
+            case Calendar.SATURDAY:
+                currentDay = "sabado";
+                chipSaturday.setChecked(true);
+                break;
+            default:
+                // Si es domingo, mostrar lunes
+                currentDay = "lunes";
+                chipMonday.setChecked(true);
+                break;
+        }
+
+        viewModel.setSelectedDay(currentDay);
+        viewModel.loadClients(requireContext());
     }
 
     private void checkGPSEnabled() {

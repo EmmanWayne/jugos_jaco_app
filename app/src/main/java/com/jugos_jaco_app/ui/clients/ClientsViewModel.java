@@ -25,6 +25,10 @@ public class ClientsViewModel extends ViewModel {
     private List<Client> cachedClients = new ArrayList<>();
     private boolean isDataLoaded = false;
     private MutableLiveData<String> errorMessage = new MutableLiveData<>();
+    private MutableLiveData<List<Client>> clients = new MutableLiveData<>();
+    private MutableLiveData<Boolean> isLoading = new MutableLiveData<>();
+    private MutableLiveData<String> error = new MutableLiveData<>();
+    private String selectedDay = "";
 
     public LiveData<List<Client>> getClients() {
         return clientList;
@@ -44,8 +48,13 @@ public class ClientsViewModel extends ViewModel {
         loadClients(context);
     }
 
-    private void loadClients(Context context) {
-        String url = Utilities.URL + "clients/";
+    public void setSelectedDay(String day) {
+        this.selectedDay = day;
+    }
+
+    public void loadClients(Context context) {
+        isLoading.setValue(true);
+        String url = Utilities.URL + "clients?day=" + selectedDay;
 
         JsonObjectRequest request = new JsonObjectRequest(
                 Request.Method.GET,
@@ -122,6 +131,7 @@ public class ClientsViewModel extends ViewModel {
 
         VolleySingleton.getInstance(context).addToRequestQueue(request);
     }
+
     public void filterClients(String query) {
         if (query.isEmpty()) {
             clientList.setValue(cachedClients);
