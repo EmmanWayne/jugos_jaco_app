@@ -31,6 +31,26 @@
                 android:drawablePadding="8dp"
                 android:drawableTint="@color/white" />
 
+            <!-- Nombre del Negocio -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilBusinessName"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                app:startIconDrawable="@drawable/ic_store"
+                app:startIconTint="@color/primary"
+                android:hint="Nombre del Negocio">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etBusinessName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textPersonName"
+                    android:maxLines="1" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
 
             <!-- First Name -->
             <com.google.android.material.textfield.TextInputLayout
@@ -64,6 +84,8 @@
                     android:inputType="textCapWords"
                     android:hint="Apellido" />
             </com.google.android.material.textfield.TextInputLayout>
+
+
 
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilPhoneNumber"

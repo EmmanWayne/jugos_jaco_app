@@ -139,6 +139,7 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
     private ImageView clientHeaderImage;
     private Uri headerPhotoUri;
     private String currentHeaderPhotoPath;
+    private String businessName;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -155,6 +156,7 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
             clientLastName = getArguments().getString("lastName");
             id = getArguments().getString("id");
             typePrice = getArguments().getString("typePrice");
+            businessName = getArguments().getString("business_name");
 
             clientPhone = getArguments().getString("phoneNumber");
             adress = getArguments().getString("adress");
@@ -184,25 +186,24 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
         View view = inflater.inflate(R.layout.fragment_client_details, container, false);
 
         // Mostrar los detalles del cliente
-        TextView tvName = view.findViewById(R.id.tvClientName);
-        TextView tvadress = view.findViewById(R.id.tvAddress);
-        FloatingActionButton fabEdit = view.findViewById(R.id.fabEdit);
-
-        TextView tvPhone = view.findViewById(R.id.tvClientPhone);
+        TextView tvClientName = view.findViewById(R.id.tvClientName);
+        TextView tvClientPhone = view.findViewById(R.id.tvClientPhone);
+        TextView tvAddress = view.findViewById(R.id.tvAddress);
+        TextView tvTypePrice = view.findViewById(R.id.tvTypePrice);
+        TextView tvBusinessName = view.findViewById(R.id.tvBusinessName);
         TextView tvCoordinates = view.findViewById(R.id.tvCoordinates);
         TextView tvdepartment = view.findViewById(R.id.tvDepartment);
         TextView tvtownship = view.findViewById(R.id.tvTownship);
-        TextView tvTypePrice = view.findViewById(R.id.tvTypePrice);
 
         Button btnAddPhoto = view.findViewById(R.id.btnAddPhoto);
         Button btnUploadPhotos = view.findViewById(R.id.btnUploadPhotos);
         rvPhotos = view.findViewById(R.id.rvPhotos);
 
-        tvName.setText(clientName);
+        tvClientName.setText(clientName);
         tvtownship.setText(township);
-        tvadress.setText(adress);
+        tvAddress.setText(adress);
         tvdepartment.setText(department);
-        tvPhone.setText(clientPhone);
+        tvClientPhone.setText(clientPhone);
         tvTypePrice.setText(typePrice);
 
         if (clientLatitude != null && clientLongitude != null) {
@@ -211,11 +212,29 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
             tvCoordinates.setText("Sin coordenadas");
         }
 
+        // Obtener los argumentos
+        Bundle args = getArguments();
+        if (args != null) {
+            String firstName = args.getString("firstName", "");
+            String lastName = args.getString("lastName", "");
+            String phoneNumber = args.getString("phoneNumber", "");
+            String address = args.getString("adress", "");
+            String typePrice = args.getString("typePrice", "");
+            String businessName = args.getString("businessName", "Sin nombre de negocio");
+
+            tvClientName.setText(firstName + " " + lastName);
+            tvClientPhone.setText(phoneNumber);
+            tvAddress.setText(address);
+            tvTypePrice.setText(typePrice);
+            tvBusinessName.setText(businessName);
+        }
+
         // Configurar el adaptador para el RecyclerView
         photoAdapter = new PhotoAdapter(new ArrayList<>(), requireContext(), this);
         rvPhotos.setLayoutManager(new GridLayoutManager(getContext(), 3));
         rvPhotos.setAdapter(photoAdapter);
 
+        FloatingActionButton fabEdit = view.findViewById(R.id.fabEdit);
         fabEdit.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -229,6 +248,7 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                 bundle.putString("latitude", clientLatitude);
                 bundle.putString("longitude", clientLongitude);
                 bundle.putString("client_id", id);
+                bundle.putString("business_name", businessName);
                 // bundle.putString("type_price", typePrice);
 
                 try {

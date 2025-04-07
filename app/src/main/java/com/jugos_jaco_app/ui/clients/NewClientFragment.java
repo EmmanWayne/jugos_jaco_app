@@ -57,9 +57,11 @@ import com.jugos_jaco_app.ui.utilities.LocationData;
 public class NewClientFragment extends Fragment {
 
     private Spinner spinnerDepartament, spinnerTownship, spinnerTypePrice;
-    private TextInputEditText etPhoneNumber, etLatitude, etLongitude;
+    private TextInputEditText etFirstName, etLastName, etBusinessName, etPhoneNumber, etLatitude, etLongitude, etAddress;
+    private TextInputLayout tilFirstName, tilLastName, tilBusinessName, tilPhoneNumber, tilAddress;
     private List<String> departamentos = new ArrayList<>();
     private LinearLayout linearLayoutMunicipio; // Referencia al LinearLayout de municipios
+    private MaterialButton btnSubmit, btnCaptureCoordinates;
 
     private Map<String, List<String>> municipiosPorDepartamento = new HashMap<>();
     private List<String> tiposPrecio = new ArrayList<>();
@@ -67,7 +69,6 @@ public class NewClientFragment extends Fragment {
     private FusedLocationProviderClient fusedLocationClient;
     private static final int REQUEST_ENABLE_GPS = 123;
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 124;
-    private MaterialButton btnCaptureCoordinates;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -75,21 +76,7 @@ public class NewClientFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_new_client, container, false);
 
         // Inicializar vistas
-        spinnerDepartament = view.findViewById(R.id.spinnerDepartament);
-        spinnerTownship = view.findViewById(R.id.spinnerTownship);
-        etPhoneNumber = view.findViewById(R.id.etPhoneNumber);
-        etLatitude = view.findViewById(R.id.etLatitude);
-        etLongitude = view.findViewById(R.id.etLongitude);
-        linearLayoutMunicipio = view.findViewById(R.id.linearLayoutMunicipio); // Inicializar LinearLayout
-
-        MaterialButton btnSubmit = view.findViewById(R.id.btnSubmit);
-        btnCaptureCoordinates = view.findViewById(R.id.btnCaptureCoordinates);
-
-        // Deshabilitar interacción en latitud y longitud
-        etLatitude.setFocusable(false);
-        etLatitude.setClickable(false);
-        etLongitude.setFocusable(false);
-        etLongitude.setClickable(false);
+        setupViews(view);
 
         // Cargar departamentos, municipios y tipos de precio
         loadDepartamentos();
@@ -108,10 +95,11 @@ public class NewClientFragment extends Fragment {
             TextInputLayout tilAddress = view.findViewById(R.id.tilAddress); // Referencia para el campo de dirección
 
             // Obtener datos del formulario
-            String firstName = ((TextInputEditText) view.findViewById(R.id.etFirstName)).getText().toString();
-            String lastName = ((TextInputEditText) view.findViewById(R.id.etLastName)).getText().toString();
-            String address = ((TextInputEditText) view.findViewById(R.id.etAddress)).getText().toString();
-            String phoneNumber = etPhoneNumber.getText().toString();
+            String firstName = etFirstName.getText().toString().trim();
+            String lastName = etLastName.getText().toString().trim();
+            String businessName = etBusinessName.getText().toString().trim();
+            String phoneNumber = etPhoneNumber.getText().toString().trim();
+            String address = etAddress.getText().toString().trim();
 
             // Verificar si los Spinner tienen un valor seleccionado
             String department = "";
@@ -123,8 +111,6 @@ public class NewClientFragment extends Fragment {
             if (spinnerTownship.getSelectedItem() != null) {
                 township = spinnerTownship.getSelectedItem().toString();
             }
-
-
 
             String latitude = etLatitude.getText().toString();
             String longitude = etLongitude.getText().toString();
@@ -145,6 +131,11 @@ public class NewClientFragment extends Fragment {
 
             if (lastName.isEmpty()) {
                 tilLastName.setError("Este campo es obligatorio");
+                isValid = false;
+            }
+
+            if (businessName.isEmpty()) {
+                tilBusinessName.setError("El nombre del negocio es requerido");
                 isValid = false;
             }
 
@@ -181,24 +172,48 @@ public class NewClientFragment extends Fragment {
                 isValid = false;
             }
 
-
-
             // Si todos los campos son válidos, enviar datos al servidor
             if (isValid) {
-                storeEmploye(firstName, lastName, address, phoneNumber, department, township, latitude, longitude);
-                //sendDataToServer(firstName, lastName, address, phoneNumber, department, township, typePrice, latitude, longitude);
+                storeEmploye(firstName, lastName, address, phoneNumber, department, township, latitude, longitude, businessName);
             }
         });
 
         return view;
     }
 
+    private void setupViews(View root) {
+        spinnerDepartament = root.findViewById(R.id.spinnerDepartament);
+        spinnerTownship = root.findViewById(R.id.spinnerTownship);
+        etFirstName = root.findViewById(R.id.etFirstName);
+        etLastName = root.findViewById(R.id.etLastName);
+        etBusinessName = root.findViewById(R.id.etBusinessName);
+        etPhoneNumber = root.findViewById(R.id.etPhoneNumber);
+        etAddress = root.findViewById(R.id.etAddress);
+        etLatitude = root.findViewById(R.id.etLatitude);
+        etLongitude = root.findViewById(R.id.etLongitude);
+        linearLayoutMunicipio = root.findViewById(R.id.linearLayoutMunicipio);
+
+        // Inicializar TextInputLayouts
+        tilFirstName = root.findViewById(R.id.tilFirstName);
+        tilLastName = root.findViewById(R.id.tilLastName);
+        tilBusinessName = root.findViewById(R.id.tilBusinessName);
+        tilPhoneNumber = root.findViewById(R.id.tilPhoneNumber);
+        tilAddress = root.findViewById(R.id.tilAddress);
+
+        btnSubmit = root.findViewById(R.id.btnSubmit);
+        btnCaptureCoordinates = root.findViewById(R.id.btnCaptureCoordinates);
+
+        // Deshabilitar interacción en latitud y longitud
+        etLatitude.setFocusable(false);
+        etLatitude.setClickable(false);
+        etLongitude.setFocusable(false);
+        etLongitude.setClickable(false);
+    }
+
     private void loadDepartamentos() {
         departamentos = LocationData.getDepartamentos();
         municipiosPorDepartamento = LocationData.getMunicipiosPorDepartamento();
     }
-
-
 
     private void setupDepartamentosSpinner() {
         ArrayAdapter<String> departamentosAdapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, departamentos);
@@ -239,8 +254,6 @@ public class NewClientFragment extends Fragment {
         municipiosAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerTownship.setAdapter(municipiosAdapter);
     }
-
-
 
     private void checkLocationAndGetCoordinates() {
         LocationManager locationManager = (LocationManager) requireContext().getSystemService(Context.LOCATION_SERVICE);
@@ -372,11 +385,12 @@ public class NewClientFragment extends Fragment {
     }
 
     private void storeEmploye(String first_name, String last_name, String address, String phone_number,
-                              String department, String township, String latitude, String longitude) {
+                              String department, String township, String latitude, String longitude, String business_name) {
         String url = Utilities.URL + "clients";
         Map<String, String> params = new HashMap<>();
         params.put("first_name", first_name);
         params.put("last_name", last_name);
+        params.put("business_name", business_name);
         params.put("address", address);
         params.put("phone_number", phone_number);
         params.put("department", department);
@@ -422,7 +436,8 @@ public class NewClientFragment extends Fragment {
                                     locationJson.getString("latitude"),
                                     locationJson.getString("longitude"),
                                     locationJson.getString("plus_code"),
-                                    typePrice
+                                    typePrice,
+                                    dataJson.getString("business_name")
                             );
                             Toast.makeText(requireContext(), locationJson.getString("plus_code")
                                     , Toast.LENGTH_SHORT).show();

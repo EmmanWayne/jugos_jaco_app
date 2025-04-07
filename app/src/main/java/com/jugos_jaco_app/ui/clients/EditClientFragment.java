@@ -35,6 +35,7 @@ import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.Priority;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 import com.jugos_jaco_app.R;
 import com.jugos_jaco_app.ui.models.Client;
 import com.jugos_jaco_app.ui.utilities.VolleySingleton;
@@ -55,7 +56,8 @@ import java.util.Map;
  */
 public class EditClientFragment extends Fragment {
     private Spinner spinnerDepartament, spinnerTownship, spinnerTypePrice;
-    private TextInputEditText etFirstName, etLastName, etPhoneNumber, etAddress, etLatitude, etLongitude;
+    private TextInputEditText etFirstName, etLastName, etPhoneNumber, etAddress, etLatitude, etLongitude, etBusinessName;
+    private TextInputLayout tilFirstName, tilLastName, tilPhoneNumber, tilAddress, tilBusinessName;
     private MaterialButton btnSubmit, btnCaptureCoordinates;
     private String clientId;
     private List<String> departamentos = new ArrayList<>();
@@ -89,6 +91,7 @@ public class EditClientFragment extends Fragment {
     private void initializeViews(View view) {
         etFirstName = view.findViewById(R.id.etFirstName);
         etLastName = view.findViewById(R.id.etLastName);
+        etBusinessName = view.findViewById(R.id.etBusinessName);
         etPhoneNumber = view.findViewById(R.id.etPhoneNumber);
         etAddress = view.findViewById(R.id.etAddress);
         etLatitude = view.findViewById(R.id.etLatitude);
@@ -99,6 +102,12 @@ public class EditClientFragment extends Fragment {
         btnCaptureCoordinates = view.findViewById(R.id.btnCaptureCoordinates);
         linearLayoutMunicipio = view.findViewById(R.id.linearLayoutMunicipio); // Inicializar LinearLayout
 
+        tilFirstName = view.findViewById(R.id.tilFirstName);
+        tilLastName = view.findViewById(R.id.tilLastName);
+        tilBusinessName = view.findViewById(R.id.tilBusinessName);
+        tilPhoneNumber = view.findViewById(R.id.tilPhoneNumber);
+        tilAddress = view.findViewById(R.id.tilAddress);
+
         btnSubmit.setText("Actualizar Cliente");
     }
 
@@ -106,6 +115,7 @@ public class EditClientFragment extends Fragment {
         if (getArguments() != null) {
             etFirstName.setText(getArguments().getString("first_name"));
             etLastName.setText(getArguments().getString("last_name"));
+            etBusinessName.setText(getArguments().getString("business_name"));
             etPhoneNumber.setText(getArguments().getString("phone_number"));
             etAddress.setText(getArguments().getString("address"));
             etLatitude.setText(getArguments().getString("latitude"));
@@ -312,16 +322,31 @@ public class EditClientFragment extends Fragment {
     }
 
     private void updateClient() {
+        if (!validateFields()) {
+            return;
+        }
+
+        String firstName = etFirstName.getText().toString().trim();
+        String lastName = etLastName.getText().toString().trim();
+        String businessName = etBusinessName.getText().toString().trim();
+        String phoneNumber = etPhoneNumber.getText().toString().trim();
+        String address = etAddress.getText().toString().trim();
+        String department = spinnerDepartament.getSelectedItem().toString();
+        String township = spinnerTownship.getSelectedItem().toString();
+        String latitude = etLatitude.getText().toString().trim();
+        String longitude = etLongitude.getText().toString().trim();
+
         String url = Utilities.URL + "clients/" + clientId;
         Map<String, String> params = new HashMap<>();
-        params.put("first_name", etFirstName.getText().toString());
-        params.put("last_name", etLastName.getText().toString());
-        params.put("phone_number", etPhoneNumber.getText().toString());
-        params.put("address", etAddress.getText().toString());
-        params.put("department", spinnerDepartament.getSelectedItem().toString());
-        params.put("township", spinnerTownship.getSelectedItem().toString());
-        params.put("latitude", etLatitude.getText().toString());
-        params.put("longitude", etLongitude.getText().toString());
+        params.put("first_name", firstName);
+        params.put("last_name", lastName);
+        params.put("business_name", businessName);
+        params.put("phone_number", phoneNumber);
+        params.put("address", address);
+        params.put("department", department);
+        params.put("township", township);
+        params.put("latitude", latitude);
+        params.put("longitude", longitude);
         JsonObjectRequest request = new JsonObjectRequest(
                 Request.Method.PUT,
                 url,
@@ -329,8 +354,6 @@ public class EditClientFragment extends Fragment {
                 response -> {
                     try {
                         // Obtener el mensaje
-
-
                         String message = response.getString("message");
                         Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
                         // Verificar si la respuesta contiene la clave "data"
@@ -358,7 +381,8 @@ public class EditClientFragment extends Fragment {
                                     locationJson.getString("latitude"),
                                     locationJson.getString("longitude"),
                                     locationJson.getString("plus_code"),
-                                    typePrice
+                                    typePrice,
+                                    dataJson.getString("business_name")
                             );
                             // Actualizar el ViewModel
                             ClientsViewModel viewModel = new ViewModelProvider(requireActivity())
@@ -404,37 +428,45 @@ public class EditClientFragment extends Fragment {
 
         VolleySingleton.getInstance(requireContext()).addToRequestQueue(request);
     }
+
     private boolean validateFields() {
         boolean isValid = true;
 
         // Validar nombre
         String firstName = etFirstName.getText().toString().trim();
         if (firstName.isEmpty()) {
-            etFirstName.setError("El nombre es requerido");
+            tilFirstName.setError("El nombre es requerido");
             isValid = false;
         }
 
         // Validar apellido
         String lastName = etLastName.getText().toString().trim();
         if (lastName.isEmpty()) {
-            etLastName.setError("El apellido es requerido");
+            tilLastName.setError("El apellido es requerido");
             isValid = false;
         }
 
         // Validar teléfono
         String phoneNumber = etPhoneNumber.getText().toString().trim();
         if (phoneNumber.isEmpty()) {
-            etPhoneNumber.setError("El teléfono es requerido");
+            tilPhoneNumber.setError("El teléfono es requerido");
             isValid = false;
         } else if (phoneNumber.length() < 8) {
-            etPhoneNumber.setError("El teléfono debe tener al menos 8 dígitos");
+            tilPhoneNumber.setError("El teléfono debe tener al menos 8 dígitos");
             isValid = false;
         }
 
         // Validar dirección
         String address = etAddress.getText().toString().trim();
         if (address.isEmpty()) {
-            etAddress.setError("La dirección es requerida");
+            tilAddress.setError("La dirección es requerida");
+            isValid = false;
+        }
+
+        // Validar negocio
+        String businessName = etBusinessName.getText().toString().trim();
+        if (businessName.isEmpty()) {
+            tilBusinessName.setError("El nombre del negocio es requerido");
             isValid = false;
         }
 
