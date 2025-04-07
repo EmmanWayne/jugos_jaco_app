@@ -55,6 +55,7 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
 
         holder.tvFullName.setText(client.getFirstName() + " " + client.getLastName());
         holder.tvPhoneNumber.setText(client.getPhoneNumber());
+        holder.tvBusinessName.setText(client.getBusinessName());
 
         if (client.hasCoordinates()) {
             holder.ivCoordinatesIcon.setImageResource(R.drawable.ic_has_coordinates);
@@ -149,13 +150,19 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
     }
 
     public static class ClientViewHolder extends RecyclerView.ViewHolder {
-        TextView tvFullName, tvPhoneNumber;
-        ImageView ivCoordinatesIcon, ivPhoneIcon, ivVentaIcon, imageItem;
+        TextView tvFullName;
+        TextView tvPhoneNumber;
+        TextView tvBusinessName;
+        ImageView ivCoordinatesIcon;
+        ImageView ivPhoneIcon;
+        ImageView ivVentaIcon;
+        ImageView imageItem;
 
         public ClientViewHolder(@NonNull View itemView) {
             super(itemView);
             tvFullName = itemView.findViewById(R.id.tvFullName);
             tvPhoneNumber = itemView.findViewById(R.id.tvPhoneNumber);
+            tvBusinessName = itemView.findViewById(R.id.tvBusinessName);
             ivCoordinatesIcon = itemView.findViewById(R.id.ivCoordinatesIcon);
             ivPhoneIcon = itemView.findViewById(R.id.ivPhoneIcon);
             ivVentaIcon = itemView.findViewById(R.id.ivVentaIcon);
