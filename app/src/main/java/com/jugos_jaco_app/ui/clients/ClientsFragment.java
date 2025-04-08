@@ -13,6 +13,7 @@ import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -31,8 +32,11 @@ import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import androidx.lifecycle.ViewModelProvider;
+import com.android.volley.Request;
+import com.android.volley.toolbox.JsonObjectRequest;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
@@ -40,10 +44,17 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
 import com.jugos_jaco_app.R;
 import com.jugos_jaco_app.ui.adapters.ClientAdapter;
+import com.jugos_jaco_app.ui.models.Client;
 import com.jugos_jaco_app.ui.utilities.Utilities;
+import com.jugos_jaco_app.ui.utilities.VolleySingleton;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class ClientsFragment extends Fragment implements ChipGroup.OnCheckedChangeListener {
 
@@ -150,6 +161,47 @@ public class ClientsFragment extends Fragment implements ChipGroup.OnCheckedChan
         clientAdapter = new ClientAdapter(new ArrayList<>(), requireContext());
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         recyclerView.setAdapter(clientAdapter);
+
+        // Configurar ItemTouchHelper para el arrastre
+        ItemTouchHelper.Callback callback = new ItemTouchHelper.SimpleCallback(
+                ItemTouchHelper.UP | ItemTouchHelper.DOWN,
+                0) {
+            @Override
+            public boolean onMove(@NonNull RecyclerView recyclerView,
+                                @NonNull RecyclerView.ViewHolder viewHolder,
+                                @NonNull RecyclerView.ViewHolder target) {
+                int fromPosition = viewHolder.getAdapterPosition();
+                int toPosition = target.getAdapterPosition();
+                
+                // Primero movemos el item en el adaptador
+                clientAdapter.moveItem(fromPosition, toPosition);
+                
+                // Luego calculamos y actualizamos las posiciones
+                updatePositionsAfterMove(fromPosition, toPosition);
+                
+                return true;
+            }
+
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+                // No implementamos el deslizamiento
+            }
+
+            @Override
+            public void clearView(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
+                super.clearView(recyclerView, viewHolder);
+                // Cuando se suelta el item, actualizamos en el servidor
+                List<Client> clients = clientAdapter.getClients();
+                if (viewHolder.getAdapterPosition() != RecyclerView.NO_POSITION) {
+                    Client movedClient = clients.get(viewHolder.getAdapterPosition());
+                    updateClientPosition(movedClient);
+                }
+            }
+        };
+
+        ItemTouchHelper touchHelper = new ItemTouchHelper(callback);
+        touchHelper.attachToRecyclerView(recyclerView);
+        clientAdapter.attachTouchHelper(touchHelper);
 
         // Configurar SwipeRefreshLayout
         swipeRefreshLayout.setOnRefreshListener(() -> {
@@ -348,6 +400,154 @@ public class ClientsFragment extends Fragment implements ChipGroup.OnCheckedChan
                 viewModel.forceLoadClients(requireContext());
             }
         }
+    }
+
+    private void updatePositionsAfterMove(int fromPosition, int toPosition) {
+        List<Client> clients = clientAdapter.getClients();
+        
+        // Obtener el cliente que se movió
+        Client movedClient = clients.get(toPosition);
+        String oldPosition = movedClient.getPosition();
+
+        // Determinar la nueva posición basada en los clientes adyacentes
+        String newPosition;
+        if (toPosition == 0) {
+            // Si se movió a la primera posición
+            if (clients.size() > 1) {
+                // Tomar un número menor que el siguiente
+                int nextPosition = Integer.parseInt(clients.get(1).getPosition());
+                newPosition = String.valueOf(nextPosition - 1);
+            } else {
+                newPosition = "1";
+            }
+        } else if (toPosition == clients.size() - 1) {
+            // Si se movió a la última posición
+            int prevPosition = Integer.parseInt(clients.get(toPosition - 1).getPosition());
+            newPosition = String.valueOf(prevPosition + 1);
+        } else {
+            // Si se movió entre dos clientes
+            int prevPosition = Integer.parseInt(clients.get(toPosition - 1).getPosition());
+            newPosition = String.valueOf(prevPosition + 1);
+        }
+
+        // Mostrar información de las posiciones antes del cambio
+        Log.d("REORDER_DEBUG", String.format(
+            "Movimiento iniciado:\n" +
+            "Cliente: %s %s\n" +
+            "De posición lista: %d (position=%s)\n" +
+            "A posición lista: %d (nueva position será=%s)",
+            movedClient.getFirstName(),
+            movedClient.getLastName(),
+            fromPosition,
+            oldPosition,
+            toPosition,
+            newPosition
+        ));
+
+        // El cliente movido toma la nueva posición
+        movedClient.setPosition(newPosition);
+
+        // Si se mueve hacia arriba
+        if (fromPosition > toPosition) {
+            // Los clientes entre el destino y el origen incrementan su posición
+            for (int i = toPosition + 1; i <= fromPosition; i++) {
+                Client client = clients.get(i);
+                int currentPosition = Integer.parseInt(client.getPosition());
+                client.setPosition(String.valueOf(currentPosition + 1));
+                clientAdapter.notifyItemChanged(i);
+            }
+        }
+        // Si se mueve hacia abajo
+        else if (fromPosition < toPosition) {
+            // Los clientes entre el origen y el destino decrementan su posición
+            for (int i = fromPosition; i < toPosition; i++) {
+                Client client = clients.get(i);
+                int currentPosition = Integer.parseInt(client.getPosition());
+                client.setPosition(String.valueOf(currentPosition - 1));
+                clientAdapter.notifyItemChanged(i);
+            }
+        }
+
+        // Mostrar información final del movimiento
+        Log.d("REORDER_DEBUG", String.format(
+            "Movimiento completado:\n" +
+            "Cliente %s %s\n" +
+            "Position anterior: %s\n" +
+            "Position nueva: %s\n" +
+            "Position del cliente anterior: %s\n" +
+            "Position del cliente siguiente: %s",
+            movedClient.getFirstName(),
+            movedClient.getLastName(),
+            oldPosition,
+            movedClient.getPosition(),
+            toPosition > 0 ? clients.get(toPosition - 1).getPosition() : "ninguna",
+            toPosition < clients.size() - 1 ? clients.get(toPosition + 1).getPosition() : "ninguna"
+        ));
+
+        // Notificar el cambio del item movido
+        clientAdapter.notifyItemChanged(toPosition);
+    }
+
+    private void updateClientPosition(Client client) {
+        String url = Utilities.URL + "clients/" + client.getId() + "/position";
+        
+        JSONObject jsonBody = new JSONObject();
+        try {
+            jsonBody.put("position", client.getPosition());
+            
+            // Mostrar información antes de enviar al servidor
+            Log.d("REORDER_DEBUG", String.format(
+                "Enviando al servidor:\n" +
+                "Cliente: %s %s\n" +
+                "ID: %s\n" +
+                "Nuevo valor position: %s",
+                client.getFirstName(),
+                client.getLastName(),
+                client.getId(),
+                client.getPosition()
+            ));
+            
+        } catch (JSONException e) {
+            e.printStackTrace();
+            return;
+        }
+
+        JsonObjectRequest request = new JsonObjectRequest(
+                Request.Method.PUT,
+                url,
+                jsonBody,
+                response -> {
+                    // Éxito al actualizar la posición
+                    Toast.makeText(requireContext(), 
+                        String.format("Posición actualizada para %s %s", 
+                            client.getFirstName(), 
+                            client.getLastName()),
+                        Toast.LENGTH_SHORT).show();
+                    
+                    // Recargar la lista para asegurar que todas las posiciones estén actualizadas
+                    viewModel.forceLoadClients(requireContext());
+                },
+                error -> {
+                    // Error al actualizar la posición
+                    Toast.makeText(requireContext(), 
+                        String.format("Error al actualizar posición de %s %s", 
+                            client.getFirstName(), 
+                            client.getLastName()),
+                        Toast.LENGTH_SHORT).show();
+                    viewModel.forceLoadClients(requireContext());
+                }
+        ) {
+            @Override
+            public Map<String, String> getHeaders() {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Authorization", getAuthorizationHeader(requireContext()));
+                headers.put("Accept", "application/json");
+                headers.put("Content-Type", "application/json");
+                return headers;
+            }
+        };
+
+        VolleySingleton.getInstance(requireContext()).addToRequestQueue(request);
     }
 }
 

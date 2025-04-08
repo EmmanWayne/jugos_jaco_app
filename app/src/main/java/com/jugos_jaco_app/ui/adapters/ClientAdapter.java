@@ -22,6 +22,7 @@ import androidx.core.content.ContextCompat;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import com.jugos_jaco_app.R;
 import com.jugos_jaco_app.ui.models.Client;
 
@@ -36,10 +37,15 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
     private Context context;
     private static final int REQUEST_ENABLE_GPS = 123;
     private static final int REQUEST_CALL_PERMISSION = 124;
+    private ItemTouchHelper touchHelper;
 
     public ClientAdapter(List<Client> clients, Context context) {
         this.clients = clients;
         this.context = context;
+    }
+
+    public void attachTouchHelper(ItemTouchHelper touchHelper) {
+        this.touchHelper = touchHelper;
     }
 
     @NonNull
@@ -143,6 +149,12 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
 
                  }
          });
+
+        // Configurar el evento de mantener presionado
+        holder.itemView.setOnLongClickListener(v -> {
+            touchHelper.startDrag(holder);
+            return true;
+        });
     }
 
     @Override
@@ -170,6 +182,7 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
             imageItem = itemView.findViewById(R.id.imageitem);
         }
     }
+
     public void updateList(List<Client> newClients) {
         clients.clear();
         clients.addAll(newClients);
@@ -225,5 +238,24 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
         } catch (SecurityException e) {
             Toast.makeText(context, "Error al realizar la llamada", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    public void moveItem(int fromPosition, int toPosition) {
+        Client movedClient = clients.get(fromPosition);
+        clients.remove(fromPosition);
+        clients.add(toPosition, movedClient);
+        notifyItemMoved(fromPosition, toPosition);
+    }
+
+    public void updatePosition(int position, String newPosition) {
+        if (position >= 0 && position < clients.size()) {
+            Client client = clients.get(position);
+            client.setPosition(newPosition);
+            notifyItemChanged(position);
+        }
+    }
+
+    public List<Client> getClients() {
+        return clients;
     }
 }

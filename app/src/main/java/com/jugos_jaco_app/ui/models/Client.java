@@ -85,6 +85,10 @@ public class Client implements Serializable {
         return position;
     }
 
+    public void setPosition(String position) {
+        this.position = position;
+    }
+
     public String getVisitDay() {
         return visitDay;
     }
