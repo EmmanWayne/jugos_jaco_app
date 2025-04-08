@@ -409,25 +409,39 @@ public class ClientsFragment extends Fragment implements ChipGroup.OnCheckedChan
         Client movedClient = clients.get(toPosition);
         String oldPosition = movedClient.getPosition();
 
-        // Determinar la nueva posición basada en los clientes adyacentes
-        String newPosition;
-        if (toPosition == 0) {
-            // Si se movió a la primera posición
-            if (clients.size() > 1) {
-                // Tomar un número menor que el siguiente
-                int nextPosition = Integer.parseInt(clients.get(1).getPosition());
-                newPosition = String.valueOf(nextPosition - 1);
+        // Determinar la nueva posición
+        if (fromPosition > toPosition) {
+            // Si se mueve hacia arriba
+            if (toPosition == 0) {
+                // Si se mueve a la primera posición, siempre será 1
+                movedClient.setPosition("1");
+                // Los demás clientes incrementan su posición
+                for (int i = 1; i < clients.size(); i++) {
+                    Client client = clients.get(i);
+                    client.setPosition(String.valueOf(i + 1));
+                    clientAdapter.notifyItemChanged(i);
+                }
             } else {
-                newPosition = "1";
+                // Si se mueve a una posición intermedia hacia arriba
+                movedClient.setPosition(String.valueOf(toPosition + 1));
+                // Actualizar posiciones de los clientes que quedaron abajo
+                for (int i = toPosition + 1; i < clients.size(); i++) {
+                    Client client = clients.get(i);
+                    client.setPosition(String.valueOf(i + 1));
+                    clientAdapter.notifyItemChanged(i);
+                }
             }
-        } else if (toPosition == clients.size() - 1) {
-            // Si se movió a la última posición
-            int prevPosition = Integer.parseInt(clients.get(toPosition - 1).getPosition());
-            newPosition = String.valueOf(prevPosition + 1);
-        } else {
-            // Si se movió entre dos clientes
-            int prevPosition = Integer.parseInt(clients.get(toPosition - 1).getPosition());
-            newPosition = String.valueOf(prevPosition + 1);
+        } else if (fromPosition < toPosition) {
+            // Si se mueve hacia abajo
+            // El cliente movido toma la posición de destino + 1
+            movedClient.setPosition(String.valueOf(toPosition + 1));
+            
+            // Los clientes entre la posición original y la destino decrementan su posición en 1
+            for (int i = fromPosition; i < toPosition; i++) {
+                Client client = clients.get(i);
+                client.setPosition(String.valueOf(i + 1));
+                clientAdapter.notifyItemChanged(i);
+            }
         }
 
         // Mostrar información de las posiciones antes del cambio
@@ -441,32 +455,8 @@ public class ClientsFragment extends Fragment implements ChipGroup.OnCheckedChan
             fromPosition,
             oldPosition,
             toPosition,
-            newPosition
+            movedClient.getPosition()
         ));
-
-        // El cliente movido toma la nueva posición
-        movedClient.setPosition(newPosition);
-
-        // Si se mueve hacia arriba
-        if (fromPosition > toPosition) {
-            // Los clientes entre el destino y el origen incrementan su posición
-            for (int i = toPosition + 1; i <= fromPosition; i++) {
-                Client client = clients.get(i);
-                int currentPosition = Integer.parseInt(client.getPosition());
-                client.setPosition(String.valueOf(currentPosition + 1));
-                clientAdapter.notifyItemChanged(i);
-            }
-        }
-        // Si se mueve hacia abajo
-        else if (fromPosition < toPosition) {
-            // Los clientes entre el origen y el destino decrementan su posición
-            for (int i = fromPosition; i < toPosition; i++) {
-                Client client = clients.get(i);
-                int currentPosition = Integer.parseInt(client.getPosition());
-                client.setPosition(String.valueOf(currentPosition - 1));
-                clientAdapter.notifyItemChanged(i);
-            }
-        }
 
         // Mostrar información final del movimiento
         Log.d("REORDER_DEBUG", String.format(
