@@ -249,6 +249,8 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                 bundle.putString("longitude", clientLongitude);
                 bundle.putString("client_id", id);
                 bundle.putString("business_name", businessName);
+                bundle.putString("position", position);
+                bundle.putString("visit_day", visitDay);
 
                 try {
                     NavController navController = Navigation.findNavController(v);

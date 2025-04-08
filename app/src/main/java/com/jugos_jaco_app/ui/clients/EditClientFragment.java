@@ -56,8 +56,8 @@ import java.util.Map;
  */
 public class EditClientFragment extends Fragment {
     private Spinner spinnerDepartament, spinnerTownship, spinnerTypePrice;
-    private TextInputEditText etFirstName, etLastName, etPhoneNumber, etAddress, etLatitude, etLongitude, etBusinessName;
-    private TextInputLayout tilFirstName, tilLastName, tilPhoneNumber, tilAddress, tilBusinessName;
+    private TextInputEditText etFirstName, etLastName, etPhoneNumber, etAddress, etLatitude, etLongitude, etBusinessName, etPosition, etVisitDay;
+    private TextInputLayout tilFirstName, tilLastName, tilPhoneNumber, tilAddress, tilBusinessName, tilPosition, tilVisitDay;
     private MaterialButton btnSubmit, btnCaptureCoordinates;
     private String clientId;
     private List<String> departamentos = new ArrayList<>();
@@ -66,15 +66,17 @@ public class EditClientFragment extends Fragment {
     private FusedLocationProviderClient fusedLocationClient;
     private static final int REQUEST_ENABLE_GPS = 123;
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 124;
-    private LinearLayout linearLayoutMunicipio; // Referencia al LinearLayout de municipios
+    private LinearLayout linearLayoutMunicipio;
+    private String[] diasSemana = {"lunes", "martes", "miercoles", "jueves", "viernes", "sabado"};
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_edit_client, container, false);
         
         initializeViews(view);
-        loadDepartamentos(); // Primero cargar los datos
-        loadDataFromArguments(); // Después cargar y configurar los valores
+        loadDepartamentos();
+        loadDataFromArguments();
+        setupVisitDaySpinner();
         
         btnSubmit.setOnClickListener(v -> {
             if (validateFields()) {
@@ -100,7 +102,11 @@ public class EditClientFragment extends Fragment {
         spinnerTownship = view.findViewById(R.id.spinnerTownship);
          btnSubmit = view.findViewById(R.id.btnSubmit);
         btnCaptureCoordinates = view.findViewById(R.id.btnCaptureCoordinates);
-        linearLayoutMunicipio = view.findViewById(R.id.linearLayoutMunicipio); // Inicializar LinearLayout
+        linearLayoutMunicipio = view.findViewById(R.id.linearLayoutMunicipio);
+        etPosition = view.findViewById(R.id.etPosition);
+        etVisitDay = view.findViewById(R.id.etVisitDay);
+        tilPosition = view.findViewById(R.id.tilPosition);
+        tilVisitDay = view.findViewById(R.id.tilVisitDay);
 
         tilFirstName = view.findViewById(R.id.tilFirstName);
         tilLastName = view.findViewById(R.id.tilLastName);
@@ -109,6 +115,19 @@ public class EditClientFragment extends Fragment {
         tilAddress = view.findViewById(R.id.tilAddress);
 
         btnSubmit.setText("Actualizar Cliente");
+    }
+
+    private void setupVisitDaySpinner() {
+        etVisitDay.setOnClickListener(v -> {
+            AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+            builder.setTitle("Seleccionar día de visita");
+            builder.setItems(diasSemana, (dialog, which) -> {
+                String selectedDay = diasSemana[which];
+                etVisitDay.setText(selectedDay);
+                tilVisitDay.setError(null); // Limpiar el error si existe
+            });
+            builder.show();
+        });
     }
 
     private void loadDataFromArguments() {
@@ -120,6 +139,22 @@ public class EditClientFragment extends Fragment {
             etAddress.setText(getArguments().getString("address"));
             etLatitude.setText(getArguments().getString("latitude"));
             etLongitude.setText(getArguments().getString("longitude"));
+            etPosition.setText(getArguments().getString("position", ""));
+            
+            // Cargar el día de visita
+            String visitDay = getArguments().getString("visit_day", "");
+            if (!visitDay.isEmpty()) {
+                // Convertir el día a minúsculas y normalizar
+                visitDay = visitDay.toLowerCase().trim();
+                // Buscar el día en el array de días de la semana
+                for (String dia : diasSemana) {
+                    if (dia.equals(visitDay)) {
+                        etVisitDay.setText(dia);
+                        break;
+                    }
+                }
+            }
+            
             clientId = getArguments().getString("client_id");
 
             String department = getArguments().getString("department");
@@ -335,6 +370,8 @@ public class EditClientFragment extends Fragment {
         String township = spinnerTownship.getSelectedItem().toString();
         String latitude = etLatitude.getText().toString().trim();
         String longitude = etLongitude.getText().toString().trim();
+        String position = etPosition.getText().toString().trim();
+        String visitDay = etVisitDay.getText().toString().trim();
 
         String url = Utilities.URL + "clients/" + clientId;
         Map<String, String> params = new HashMap<>();
@@ -347,6 +384,8 @@ public class EditClientFragment extends Fragment {
         params.put("township", township);
         params.put("latitude", latitude);
         params.put("longitude", longitude);
+        params.put("position", position);
+        params.put("visit_day", visitDay);
         JsonObjectRequest request = new JsonObjectRequest(
                 Request.Method.PUT,
                 url,
@@ -383,8 +422,8 @@ public class EditClientFragment extends Fragment {
                                     locationJson.getString("plus_code"),
                                     typePrice,
                                     dataJson.getString("business_name"),
-                                    dataJson.optString("position", ""),
-                                    dataJson.optString("visit_day", "")
+                                    dataJson.getString("position"),
+                                    dataJson.getString("visit_day")
                             );
                             // Actualizar el ViewModel
                             ClientsViewModel viewModel = new ViewModelProvider(requireActivity())
@@ -514,6 +553,20 @@ public class EditClientFragment extends Fragment {
                 etLongitude.setError("Coordenada inválida");
                 isValid = false;
             }
+        }
+
+        if (etPosition.getText().toString().trim().isEmpty()) {
+            tilPosition.setError("La posición es requerida");
+            isValid = false;
+        } else {
+            tilPosition.setError(null);
+        }
+
+        if (etVisitDay.getText().toString().trim().isEmpty()) {
+            tilVisitDay.setError("El día de visita es requerido");
+            isValid = false;
+        } else {
+            tilVisitDay.setError(null);
         }
 
         if (!isValid) {

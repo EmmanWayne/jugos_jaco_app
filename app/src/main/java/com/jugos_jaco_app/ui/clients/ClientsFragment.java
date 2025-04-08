@@ -45,7 +45,7 @@ import com.jugos_jaco_app.ui.utilities.Utilities;
 import java.util.ArrayList;
 import java.util.Calendar;
 
-public class ClientsFragment extends Fragment {
+public class ClientsFragment extends Fragment implements ChipGroup.OnCheckedChangeListener {
 
     private ClientsViewModel viewModel;
     private RecyclerView recyclerView;
@@ -105,50 +105,38 @@ public class ClientsFragment extends Fragment {
                              ViewGroup container, Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_clients, container, false);
 
-        // Inicializar el launcher para la configuración de ubicación
-        locationSettingsLauncher = registerForActivityResult(
-                new ActivityResultContracts.StartActivityForResult(),
-                result -> checkAndRequestLocationPermissions()
-        );
+        // Inicializar ViewModel a nivel de actividad
+        viewModel = new ViewModelProvider(requireActivity()).get(ClientsViewModel.class);
 
-        // Verificar GPS y permisos
-        checkAndRequestLocationPermissions();
-
-        // Inicializar vistas
+        // Configurar vistas
         setupViews(root);
-
-        // Inicializar overlay de carga
-        loadingOverlay = root.findViewById(R.id.loadingView);
 
         // Observar cambios en la lista de clientes
         viewModel.getClients().observe(getViewLifecycleOwner(), clients -> {
-            clientAdapter.updateList(clients);
-            swipeRefreshLayout.setRefreshing(false);
-            hideLoading(); // Ocultar loading cuando se cargan los datos
-        });
-
-        // Observar mensajes de error
-        viewModel.getErrorMessage().observe(getViewLifecycleOwner(), message -> {
-            if (message != null && !message.isEmpty()) {
-                Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+            if (clients != null) {
+                clientAdapter.updateList(clients);
                 swipeRefreshLayout.setRefreshing(false);
-                hideLoading(); // Ocultar loading en caso de error
+                hideLoading();
             }
         });
 
-        // Mostrar loading al cargar clientes
-        if (viewModel.getClients().getValue() == null || viewModel.getClients().getValue().isEmpty()) {
-            showLoading();
+        // Observar cambios en el día seleccionado
+        viewModel.getSelectedDay().observe(getViewLifecycleOwner(), day -> {
+            if (day != null) {
+                updateDaySelection(day);
+            } else {
+                chipGroupDays.clearCheck(); // Desmarcar todos los chips cuando day es null
+            }
+            // Cargar clientes solo si no hay datos previos
+            if (!viewModel.hasLoadedData()) {
+                viewModel.loadClients(requireContext());
+            }
+        });
+
+        // Solo establecer el día actual si no hay un día seleccionado previamente
+        if (viewModel.getSelectedDay().getValue() == null && !viewModel.hasLoadedData()) {
+            setCurrentDay();
         }
-
-        // Cargar clientes solo si es necesario
-        viewModel.loadClientsIfNeeded(requireContext());
-
-        // Configurar listeners
-        setupListeners();
-
-        // Establecer día actual por defecto
-        setCurrentDay();
 
         return root;
     }
@@ -156,6 +144,7 @@ public class ClientsFragment extends Fragment {
     private void setupViews(View root) {
         recyclerView = root.findViewById(R.id.recyclerView);
         swipeRefreshLayout = root.findViewById(R.id.swipeRefreshLayout);
+        loadingOverlay = root.findViewById(R.id.loadingView);
 
         // Configurar RecyclerView
         clientAdapter = new ClientAdapter(new ArrayList<>(), requireContext());
@@ -183,70 +172,60 @@ public class ClientsFragment extends Fragment {
         chipThursday = root.findViewById(R.id.chipThursday);
         chipFriday = root.findViewById(R.id.chipFriday);
         chipSaturday = root.findViewById(R.id.chipSaturday);
+
+        // Configurar listeners para los chips
+        chipGroupDays.setOnCheckedChangeListener(this);
     }
 
-    private void setupListeners() {
-        // Configurar listeners para los chips
-        chipGroupDays.setOnCheckedChangeListener((group, checkedId) -> {
-            String selectedDay = "";
-            if (checkedId == R.id.chipMonday) {
-                selectedDay = "lunes";
-            } else if (checkedId == R.id.chipTuesday) {
-                selectedDay = "martes";
-            } else if (checkedId == R.id.chipWednesday) {
-                selectedDay = "miercoles";
-            } else if (checkedId == R.id.chipThursday) {
-                selectedDay = "jueves";
-            } else if (checkedId == R.id.chipFriday) {
-                selectedDay = "viernes";
-            } else if (checkedId == R.id.chipSaturday) {
-                selectedDay = "sabado";
-            }
-            viewModel.setSelectedDay(selectedDay);
-            viewModel.loadClients(requireContext());
-            cardDaySelector.setVisibility(View.GONE);
-        });
+    private void updateDaySelection(String day) {
+        switch (day) {
+            case "lunes":
+                chipMonday.setChecked(true);
+                break;
+            case "martes":
+                chipTuesday.setChecked(true);
+                break;
+            case "miercoles":
+                chipWednesday.setChecked(true);
+                break;
+            case "jueves":
+                chipThursday.setChecked(true);
+                break;
+            case "viernes":
+                chipFriday.setChecked(true);
+                break;
+            case "sabado":
+                chipSaturday.setChecked(true);
+                break;
+        }
     }
 
     private void setCurrentDay() {
         Calendar calendar = Calendar.getInstance();
         int dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK);
-        String currentDay = "";
+        String currentDay = getDayName(dayOfWeek);
+        if (currentDay != null && !currentDay.isEmpty()) {
+            viewModel.setSelectedDay(currentDay);
+        }
+    }
 
+    private String getDayName(int dayOfWeek) {
         switch (dayOfWeek) {
             case Calendar.MONDAY:
-                currentDay = "lunes";
-                chipMonday.setChecked(true);
-                break;
+                return "lunes";
             case Calendar.TUESDAY:
-                currentDay = "martes";
-                chipTuesday.setChecked(true);
-                break;
+                return "martes";
             case Calendar.WEDNESDAY:
-                currentDay = "miercoles";
-                chipWednesday.setChecked(true);
-                break;
+                return "miercoles";
             case Calendar.THURSDAY:
-                currentDay = "jueves";
-                chipThursday.setChecked(true);
-                break;
+                return "jueves";
             case Calendar.FRIDAY:
-                currentDay = "viernes";
-                chipFriday.setChecked(true);
-                break;
+                return "viernes";
             case Calendar.SATURDAY:
-                currentDay = "sabado";
-                chipSaturday.setChecked(true);
-                break;
+                return "sabado";
             default:
-                // Si es domingo, mostrar lunes
-                currentDay = "lunes";
-                chipMonday.setChecked(true);
-                break;
+                return ""; // Retornar string vacío en lugar de "lunes" por defecto
         }
-
-        viewModel.setSelectedDay(currentDay);
-        viewModel.loadClients(requireContext());
     }
 
     private void checkGPSEnabled() {
@@ -351,6 +330,23 @@ public class ClientsFragment extends Fragment {
                 .setDuration(200)
                 .withEndAction(() -> loadingOverlay.setVisibility(View.GONE))
                 .start();
+        }
+    }
+
+    @Override
+    public void onCheckedChanged(@NonNull ChipGroup group, int checkedId) {
+        if (checkedId == View.NO_ID) {
+            // No hay chips seleccionados
+            viewModel.setSelectedDay(null);
+            viewModel.forceLoadClients(requireContext());
+        } else {
+            // Un chip fue seleccionado
+            Chip selectedChip = group.findViewById(checkedId);
+            if (selectedChip != null) {
+                String selectedDay = selectedChip.getText().toString().toLowerCase();
+                viewModel.setSelectedDay(selectedDay);
+                viewModel.forceLoadClients(requireContext());
+            }
         }
     }
 }

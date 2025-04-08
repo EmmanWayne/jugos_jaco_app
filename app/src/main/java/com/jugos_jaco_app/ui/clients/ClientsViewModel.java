@@ -22,39 +22,56 @@ import java.util.Map;
 
 public class ClientsViewModel extends ViewModel {
     private MutableLiveData<List<Client>> clientList = new MutableLiveData<>();
+    private MutableLiveData<Boolean> isLoading = new MutableLiveData<>();
+    private MutableLiveData<String> error = new MutableLiveData<>();
+    private MutableLiveData<String> selectedDay = new MutableLiveData<>(null);
     private List<Client> cachedClients = new ArrayList<>();
     private boolean isDataLoaded = false;
     private MutableLiveData<String> errorMessage = new MutableLiveData<>();
     private MutableLiveData<List<Client>> clients = new MutableLiveData<>();
-    private MutableLiveData<Boolean> isLoading = new MutableLiveData<>();
-    private MutableLiveData<String> error = new MutableLiveData<>();
-    private String selectedDay = "";
 
     public LiveData<List<Client>> getClients() {
         return clientList;
     }
 
-    public LiveData<String> getErrorMessage() {
-        return errorMessage;
+    public LiveData<Boolean> getIsLoading() {
+        return isLoading;
     }
 
-    public void loadClientsIfNeeded(Context context) {
-        if (!isDataLoaded) {
-            loadClients(context);
-        }
+    public LiveData<String> getError() {
+        return error;
     }
 
-    public void forceLoadClients(Context context) {
-        loadClients(context);
+    public LiveData<String> getSelectedDay() {
+        return selectedDay;
     }
 
     public void setSelectedDay(String day) {
-        this.selectedDay = day;
+        this.selectedDay.setValue(day);
+    }
+
+    public boolean hasLoadedData() {
+        return isDataLoaded;
+    }
+
+    public void forceLoadClients(Context context) {
+        isDataLoaded = false;
+        loadClients(context);
     }
 
     public void loadClients(Context context) {
+        if (isDataLoaded && clientList.getValue() != null) {
+            return; // Si ya hay datos cargados, no hacer nada
+        }
+
         isLoading.setValue(true);
-        String url = Utilities.URL + "clients?day=" + selectedDay;
+        String url = Utilities.URL + "clients";
+        
+        // Solo agregar el parámetro day si hay un día seleccionado
+        String currentDay = selectedDay.getValue();
+        if (currentDay != null && !currentDay.isEmpty()) {
+            url += "?day=" + currentDay;
+        }
 
         JsonObjectRequest request = new JsonObjectRequest(
                 Request.Method.GET,
@@ -63,7 +80,6 @@ public class ClientsViewModel extends ViewModel {
                 response -> {
                     try {
                         List<Client> clients = new ArrayList<>();
-                        // Obtener el array "data" directamente del objeto response
                         JSONArray clientsJson = response.getJSONArray("data");
                         for (int i = 0; i < clientsJson.length(); i++) {
                             JSONObject clientJson = clientsJson.getJSONObject(i);
@@ -98,10 +114,12 @@ public class ClientsViewModel extends ViewModel {
                         cachedClients = new ArrayList<>(clients);
                         clientList.setValue(clients);
                         isDataLoaded = true;
+                        isLoading.setValue(false);
                     } catch (JSONException e) {
                         e.printStackTrace();
                         Log.e("TAGASIEMPRE", e.toString());
                         errorMessage.setValue("Error al procesar los datos");
+                        isLoading.setValue(false);
                     }
                 },
                 error -> {
@@ -122,6 +140,7 @@ public class ClientsViewModel extends ViewModel {
                         }
                     }
                     errorMessage.setValue(message);
+                    isLoading.setValue(false);
                 }
         ) {
             @Override

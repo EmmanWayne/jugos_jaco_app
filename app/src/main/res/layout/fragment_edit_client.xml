@@ -34,22 +34,55 @@
             <!-- Nombre del Negocio -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilBusinessName"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                app:startIconDrawable="@drawable/ic_store"
-                app:startIconTint="@color/primary"
-                android:hint="Nombre del Negocio">
+                android:hint="Nombre del Negocio"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
-                <com.google.android.material.textfield.TextInputEditText
+
+            <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etBusinessName"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="textPersonName"
-                    android:maxLines="1" />
-
+                    android:inputType="textPersonName" />
             </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilPosition"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+
+            android:hint="Posición">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etPosition"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="text" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilVisitDay"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:hint="Día de Visita">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etVisitDay"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="text"
+                    android:focusable="false"
+                    android:clickable="true" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+
+
             <!-- First Name -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilFirstName"
@@ -180,9 +213,6 @@
                     android:padding="10dp"
                     android:spinnerMode="dropdown" />
             </LinearLayout>
-
-            <!-- Type Price ID (Spinner) -->
-
 
             <!-- Latitud -->
             <com.google.android.material.textfield.TextInputLayout

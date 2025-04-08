@@ -177,7 +177,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Lunes"
-                    app:chipBackgroundColor="@color/primary"
+                    app:chipBackgroundColor="@color/jugos_jaco_logo_2_background"
                     app:chipStrokeColor="@color/primary"
                     app:chipStrokeWidth="1dp"/>
 
@@ -187,7 +187,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Martes"
-                    app:chipBackgroundColor="@color/primary"
+                    app:chipBackgroundColor="@color/jugos_jaco_logo_2_background"
                     app:chipStrokeColor="@color/primary"
                     app:chipStrokeWidth="1dp"/>
 
@@ -197,7 +197,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Miércoles"
-                    app:chipBackgroundColor="@color/primary"
+                    app:chipBackgroundColor="@color/jugos_jaco_logo_2_background"
                     app:chipStrokeColor="@color/primary"
                     app:chipStrokeWidth="1dp"/>
 
@@ -207,7 +207,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Jueves"
-                    app:chipBackgroundColor="@color/primary"
+                    app:chipBackgroundColor="@color/jugos_jaco_logo_2_background"
                     app:chipStrokeColor="@color/primary"
                     app:chipStrokeWidth="1dp"/>
 
@@ -217,7 +217,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Viernes"
-                    app:chipBackgroundColor="@color/primary"
+                    app:chipBackgroundColor="@color/jugos_jaco_logo_2_background"
                     app:chipStrokeColor="@color/primary"
                     app:chipStrokeWidth="1dp"/>
 
@@ -227,7 +227,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Sábado"
-                    app:chipBackgroundColor="@color/primary"
+                    app:chipBackgroundColor="@color/jugos_jaco_logo_2_background"
                     app:chipStrokeColor="@color/primary"
                     app:chipStrokeWidth="1dp"/>
 
