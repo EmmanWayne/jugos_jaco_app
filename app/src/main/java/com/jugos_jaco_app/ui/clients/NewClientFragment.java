@@ -56,9 +56,9 @@ import com.jugos_jaco_app.ui.utilities.LocationData;
 
 public class NewClientFragment extends Fragment {
 
-    private Spinner spinnerDepartament, spinnerTownship, spinnerTypePrice;
-    private TextInputEditText etFirstName, etLastName, etBusinessName, etPhoneNumber, etLatitude, etLongitude, etAddress;
-    private TextInputLayout tilFirstName, tilLastName, tilBusinessName, tilPhoneNumber, tilAddress;
+    private Spinner spinnerDepartament, spinnerTownship, spinnerTypePrice, spinnerVisitDay;
+    private TextInputEditText etFirstName, etLastName, etBusinessName, etPhoneNumber, etLatitude, etLongitude, etAddress, etPosition;
+    private TextInputLayout tilFirstName, tilLastName, tilBusinessName, tilPhoneNumber, tilAddress, tilPosition;
     private List<String> departamentos = new ArrayList<>();
     private LinearLayout linearLayoutMunicipio; // Referencia al LinearLayout de municipios
     private MaterialButton btnSubmit, btnCaptureCoordinates;
@@ -69,6 +69,8 @@ public class NewClientFragment extends Fragment {
     private FusedLocationProviderClient fusedLocationClient;
     private static final int REQUEST_ENABLE_GPS = 123;
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 124;
+
+    private String visitDay = "";
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -81,6 +83,7 @@ public class NewClientFragment extends Fragment {
         // Cargar departamentos, municipios y tipos de precio
         loadDepartamentos();
          setupDepartamentosSpinner();
+         setupVisitDaySpinner();
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity());
 
@@ -88,93 +91,8 @@ public class NewClientFragment extends Fragment {
 
         // Configurar el botón de enviar
         btnSubmit.setOnClickListener(v -> {
-            // Obtener referencias a los TextInputLayout
-            TextInputLayout tilFirstName = view.findViewById(R.id.tilFirstName);
-            TextInputLayout tilLastName = view.findViewById(R.id.tilLastName);
-            TextInputLayout tilPhoneNumber = view.findViewById(R.id.tilPhoneNumber);
-            TextInputLayout tilAddress = view.findViewById(R.id.tilAddress); // Referencia para el campo de dirección
-
-            // Obtener datos del formulario
-            String firstName = etFirstName.getText().toString().trim();
-            String lastName = etLastName.getText().toString().trim();
-            String businessName = etBusinessName.getText().toString().trim();
-            String phoneNumber = etPhoneNumber.getText().toString().trim();
-            String address = etAddress.getText().toString().trim();
-
-            // Verificar si los Spinner tienen un valor seleccionado
-            String department = "";
-            if (spinnerDepartament.getSelectedItem() != null) {
-                department = spinnerDepartament.getSelectedItem().toString();
-            }
-
-            String township = "";
-            if (spinnerTownship.getSelectedItem() != null) {
-                township = spinnerTownship.getSelectedItem().toString();
-            }
-
-            String latitude = etLatitude.getText().toString();
-            String longitude = etLongitude.getText().toString();
-
-            // Limpiar errores previos
-            tilFirstName.setError(null);
-            tilLastName.setError(null);
-            tilPhoneNumber.setError(null);
-            tilAddress.setError(null);
-
-            // Validar datos
-            boolean isValid = true;
-
-            if (firstName.isEmpty()) {
-                tilFirstName.setError("Este campo es obligatorio");
-                isValid = false;
-            }
-
-            if (lastName.isEmpty()) {
-                tilLastName.setError("Este campo es obligatorio");
-                isValid = false;
-            }
-
-            if (businessName.isEmpty()) {
-                tilBusinessName.setError("El nombre del negocio es requerido");
-                isValid = false;
-            }
-
-            if (phoneNumber.isEmpty()) {
-                tilPhoneNumber.setError("Este campo es obligatorio");
-                isValid = false;
-            } else if (!phoneNumber.matches("\\d+")) {
-                tilPhoneNumber.setError("El teléfono solo debe contener números");
-                isValid = false;
-            }
-
-            if (address.isEmpty()) {
-                tilAddress.setError("Este campo es obligatorio");
-                isValid = false;
-            }
-
-            if (department.equals("Seleccione") || department.isEmpty()) {
-                // Mostrar error en el Spinner de departamento
-                TextView errorText = (TextView) spinnerDepartament.getSelectedView();
-                if (errorText != null) {
-                    errorText.setError("Seleccione un departamento");
-                    errorText.setTextColor(Color.RED); // Cambiar el color del texto a rojo
-                }
-                isValid = false;
-            }
-
-            if (township.isEmpty()) {
-                // Mostrar error en el Spinner de municipio
-                TextView errorText = (TextView) spinnerTownship.getSelectedView();
-                if (errorText != null) {
-                    errorText.setError("Seleccione un municipio");
-                    errorText.setTextColor(Color.RED); // Cambiar el color del texto a rojo
-                }
-                isValid = false;
-            }
-
-            // Si todos los campos son válidos, enviar datos al servidor
-            if (isValid) {
-                storeEmploye(firstName, lastName, address, phoneNumber, department, township, latitude, longitude, businessName);
+            if (validateFields()) {
+                createClient();
             }
         });
 
@@ -184,6 +102,7 @@ public class NewClientFragment extends Fragment {
     private void setupViews(View root) {
         spinnerDepartament = root.findViewById(R.id.spinnerDepartament);
         spinnerTownship = root.findViewById(R.id.spinnerTownship);
+        spinnerVisitDay = root.findViewById(R.id.spinnerVisitDay);
         etFirstName = root.findViewById(R.id.etFirstName);
         etLastName = root.findViewById(R.id.etLastName);
         etBusinessName = root.findViewById(R.id.etBusinessName);
@@ -192,6 +111,7 @@ public class NewClientFragment extends Fragment {
         etLatitude = root.findViewById(R.id.etLatitude);
         etLongitude = root.findViewById(R.id.etLongitude);
         linearLayoutMunicipio = root.findViewById(R.id.linearLayoutMunicipio);
+        etPosition = root.findViewById(R.id.etPosition);
 
         // Inicializar TextInputLayouts
         tilFirstName = root.findViewById(R.id.tilFirstName);
@@ -199,6 +119,7 @@ public class NewClientFragment extends Fragment {
         tilBusinessName = root.findViewById(R.id.tilBusinessName);
         tilPhoneNumber = root.findViewById(R.id.tilPhoneNumber);
         tilAddress = root.findViewById(R.id.tilAddress);
+        tilPosition = root.findViewById(R.id.tilPosition);
 
         btnSubmit = root.findViewById(R.id.btnSubmit);
         btnCaptureCoordinates = root.findViewById(R.id.btnCaptureCoordinates);
@@ -253,6 +174,42 @@ public class NewClientFragment extends Fragment {
         ArrayAdapter<String> municipiosAdapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, municipios);
         municipiosAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerTownship.setAdapter(municipiosAdapter);
+    }
+
+    private void setupVisitDaySpinner() {
+        String[] diasSemana = new String[]{
+            "Seleccionar día",
+            "Lunes",
+            "Martes",
+            "Miércoles",
+            "Jueves",
+            "Viernes",
+            "Sábado"
+        };
+
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(
+            requireContext(),
+            android.R.layout.simple_spinner_item,
+            diasSemana
+        );
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerVisitDay.setAdapter(adapter);
+
+        spinnerVisitDay.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (position > 0) { // Ignorar "Seleccionar día"
+                    visitDay = diasSemana[position]; // Ya está en el formato correcto
+                } else {
+                    visitDay = "";
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+                visitDay = "";
+            }
+        });
     }
 
     private void checkLocationAndGetCoordinates() {
@@ -384,19 +341,159 @@ public class NewClientFragment extends Fragment {
         }
     }
 
-    private void storeEmploye(String first_name, String last_name, String address, String phone_number,
-                              String department, String township, String latitude, String longitude, String business_name) {
+    private boolean validateFields() {
+        boolean isValid = true;
+
+        // Validar nombre
+        String firstName = etFirstName.getText().toString().trim();
+        if (firstName.isEmpty()) {
+            tilFirstName.setError("El nombre es requerido");
+            isValid = false;
+        } else {
+            tilFirstName.setError(null);
+        }
+
+        // Validar apellido
+        String lastName = etLastName.getText().toString().trim();
+        if (lastName.isEmpty()) {
+            tilLastName.setError("El apellido es requerido");
+            isValid = false;
+        } else {
+            tilLastName.setError(null);
+        }
+
+        // Validar teléfono
+        String phoneNumber = etPhoneNumber.getText().toString().trim();
+        if (phoneNumber.isEmpty()) {
+            tilPhoneNumber.setError("El teléfono es requerido");
+            isValid = false;
+        } else if (phoneNumber.length() < 8) {
+            tilPhoneNumber.setError("El teléfono debe tener al menos 8 dígitos");
+            isValid = false;
+        } else {
+            tilPhoneNumber.setError(null);
+        }
+
+        // Validar dirección
+        String address = etAddress.getText().toString().trim();
+        if (address.isEmpty()) {
+            tilAddress.setError("La dirección es requerida");
+            isValid = false;
+        } else {
+            tilAddress.setError(null);
+        }
+
+        // Validar negocio
+        String businessName = etBusinessName.getText().toString().trim();
+        if (businessName.isEmpty()) {
+            tilBusinessName.setError("El nombre del negocio es requerido");
+            isValid = false;
+        } else {
+            tilBusinessName.setError(null);
+        }
+
+        // Validar departamento
+        if (spinnerDepartament.getSelectedItemPosition() == 0) {
+            TextView errorText = (TextView) spinnerDepartament.getSelectedView();
+            errorText.setError("");
+            errorText.setTextColor(Color.RED);
+            errorText.setText("Seleccione un departamento");
+            isValid = false;
+        }
+
+        // Validar municipio
+        if (spinnerTownship.getSelectedItemPosition() < 0 || 
+            spinnerDepartament.getSelectedItemPosition() == 0) {
+            TextView errorText = null;
+            try {
+                errorText = (TextView) spinnerTownship.getSelectedView();
+            } catch (Exception e) {
+                // Si no hay vista seleccionada, mostrar un Toast
+                Toast.makeText(requireContext(), 
+                    "Seleccione un municipio", 
+                    Toast.LENGTH_SHORT).show();
+            }
+            if (errorText != null) {
+                errorText.setError("");
+                errorText.setTextColor(Color.RED);
+                errorText.setText("Seleccione un municipio");
+            }
+            isValid = false;
+        }
+
+        // Validar posición
+        if (etPosition.getText().toString().trim().isEmpty()) {
+            tilPosition.setError("La posición es requerida");
+            isValid = false;
+        } else {
+            tilPosition.setError(null);
+        }
+
+        // Validar día de visita
+        if (spinnerVisitDay.getSelectedItemPosition() == 0) {
+            ((TextView) spinnerVisitDay.getSelectedView()).setError("Seleccione un día de visita");
+            isValid = false;
+        }
+
+        // Validar coordenadas (opcional pero con advertencia)
+        String latitude = etLatitude.getText().toString().trim();
+        String longitude = etLongitude.getText().toString().trim();
+        if (latitude.equals("0.0") || longitude.equals("0.0")) {
+            Toast.makeText(requireContext(),
+                "Se recomienda capturar las coordenadas del cliente",
+                Toast.LENGTH_SHORT).show();
+        } else {
+            try {
+                double lat = Double.parseDouble(latitude);
+                double lon = Double.parseDouble(longitude);
+                
+                // Validar rango de coordenadas para Honduras
+                if (lat < 12.98 || lat > 16.02 || lon < -89.35 || lon > -83.15) {
+                    etLatitude.setError("Coordenadas fuera de Honduras");
+                    etLongitude.setError("Coordenadas fuera de Honduras");
+                    isValid = false;
+                }
+            } catch (NumberFormatException e) {
+                etLatitude.setError("Coordenada inválida");
+                etLongitude.setError("Coordenada inválida");
+                isValid = false;
+            }
+        }
+
+        if (!isValid) {
+            Toast.makeText(requireContext(), 
+                "Por favor, complete todos los campos requeridos correctamente", 
+                Toast.LENGTH_SHORT).show();
+        }
+
+        return isValid;
+    }
+
+    private void createClient() {
+        String firstName = etFirstName.getText().toString().trim();
+        String lastName = etLastName.getText().toString().trim();
+        String businessName = etBusinessName.getText().toString().trim();
+        String phoneNumber = etPhoneNumber.getText().toString().trim();
+        String address = etAddress.getText().toString().trim();
+        String department = spinnerDepartament.getSelectedItem().toString();
+        String township = spinnerTownship.getSelectedItem().toString();
+        String latitude = etLatitude.getText().toString().trim();
+        String longitude = etLongitude.getText().toString().trim();
+        String position = etPosition.getText().toString().trim();
+
         String url = Utilities.URL + "clients";
         Map<String, String> params = new HashMap<>();
-        params.put("first_name", first_name);
-        params.put("last_name", last_name);
-        params.put("business_name", business_name);
+        params.put("first_name", firstName);
+        params.put("last_name", lastName);
+        params.put("business_name", businessName);
+        params.put("phone_number", phoneNumber);
         params.put("address", address);
-        params.put("phone_number", phone_number);
         params.put("department", department);
         params.put("township", township);
         params.put("latitude", latitude);
         params.put("longitude", longitude);
+        params.put("position", position);
+        params.put("visit_day", visitDay);
 
         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(
                 Request.Method.POST,

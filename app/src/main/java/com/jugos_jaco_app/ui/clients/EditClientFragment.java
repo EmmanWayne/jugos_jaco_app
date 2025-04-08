@@ -55,11 +55,13 @@ import java.util.Map;
   * create an instance of this fragment.
  */
 public class EditClientFragment extends Fragment {
-    private Spinner spinnerDepartament, spinnerTownship, spinnerTypePrice;
-    private TextInputEditText etFirstName, etLastName, etPhoneNumber, etAddress, etLatitude, etLongitude, etBusinessName, etPosition, etVisitDay;
-    private TextInputLayout tilFirstName, tilLastName, tilPhoneNumber, tilAddress, tilBusinessName, tilPosition, tilVisitDay;
+    private Spinner spinnerDepartament, spinnerTownship, spinnerTypePrice, spinnerVisitDay;
+    private TextInputEditText etFirstName, etLastName, etPhoneNumber, etAddress, etLatitude, etLongitude, etBusinessName, etPosition;
+    private TextInputLayout tilFirstName, tilLastName, tilPhoneNumber, tilAddress, tilBusinessName, tilPosition;
     private MaterialButton btnSubmit, btnCaptureCoordinates;
     private String clientId;
+    private String visitDay;
+    private View root;
     private List<String> departamentos = new ArrayList<>();
     private List<String> tiposPrecio = new ArrayList<>();
     private Map<String, List<String>> municipiosPorDepartamento = new HashMap<>();
@@ -67,13 +69,12 @@ public class EditClientFragment extends Fragment {
     private static final int REQUEST_ENABLE_GPS = 123;
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 124;
     private LinearLayout linearLayoutMunicipio;
-    private String[] diasSemana = {"lunes", "martes", "miercoles", "jueves", "viernes", "sabado"};
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_edit_client, container, false);
+        root = inflater.inflate(R.layout.fragment_edit_client, container, false);
         
-        initializeViews(view);
+        initializeViews(root);
         loadDepartamentos();
         loadDataFromArguments();
         setupVisitDaySpinner();
@@ -87,7 +88,7 @@ public class EditClientFragment extends Fragment {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity());
         btnCaptureCoordinates.setOnClickListener(v -> checkLocationAndGetCoordinates());
 
-        return view;
+        return root;
     }
 
     private void initializeViews(View view) {
@@ -100,13 +101,12 @@ public class EditClientFragment extends Fragment {
         etLongitude = view.findViewById(R.id.etLongitude);
         spinnerDepartament = view.findViewById(R.id.spinnerDepartament);
         spinnerTownship = view.findViewById(R.id.spinnerTownship);
-         btnSubmit = view.findViewById(R.id.btnSubmit);
+        spinnerVisitDay = view.findViewById(R.id.spinnerVisitDay);
+        btnSubmit = view.findViewById(R.id.btnSubmit);
         btnCaptureCoordinates = view.findViewById(R.id.btnCaptureCoordinates);
         linearLayoutMunicipio = view.findViewById(R.id.linearLayoutMunicipio);
         etPosition = view.findViewById(R.id.etPosition);
-        etVisitDay = view.findViewById(R.id.etVisitDay);
         tilPosition = view.findViewById(R.id.tilPosition);
-        tilVisitDay = view.findViewById(R.id.tilVisitDay);
 
         tilFirstName = view.findViewById(R.id.tilFirstName);
         tilLastName = view.findViewById(R.id.tilLastName);
@@ -118,15 +118,49 @@ public class EditClientFragment extends Fragment {
     }
 
     private void setupVisitDaySpinner() {
-        etVisitDay.setOnClickListener(v -> {
-            AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
-            builder.setTitle("Seleccionar día de visita");
-            builder.setItems(diasSemana, (dialog, which) -> {
-                String selectedDay = diasSemana[which];
-                etVisitDay.setText(selectedDay);
-                tilVisitDay.setError(null); // Limpiar el error si existe
-            });
-            builder.show();
+        String[] diasSemana = new String[]{
+            "Seleccionar día",
+            "Lunes",
+            "Martes",
+            "Miércoles",
+            "Jueves",
+            "Viernes",
+            "Sábado"
+        };
+
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(
+            requireContext(),
+            android.R.layout.simple_spinner_item,
+            diasSemana
+        );
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerVisitDay.setAdapter(adapter);
+
+        // Seleccionar el día actual si existe
+        if (visitDay != null && !visitDay.isEmpty()) {
+            // El día ya viene formateado del servidor, solo necesitamos encontrar su posición
+            for (int i = 0; i < diasSemana.length; i++) {
+                if (diasSemana[i].equals(visitDay)) {
+                    spinnerVisitDay.setSelection(i);
+                    break;
+                }
+            }
+        }
+
+        spinnerVisitDay.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (position > 0) { // Ignorar "Seleccionar día"
+                    visitDay = diasSemana[position]; // Ya está en el formato correcto
+                } else {
+                    visitDay = "";
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+                visitDay = "";
+            }
         });
     }
 
@@ -142,18 +176,7 @@ public class EditClientFragment extends Fragment {
             etPosition.setText(getArguments().getString("position", ""));
             
             // Cargar el día de visita
-            String visitDay = getArguments().getString("visit_day", "");
-            if (!visitDay.isEmpty()) {
-                // Convertir el día a minúsculas y normalizar
-                visitDay = visitDay.toLowerCase().trim();
-                // Buscar el día en el array de días de la semana
-                for (String dia : diasSemana) {
-                    if (dia.equals(visitDay)) {
-                        etVisitDay.setText(dia);
-                        break;
-                    }
-                }
-            }
+            visitDay = getArguments().getString("visit_day", "");
             
             clientId = getArguments().getString("client_id");
 
@@ -371,7 +394,8 @@ public class EditClientFragment extends Fragment {
         String latitude = etLatitude.getText().toString().trim();
         String longitude = etLongitude.getText().toString().trim();
         String position = etPosition.getText().toString().trim();
-        String visitDay = etVisitDay.getText().toString().trim();
+        String visitDay = this.visitDay;
+
 
         String url = Utilities.URL + "clients/" + clientId;
         Map<String, String> params = new HashMap<>();
@@ -562,11 +586,11 @@ public class EditClientFragment extends Fragment {
             tilPosition.setError(null);
         }
 
-        if (etVisitDay.getText().toString().trim().isEmpty()) {
-            tilVisitDay.setError("El día de visita es requerido");
+        // Validar día de visita
+        if (spinnerVisitDay.getSelectedItemPosition() == 0) {
+            ((TextView) spinnerVisitDay.getSelectedView()).setError("Seleccione un día de visita");
+
             isValid = false;
-        } else {
-            tilVisitDay.setError(null);
         }
 
         if (!isValid) {
