@@ -479,7 +479,7 @@ public class ClientsFragment extends Fragment implements ChipGroup.OnCheckedChan
     }
 
     private void updateClientPosition(Client client) {
-        String url = Utilities.URL + "clients/" + client.getId() + "/position";
+        String url = Utilities.URL + client.getId()+"/visit/position";
         
         JSONObject jsonBody = new JSONObject();
         try {
@@ -491,8 +491,7 @@ public class ClientsFragment extends Fragment implements ChipGroup.OnCheckedChan
                 "Cliente: %s %s\n" +
                 "ID: %s\n" +
                 "Nuevo valor position: %s",
-                client.getFirstName(),
-                client.getLastName(),
+
                 client.getId(),
                 client.getPosition()
             ));
