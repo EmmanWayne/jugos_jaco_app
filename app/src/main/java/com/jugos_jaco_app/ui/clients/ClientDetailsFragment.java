@@ -248,7 +248,6 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                 bundle.putString("longitude", clientLongitude);
                 bundle.putString("client_id", id);
                 bundle.putString("business_name", businessName);
-                // bundle.putString("type_price", typePrice);
 
                 try {
                     NavController navController = Navigation.findNavController(v);
@@ -300,9 +299,6 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
         rvLocalPhotos.setAdapter(localPhotoAdapter);
         rvServerPhotos.setAdapter(serverPhotoAdapter);
 
-        // Cargar fotos del servidor
-        loadServerPhotos();
-
         fabDeletePhotos = view.findViewById(R.id.fabDeletePhotos);
         fabDeletePhotos.setOnClickListener(v -> deleteSelectedPhotos());
 
@@ -326,7 +322,8 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         
-        // Ahora llamamos a loadProfileImage() aquí, después de que la vista está creada
+        // Ahora llamamos a loadServerPhotos() aquí, después de que la vista está creada
+        loadServerPhotos();
         loadProfileImage();
     }
 
@@ -844,7 +841,7 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
         String token = Login.getAuthorizationHeader(requireContext());
 
         // Realizar la petición al servidor
-        RetrofitClient.getApiService()
+        RetrofitClient.getInstance().getApiService()
                 .uploadBusinessImage(id, imagePart, token)
                 .enqueue(new Callback<PhotoResponse>() {
                     @Override
@@ -1073,9 +1070,15 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
     }
 
     private void loadServerPhotos() {
-        String token = Login.getAuthorizationHeader(requireContext());
+        if (!isAdded() || getContext() == null) {
+            return;
+        }
 
-        RetrofitClient.getApiService()
+        ProgressBar headerProgress = requireView().findViewById(R.id.headerImageProgress);
+        headerProgress.setVisibility(View.VISIBLE);
+
+        String token = Login.getAuthorizationHeader(requireContext());
+        RetrofitClient.getInstance().getApiService()
                 .getClientImages(id, token)
                 .enqueue(new Callback<ServerPhotosResponse>() {
                     @Override
@@ -1135,7 +1138,7 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                     for (Integer photoId : selectedIds) {
                         serverPhotoAdapter.setPhotoDeleting(photoId, true);
 
-                        RetrofitClient.getApiService()
+                        RetrofitClient.getInstance().getApiService()
                                 .deleteMedia(photoId, token)
                                 .enqueue(new Callback<MessageResponse>() {
                                     @Override
@@ -1208,9 +1211,15 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
     }
 
     private void showFullscreenImage() {
-        // Obtener la URL actual de la imagen
+        if (!isAdded() || getContext() == null) {
+            return;
+        }
+
+        ProgressBar headerProgress = requireView().findViewById(R.id.headerImageProgress);
+        headerProgress.setVisibility(View.VISIBLE);
+
         String token = Login.getAuthorizationHeader(requireContext());
-        RetrofitClient.getApiService()
+        RetrofitClient.getInstance().getApiService()
                 .getProfileImage(id, token)
                 .enqueue(new Callback<PhotoResponse>() {
                     @Override
@@ -1457,7 +1466,7 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
 
         String token = Login.getAuthorizationHeader(requireContext());
 
-        RetrofitClient.getApiService()
+        RetrofitClient.getInstance().getApiService()
                 .uploadProfileImage(id, imagePart, token)
                 .enqueue(new Callback<PhotoResponse>() {
                     @Override
@@ -1550,17 +1559,25 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
     }
 
     private void loadProfileImage() {
+        if (!isAdded() || getContext() == null) {
+            return;
+        }
+
         String token = Login.getAuthorizationHeader(requireContext());
         
         // Ahora es seguro obtener el ProgressBar porque la vista ya existe
         ProgressBar headerProgress = requireView().findViewById(R.id.headerImageProgress);
         headerProgress.setVisibility(View.VISIBLE);
 
-        RetrofitClient.getApiService()
+        RetrofitClient.getInstance().getApiService()
                 .getProfileImage(id, token)
                 .enqueue(new Callback<PhotoResponse>() {
                     @Override
                     public void onResponse(Call<PhotoResponse> call, Response<PhotoResponse> response) {
+                        if (!isAdded() || getContext() == null) {
+                            return;
+                        }
+
                         if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
                             String imagePath = response.body().getData().getPath();
                             if (imagePath != null && !imagePath.isEmpty()) {
@@ -1574,30 +1591,40 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                                         .listener(new RequestListener<Drawable>() {
                                             @Override
                                             public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
-                                                headerProgress.setVisibility(View.GONE);
-                                                 return false;
+                                                if (isAdded() && getContext() != null) {
+                                                    headerProgress.setVisibility(View.GONE);
+                                                }
+                                                return false;
                                             }
 
                                             @Override
                                             public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
-                                                headerProgress.setVisibility(View.GONE);
-                                                 return false;
+                                                if (isAdded() && getContext() != null) {
+                                                    headerProgress.setVisibility(View.GONE);
+                                                }
+                                                return false;
                                             }
                                         })
                                         .into(clientHeaderImage);
                             } else {
-                                headerProgress.setVisibility(View.GONE);
-                             }
+                                if (isAdded() && getContext() != null) {
+                                    headerProgress.setVisibility(View.GONE);
+                                }
+                            }
                         } else {
-                            headerProgress.setVisibility(View.GONE);
-                             Log.d("ProfileImage", "No profile image found or error in response");
+                            if (isAdded() && getContext() != null) {
+                                headerProgress.setVisibility(View.GONE);
+                                Log.d("ProfileImage", "No profile image found or error in response");
+                            }
                         }
                     }
 
                     @Override
                     public void onFailure(Call<PhotoResponse> call, Throwable t) {
-                        headerProgress.setVisibility(View.GONE);
-                         Log.e("ProfileImage", "Error loading profile image: " + t.getMessage());
+                        if (isAdded() && getContext() != null) {
+                            headerProgress.setVisibility(View.GONE);
+                            Log.e("ProfileImage", "Error loading profile image: " + t.getMessage());
+                        }
                     }
                 });
     }
