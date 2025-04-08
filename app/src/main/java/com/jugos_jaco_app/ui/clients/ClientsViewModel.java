@@ -73,8 +73,11 @@ public class ClientsViewModel extends ViewModel {
                                 typePrice = clientJson.getString("type_price");
                             }
 
+                            String position = clientJson.optString("position", "");
+                            String visitDay = clientJson.optString("visit_day", "");
+
                             Client client = new Client(
-                                    String.valueOf(clientJson.getInt("id")), // Convertir id a String
+                                    String.valueOf(clientJson.getInt("id")),
                                     clientJson.getString("first_name"),
                                     clientJson.getString("last_name"),
                                     clientJson.getString("phone_number"),
@@ -85,9 +88,10 @@ public class ClientsViewModel extends ViewModel {
                                     locationJson.getString("longitude"),
                                     locationJson.getString("plus_code"),
                                     typePrice,
-                                    clientJson.getString("business_name")
+                                    clientJson.getString("business_name"),
+                                    position,
+                                    visitDay
                             );
-
                             clients.add(client);
                         }
 

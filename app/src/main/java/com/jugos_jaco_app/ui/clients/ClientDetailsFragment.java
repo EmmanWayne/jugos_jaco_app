@@ -120,6 +120,9 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
     private String clientLastName;
     private String id;
     private String typePrice;
+    private String businessName;
+    private String position;
+    private String visitDay;
 
     private RecyclerView rvLocalPhotos;
     private RecyclerView rvServerPhotos;
@@ -139,7 +142,6 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
     private ImageView clientHeaderImage;
     private Uri headerPhotoUri;
     private String currentHeaderPhotoPath;
-    private String businessName;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -152,16 +154,17 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
         }
         if (getArguments() != null) {
             clientName = getArguments().getString("firstName") + " " + getArguments().getString("lastName");
-            clientFirstName = getArguments().getString("firstName") ;
+            clientFirstName = getArguments().getString("firstName");
             clientLastName = getArguments().getString("lastName");
             id = getArguments().getString("id");
             typePrice = getArguments().getString("typePrice");
             businessName = getArguments().getString("businessName");
-             clientPhone = getArguments().getString("phoneNumber");
+            clientPhone = getArguments().getString("phoneNumber");
             adress = getArguments().getString("adress");
             department = getArguments().getString("department");
             township = getArguments().getString("township");
-
+            position = getArguments().getString("position", "Sin posición");
+            visitDay = getArguments().getString("visit_day", "Sin día asignado");
 
             // Recuperar las coordenadas como String
             clientLatitude = getArguments().getString("latitude", "0.0");
@@ -193,6 +196,8 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
         TextView tvCoordinates = view.findViewById(R.id.tvCoordinates);
         TextView tvdepartment = view.findViewById(R.id.tvDepartment);
         TextView tvtownship = view.findViewById(R.id.tvTownship);
+        TextView tvPosition = view.findViewById(R.id.tvPosition);
+        TextView tvVisitDay = view.findViewById(R.id.tvVisitDay);
 
         Button btnAddPhoto = view.findViewById(R.id.btnAddPhoto);
         Button btnUploadPhotos = view.findViewById(R.id.btnUploadPhotos);
@@ -204,12 +209,8 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
         tvdepartment.setText(department);
         tvClientPhone.setText(clientPhone);
         tvTypePrice.setText(typePrice);
-
-        if (clientLatitude != null && clientLongitude != null) {
-            tvCoordinates.setText("Latitud: " + clientLatitude + ", Longitud: " + clientLongitude);
-        } else {
-            tvCoordinates.setText("Sin coordenadas");
-        }
+        tvPosition.setText(position);
+        tvVisitDay.setText(visitDay);
 
         // Obtener los argumentos
         Bundle args = getArguments();

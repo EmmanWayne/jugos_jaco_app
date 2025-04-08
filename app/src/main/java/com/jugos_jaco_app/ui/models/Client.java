@@ -15,11 +15,12 @@ public class Client implements Serializable {
     private String typePrice;
     private String plus_code;
     private String businessName;
+    private String position;
+    private String visitDay;
 
-
-
-
-    public Client(String id,String firstName,  String lastName,String phoneNumber, String adress, String departament, String township, String latitude, String longitude,String plus_code ,String typePrice, String businessName) {
+    public Client(String id, String firstName, String lastName, String phoneNumber, String adress, 
+                 String departament, String township, String latitude, String longitude, 
+                 String plus_code, String typePrice, String businessName, String position, String visitDay) {
         this.id = id;
         this.firstName = firstName;
         this.lastName = lastName;
@@ -32,6 +33,8 @@ public class Client implements Serializable {
         this.typePrice = typePrice;
         this.plus_code = plus_code;
         this.businessName = businessName;
+        this.position = position;
+        this.visitDay = visitDay;
     }
 
     public String getId() {
@@ -76,6 +79,14 @@ public class Client implements Serializable {
 
     public String getBusinessName() {
         return businessName;
+    }
+
+    public String getPosition() {
+        return position;
+    }
+
+    public String getVisitDay() {
+        return visitDay;
     }
 
     public boolean hasCoordinates() {

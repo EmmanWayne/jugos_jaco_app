@@ -124,14 +124,15 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
             bundle.putString("typePrice", client.getTypePrice());
             bundle.putString("businessName", client.getBusinessName() != null && !client.getBusinessName().isEmpty() ? 
                 client.getBusinessName() : "Sin nombre de negocio");
-
             bundle.putString("phoneNumber", client.getPhoneNumber());
-                 if (client.hasCoordinates()) {
-                     bundle.putString("latitude", client.getLatitude() != null ? client.getLatitude() : null);
-                     bundle.putString("longitude", client.getLongitude() != null ? client.getLongitude() : null);
-                     bundle.putString("plus_code", client.getPlus_code() != null ? client.getPlus_code() : null);
+            bundle.putString("position", client.getPosition());
+            bundle.putString("visit_day", client.getVisitDay());
 
-                 }
+            if (client.hasCoordinates()) {
+                bundle.putString("latitude", client.getLatitude() != null ? client.getLatitude() : null);
+                bundle.putString("longitude", client.getLongitude() != null ? client.getLongitude() : null);
+                bundle.putString("plus_code", client.getPlus_code() != null ? client.getPlus_code() : null);
+            }
 
             NavController navController = Navigation.findNavController(v);
 

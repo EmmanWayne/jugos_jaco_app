@@ -337,19 +337,37 @@
 
                             <TextView
                                 android:id="@+id/tvTownship"
-                                android:layout_width="wrap_content"
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
                                 android:textSize="16sp"
-                                 android:textStyle="bold"/>
+                                android:textColor="@color/text_secondary" />
+
+                            <TextView
+                                android:id="@+id/tvPosition"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:textSize="16sp"
+                                android:textColor="@color/text_secondary" />
+
+                            <TextView
+                                android:id="@+id/tvVisitDay"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:textSize="16sp"
+                                android:textColor="@color/text_secondary" />
+
+                            <TextView
+                                android:id="@+id/tvCoordinates"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:textSize="16sp"
+                                android:textColor="@color/text_secondary" />
                         </LinearLayout>
                     </LinearLayout>
-
-                    <!-- Coordenadas -->
-                    <TextView
-                        android:id="@+id/tvCoordinates"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textSize="14sp"/>
 
                     <!-- Botón Ver en Mapa -->
                     <com.google.android.material.button.MaterialButton

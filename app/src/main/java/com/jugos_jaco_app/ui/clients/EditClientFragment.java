@@ -382,7 +382,9 @@ public class EditClientFragment extends Fragment {
                                     locationJson.getString("longitude"),
                                     locationJson.getString("plus_code"),
                                     typePrice,
-                                    dataJson.getString("business_name")
+                                    dataJson.getString("business_name"),
+                                    dataJson.optString("position", ""),
+                                    dataJson.optString("visit_day", "")
                             );
                             // Actualizar el ViewModel
                             ClientsViewModel viewModel = new ViewModelProvider(requireActivity())
