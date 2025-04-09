@@ -63,6 +63,7 @@ public class ClientsFragment extends Fragment implements ChipGroup.OnCheckedChan
     private ClientAdapter clientAdapter;
     private SwipeRefreshLayout swipeRefreshLayout;
     private static final String URL_CLIENTS = Utilities.URL +"clients/"; // Reemplaza con tu URL real
+    private boolean hasShownDaySelectionMessage = false; // Nueva variable para controlar el mensaje
 
     private ActivityResultLauncher<Intent> locationSettingsLauncher;
     private final ActivityResultLauncher<String> locationPermissionLauncher = registerForActivityResult(
@@ -166,10 +167,26 @@ public class ClientsFragment extends Fragment implements ChipGroup.OnCheckedChan
         ItemTouchHelper.Callback callback = new ItemTouchHelper.SimpleCallback(
                 ItemTouchHelper.UP | ItemTouchHelper.DOWN,
                 0) {
+
+            @Override
+            public boolean isLongPressDragEnabled() {
+                if (viewModel.getSelectedDay().getValue() == null && !hasShownDaySelectionMessage) {
+                    Toast.makeText(requireContext(), 
+                        "Seleccione un día de la semana para poder reordenar los clientes",
+                        Toast.LENGTH_LONG).show();
+                    hasShownDaySelectionMessage = true;
+                }
+                return viewModel.getSelectedDay().getValue() != null;
+            }
+
             @Override
             public boolean onMove(@NonNull RecyclerView recyclerView,
                                 @NonNull RecyclerView.ViewHolder viewHolder,
                                 @NonNull RecyclerView.ViewHolder target) {
+                if (viewModel.getSelectedDay().getValue() == null) {
+                    return false;
+                }
+
                 int fromPosition = viewHolder.getAdapterPosition();
                 int toPosition = target.getAdapterPosition();
                 
@@ -190,11 +207,13 @@ public class ClientsFragment extends Fragment implements ChipGroup.OnCheckedChan
             @Override
             public void clearView(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
                 super.clearView(recyclerView, viewHolder);
-                // Cuando se suelta el item, actualizamos en el servidor
-                List<Client> clients = clientAdapter.getClients();
-                if (viewHolder.getAdapterPosition() != RecyclerView.NO_POSITION) {
-                    Client movedClient = clients.get(viewHolder.getAdapterPosition());
-                    updateClientPosition(movedClient);
+                // Cuando se suelta el item, actualizamos en el servidor solo si hay un día seleccionado
+                if (viewModel.getSelectedDay().getValue() != null) {
+                    List<Client> clients = clientAdapter.getClients();
+                    if (viewHolder.getAdapterPosition() != RecyclerView.NO_POSITION) {
+                        Client movedClient = clients.get(viewHolder.getAdapterPosition());
+                        updateClientPosition(movedClient);
+                    }
                 }
             }
         };
@@ -388,16 +407,16 @@ public class ClientsFragment extends Fragment implements ChipGroup.OnCheckedChan
     @Override
     public void onCheckedChanged(@NonNull ChipGroup group, int checkedId) {
         if (checkedId == View.NO_ID) {
-            // No hay chips seleccionados
             viewModel.setSelectedDay(null);
             viewModel.forceLoadClients(requireContext());
+            hasShownDaySelectionMessage = false; // Resetear el control del mensaje
         } else {
-            // Un chip fue seleccionado
             Chip selectedChip = group.findViewById(checkedId);
             if (selectedChip != null) {
-                String selectedDay = selectedChip.getText().toString().toLowerCase();
+                String selectedDay = formatDayForServer(selectedChip.getText().toString());
                 viewModel.setSelectedDay(selectedDay);
                 viewModel.forceLoadClients(requireContext());
+                hasShownDaySelectionMessage = false; // Resetear el control del mensaje
             }
         }
     }
@@ -550,6 +569,28 @@ public class ClientsFragment extends Fragment implements ChipGroup.OnCheckedChan
         };
 
         VolleySingleton.getInstance(requireContext()).addToRequestQueue(request);
+    }
+
+    private String formatDayForServer(String day) {
+        // Convertir el día al formato que espera el servidor
+        switch (day.toLowerCase()) {
+            case "lunes":
+                return "Lunes";
+            case "martes":
+                return "Martes";
+            case "miércoles":
+            case "miercoles":
+                return "Miércoles";
+            case "jueves":
+                return "Jueves";
+            case "viernes":
+                return "Viernes";
+            case "sábado":
+            case "sabado":
+                return "Sábado";
+            default:
+                return day;
+        }
     }
 }
 
