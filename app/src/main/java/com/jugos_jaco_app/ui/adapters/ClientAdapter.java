@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.drawable.ColorDrawable;
 import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Bundle;
@@ -23,11 +24,20 @@ import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.ItemTouchHelper;
+
+import com.bumptech.glide.load.engine.GlideException;
 import com.jugos_jaco_app.R;
 import com.jugos_jaco_app.ui.models.Client;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.target.Target;
+import com.bumptech.glide.load.DataSource;
+import android.graphics.drawable.Drawable;
+import android.widget.ProgressBar;
+import androidx.annotation.Nullable;
+import android.graphics.Bitmap;
 
 import com.jugos_jaco_app.ui.utilities.Utilities;
 
@@ -67,10 +77,6 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
     public void onBindViewHolder(@NonNull ClientViewHolder holder, int position) {
         Client client = clients.get(position);
         holder.bind(client);
-
-        holder.imageItem.setOnClickListener(v ->
-                Toast.makeText(context, "Imagen de " + client.getFirstName(), Toast.LENGTH_SHORT).show()
-        );
 
         holder.ivCoordinatesIcon.setOnClickListener(v -> {
             if (client.hasCoordinates()) {
@@ -140,13 +146,12 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
 
             NavController navController = Navigation.findNavController(v);
 
-                 try{
-                     navController.navigate(R.id.clientDetailsFragment, bundle);
-
-                 }catch (Exception e){
-
-                 }
-         });
+            try {
+                navController.navigate(R.id.clientDetailsFragment, bundle);
+            } catch (Exception e) {
+                Log.e("Navigation", "Error al navegar: " + e.getMessage());
+            }
+        });
 
         // Configurar el evento de mantener presionado
         holder.itemView.setOnLongClickListener(v -> {
@@ -278,11 +283,11 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
             tvFullName.setText(String.format("%s %s", client.getFirstName(), client.getLastName()));
             tvPhoneNumber.setText(String.format("Teléfono: %s", client.getPhoneNumber()));
 
-            // Cargar imagen de perfil
+            // Cargar imagen de perfil comprimida
             if (client.getProfileImage() != null && !client.getProfileImage().isEmpty()) {
                 String imageUrl = Utilities.URL_FOTOS + "storage/" + client.getProfileImage();
                 
-                // Crear un RequestOptions para comprimir la imagen
+                // Opciones para la imagen comprimida en la lista
                 RequestOptions options = new RequestOptions()
                     .override(IMAGE_SIZE, IMAGE_SIZE)
                     .centerCrop()
@@ -290,13 +295,74 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
                     .placeholder(R.drawable.cliente_icon)
                     .error(R.drawable.cliente_icon);
 
-                // Cargar la imagen con Glide
+                // Cargar la imagen comprimida con Glide
                 Glide.with(context)
                     .load(imageUrl)
                     .apply(options)
                     .into(imageItem);
+
+                // Agregar evento de clic para ver la imagen original
+                imageItem.setOnClickListener(v -> {
+                    Log.d("ImageDebug", "Iniciando carga de imagen en tamaño completo");
+                    Log.d("ImageDebug", "URL de la imagen: " + imageUrl);
+
+                    // Crear un diálogo para mostrar la imagen en tamaño completo
+                    AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                    View dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_full_image, null);
+                    ImageView fullImageView = dialogView.findViewById(R.id.fullImageView);
+                    ProgressBar progressBar = dialogView.findViewById(R.id.progressBar);
+
+                    // Mostrar el ProgressBar mientras se carga la imagen
+                    progressBar.setVisibility(View.VISIBLE);
+                    Log.d("ImageDebug", "ProgressBar visible");
+
+                    // Configurar opciones de Glide para la imagen en tamaño completo
+                    RequestOptions fullImageOptions = new RequestOptions()
+                        .diskCacheStrategy(DiskCacheStrategy.ALL)
+                        .error(R.drawable.cliente_icon)
+                        .dontAnimate()
+                        .override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL);
+
+                    // Cargar la imagen original sin compresión
+                    Glide.with(context)
+                        .load(imageUrl)
+                        .apply(fullImageOptions)
+                        .listener(new RequestListener<Drawable>() {
+                            @Override
+                            public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
+                                progressBar.setVisibility(View.GONE);
+                                Log.e("ImageDebug", "Error al cargar la imagen: " + (e != null ? e.getMessage() : "Error desconocido"));
+                                if (e != null) {
+                                    Log.e("ImageDebug", "Causa del error: " + e.getRootCauses());
+                                    for (Throwable t : e.getRootCauses()) {
+                                        Log.e("ImageDebug", "Causa raíz: " + t.getMessage());
+                                    }
+                                }
+                                Toast.makeText(context, "Error al cargar la imagen", Toast.LENGTH_SHORT).show();
+                                return false;
+                            }
+
+                            @Override
+                            public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
+                                progressBar.setVisibility(View.GONE);
+                                Log.d("ImageDebug", "Imagen cargada exitosamente");
+                                Log.d("ImageDebug", "Tamaño de la imagen: " + resource.getIntrinsicWidth() + "x" + resource.getIntrinsicHeight());
+                                Log.d("ImageDebug", "Fuente de datos: " + dataSource);
+                                return false;
+                            }
+                        })
+                        .into(fullImageView);
+
+                    // Configurar el diálogo para que ocupe toda la pantalla
+                    builder.setView(dialogView);
+                    AlertDialog dialog = builder.create();
+                    dialog.getWindow().setBackgroundDrawable(new ColorDrawable(android.graphics.Color.TRANSPARENT));
+                    dialog.show();
+                    Log.d("ImageDebug", "Diálogo mostrado");
+                });
             } else {
                 imageItem.setImageResource(R.drawable.cliente_icon);
+                imageItem.setOnClickListener(null);
             }
         }
     }
