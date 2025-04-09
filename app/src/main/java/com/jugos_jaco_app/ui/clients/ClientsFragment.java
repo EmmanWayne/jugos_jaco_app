@@ -479,21 +479,22 @@ public class ClientsFragment extends Fragment implements ChipGroup.OnCheckedChan
     }
 
     private void updateClientPosition(Client client) {
-        String url = Utilities.URL + client.getId()+"/visit/position";
+        String url = Utilities.URL + "clients/"+client.getId()+"/visit/position";
         
         JSONObject jsonBody = new JSONObject();
         try {
             jsonBody.put("position", client.getPosition());
+            jsonBody.put("day", client.getVisitDay());
             
             // Mostrar información antes de enviar al servidor
             Log.d("REORDER_DEBUG", String.format(
                 "Enviando al servidor:\n" +
-                "Cliente: %s %s\n" +
-                "ID: %s\n" +
-                "Nuevo valor position: %s",
-
+                "Cliente ID: %s\n" +
+                "Nueva posición: %s\n" +
+                "Día: %s",
                 client.getId(),
-                client.getPosition()
+                client.getPosition(),
+                client.getVisitDay()
             ));
             
         } catch (JSONException e) {
@@ -517,12 +518,24 @@ public class ClientsFragment extends Fragment implements ChipGroup.OnCheckedChan
                     viewModel.forceLoadClients(requireContext());
                 },
                 error -> {
-                    // Error al actualizar la posición
-                    Toast.makeText(requireContext(), 
-                        String.format("Error al actualizar posición de %s %s", 
-                            client.getFirstName(), 
-                            client.getLastName()),
-                        Toast.LENGTH_SHORT).show();
+                    // Intentar obtener el mensaje de error del servidor
+                    String errorMessage = "Error al actualizar posición";
+                    try {
+                        String responseBody = new String(error.networkResponse.data);
+                        JSONObject jsonError = new JSONObject(responseBody);
+                        if (jsonError.has("message")) {
+                            errorMessage = jsonError.getString("message");
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+
+                    // Mostrar el mensaje de error
+                    Toast.makeText(requireContext(), errorMessage, Toast.LENGTH_LONG).show();
+                    
+                    // Log del error para debugging
+                    Log.e("UPDATE_POSITION_ERROR", "Error: " + errorMessage);
+                    
                     viewModel.forceLoadClients(requireContext());
                 }
         ) {
