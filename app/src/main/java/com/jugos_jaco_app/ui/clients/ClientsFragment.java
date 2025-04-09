@@ -86,11 +86,17 @@ public class ClientsFragment extends Fragment implements ChipGroup.OnCheckedChan
     private Chip chipMonday, chipTuesday, chipWednesday, chipThursday, chipFriday, chipSaturday;
     private MaterialCardView cardDaySelector;
 
+    private boolean isUserInteraction = false;
+    private boolean isRestoringState = false;
+
+    private String lastSelectedDay = null;
+
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
         viewModel = new ViewModelProvider(requireActivity()).get(ClientsViewModel.class);
+        Log.d("ClientsFragment", "onCreate - Fragment creado");
     }
 
     @Override
@@ -115,6 +121,7 @@ public class ClientsFragment extends Fragment implements ChipGroup.OnCheckedChan
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
+        Log.d("ClientsFragment", "onCreateView - Creando vista del fragmento");
         View root = inflater.inflate(R.layout.fragment_clients, container, false);
 
         // Inicializar ViewModel a nivel de actividad
@@ -126,6 +133,7 @@ public class ClientsFragment extends Fragment implements ChipGroup.OnCheckedChan
         // Observar cambios en la lista de clientes
         viewModel.getClients().observe(getViewLifecycleOwner(), clients -> {
             if (clients != null) {
+                Log.d("ClientsFragment", "Observador de clientes - Actualizando lista con " + clients.size() + " clientes");
                 clientAdapter.updateList(clients);
                 swipeRefreshLayout.setRefreshing(false);
                 hideLoading();
@@ -134,19 +142,31 @@ public class ClientsFragment extends Fragment implements ChipGroup.OnCheckedChan
 
         // Observar cambios en el día seleccionado
         viewModel.getSelectedDay().observe(getViewLifecycleOwner(), day -> {
-            if (day != null) {
+            Log.d("ClientsFragment", "Observador de selectedDay - Día recibido: " + day + 
+                                    ", lastSelectedDay: " + lastSelectedDay + 
+                                    ", isUserInteraction: " + isUserInteraction);
+            
+            // Solo actualizar si el día ha cambiado realmente y no estamos restaurando el estado
+            if (day != null && !day.equals(lastSelectedDay) && !isRestoringState) {
+                Log.d("ClientsFragment", "Actualizando selección de día - Nuevo día: " + day);
+                lastSelectedDay = day;
                 updateDaySelection(day);
-            } else {
-                chipGroupDays.clearCheck(); // Desmarcar todos los chips cuando day es null
-            }
-            // Cargar clientes solo si no hay datos previos
-            if (!viewModel.hasLoadedData()) {
-                viewModel.loadClients(requireContext());
+                if (!viewModel.hasLoadedData()) {
+                    Log.d("ClientsFragment", "Cargando clientes para el día: " + day);
+                    viewModel.loadClients(requireContext());
+                }
+            } else if (day == null && lastSelectedDay != null && !isRestoringState) {
+                Log.d("ClientsFragment", "Limpiando selección de día");
+                lastSelectedDay = null;
+                if (isUserInteraction) {
+                    chipGroupDays.clearCheck();
+                }
             }
         });
 
         // Solo establecer el día actual si no hay un día seleccionado previamente
         if (viewModel.getSelectedDay().getValue() == null && !viewModel.hasLoadedData()) {
+            Log.d("ClientsFragment", "Estableciendo día actual");
             setCurrentDay();
         }
 
@@ -249,6 +269,13 @@ public class ClientsFragment extends Fragment implements ChipGroup.OnCheckedChan
     }
 
     private void updateDaySelection(String day) {
+        Log.d("ClientsFragment", "updateDaySelection - Día: " + day + 
+                                ", isRestoringState: " + isRestoringState + 
+                                ", isUserInteraction: " + isUserInteraction);
+        
+        isRestoringState = true; // Indicar que estamos restaurando el estado
+        isUserInteraction = false; // Desactivar la interacción del usuario
+        
         switch (day) {
             case "lunes":
                 chipMonday.setChecked(true);
@@ -269,6 +296,12 @@ public class ClientsFragment extends Fragment implements ChipGroup.OnCheckedChan
                 chipSaturday.setChecked(true);
                 break;
         }
+        
+        isUserInteraction = true; // Reactivar la interacción del usuario
+        isRestoringState = false; // Indicar que hemos terminado de restaurar el estado
+        
+        Log.d("ClientsFragment", "updateDaySelection completado - isRestoringState: " + isRestoringState + 
+                                ", isUserInteraction: " + isUserInteraction);
     }
 
     private void setCurrentDay() {
@@ -406,17 +439,34 @@ public class ClientsFragment extends Fragment implements ChipGroup.OnCheckedChan
 
     @Override
     public void onCheckedChanged(@NonNull ChipGroup group, int checkedId) {
+        Log.d("ClientsFragment", "onCheckedChanged - checkedId: " + checkedId + 
+                                ", isRestoringState: " + isRestoringState + 
+                                ", isUserInteraction: " + isUserInteraction);
+        
+        // No procesar si estamos restaurando el estado o no es una interacción del usuario
+        if (isRestoringState || !isUserInteraction) {
+            Log.d("ClientsFragment", "Ignorando cambio de selección - isRestoringState o !isUserInteraction");
+            return;
+        }
+
         if (checkedId == View.NO_ID) {
+            Log.d("ClientsFragment", "Día deseleccionado");
             viewModel.setSelectedDay(null);
             viewModel.forceLoadClients(requireContext());
-            hasShownDaySelectionMessage = false; // Resetear el control del mensaje
+            hasShownDaySelectionMessage = false;
         } else {
             Chip selectedChip = group.findViewById(checkedId);
             if (selectedChip != null) {
                 String selectedDay = formatDayForServer(selectedChip.getText().toString());
-                viewModel.setSelectedDay(selectedDay);
-                viewModel.forceLoadClients(requireContext());
-                hasShownDaySelectionMessage = false; // Resetear el control del mensaje
+                // Solo actualizar si el día ha cambiado realmente
+                if (!selectedDay.equals(lastSelectedDay)) {
+                    Log.d("ClientsFragment", "Nuevo día seleccionado: " + selectedDay);
+                    viewModel.setSelectedDay(selectedDay);
+                    viewModel.forceLoadClients(requireContext());
+                    hasShownDaySelectionMessage = false;
+                } else {
+                    Log.d("ClientsFragment", "Ignorando selección del mismo día: " + selectedDay);
+                }
             }
         }
     }
@@ -591,6 +641,21 @@ public class ClientsFragment extends Fragment implements ChipGroup.OnCheckedChan
             default:
                 return day;
         }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        Log.d("ClientsFragment", "onResume - Fragment resumido");
+        Log.d("ClientsFragment", "Estado actual - isUserInteraction: " + isUserInteraction + 
+                                ", isRestoringState: " + isRestoringState + 
+                                ", lastSelectedDay: " + lastSelectedDay);
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        Log.d("ClientsFragment", "onPause - Fragment pausado");
     }
 }
 

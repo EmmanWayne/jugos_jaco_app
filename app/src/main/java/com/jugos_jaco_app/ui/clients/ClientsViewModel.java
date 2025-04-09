@@ -2,6 +2,7 @@ package com.jugos_jaco_app.ui.clients;
 
 import android.content.Context;
 import android.util.Log;
+import android.widget.Toast;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -60,7 +61,10 @@ public class ClientsViewModel extends ViewModel {
     }
 
     public void loadClients(Context context) {
-        if (isDataLoaded && clientList.getValue() != null) {
+
+         if (isDataLoaded && clientList.getValue() != null) {
+            Toast.makeText(context, "retona null"+isDataLoaded, Toast.LENGTH_SHORT).show();
+
             return; // Si ya hay datos cargados, no hacer nada
         }
 
@@ -78,6 +82,8 @@ public class ClientsViewModel extends ViewModel {
                 url,
                 null,
                 response -> {
+
+                    Toast.makeText(context, "recarga", Toast.LENGTH_SHORT).show();
                     try {
                         List<Client> clients = new ArrayList<>();
                         JSONArray clientsJson = response.getJSONArray("data");
