@@ -91,6 +91,7 @@ public class ClientsViewModel extends ViewModel {
 
                             String position = clientJson.optString("position", "");
                             String visitDay = clientJson.optString("visit_day", "");
+                            String profileImage = clientJson.optString("profile_image", "");
 
                             Client client = new Client(
                                     String.valueOf(clientJson.getInt("id")),
@@ -106,7 +107,8 @@ public class ClientsViewModel extends ViewModel {
                                     typePrice,
                                     clientJson.getString("business_name"),
                                     position,
-                                    visitDay
+                                    visitDay,
+                                    profileImage
                             );
                             clients.add(client);
                         }

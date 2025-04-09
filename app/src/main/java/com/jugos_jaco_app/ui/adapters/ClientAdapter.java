@@ -25,11 +25,18 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import com.jugos_jaco_app.R;
 import com.jugos_jaco_app.ui.models.Client;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.RequestOptions;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
+
+import com.jugos_jaco_app.ui.utilities.Utilities;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.List;
 import android.Manifest;
+
+import de.hdodenhof.circleimageview.CircleImageView;
 
 public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientViewHolder> {
 
@@ -38,6 +45,7 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
     private static final int REQUEST_ENABLE_GPS = 123;
     private static final int REQUEST_CALL_PERMISSION = 124;
     private ItemTouchHelper touchHelper;
+    private static final int IMAGE_SIZE = 100; // Tamaño en dp para las imágenes en miniatura
 
     public ClientAdapter(List<Client> clients, Context context) {
         this.clients = clients;
@@ -58,16 +66,7 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
     @Override
     public void onBindViewHolder(@NonNull ClientViewHolder holder, int position) {
         Client client = clients.get(position);
-
-        holder.tvFullName.setText(client.getFirstName() + " " + client.getLastName());
-        holder.tvPhoneNumber.setText(client.getPhoneNumber());
-        holder.tvBusinessName.setText(client.getBusinessName());
-
-        if (client.hasCoordinates()) {
-            holder.ivCoordinatesIcon.setImageResource(R.drawable.ic_has_coordinates);
-        } else {
-            holder.ivCoordinatesIcon.setImageResource(R.drawable.ic_no_coordinates);
-        }
+        holder.bind(client);
 
         holder.imageItem.setOnClickListener(v ->
                 Toast.makeText(context, "Imagen de " + client.getFirstName(), Toast.LENGTH_SHORT).show()
@@ -75,7 +74,6 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
 
         holder.ivCoordinatesIcon.setOnClickListener(v -> {
             if (client.hasCoordinates()) {
-
                 checkLocationAndOpenMap(client);
             } else {
                 Toast.makeText(context, "No hay coordenadas disponibles", Toast.LENGTH_SHORT).show();
@@ -162,27 +160,6 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
         return clients.size();
     }
 
-    public static class ClientViewHolder extends RecyclerView.ViewHolder {
-        TextView tvFullName;
-        TextView tvPhoneNumber;
-        TextView tvBusinessName;
-        ImageView ivCoordinatesIcon;
-        ImageView ivPhoneIcon;
-        ImageView ivVentaIcon;
-        ImageView imageItem;
-
-        public ClientViewHolder(@NonNull View itemView) {
-            super(itemView);
-            tvFullName = itemView.findViewById(R.id.tvFullName);
-            tvPhoneNumber = itemView.findViewById(R.id.tvPhoneNumber);
-            tvBusinessName = itemView.findViewById(R.id.tvBusinessName);
-            ivCoordinatesIcon = itemView.findViewById(R.id.ivCoordinatesIcon);
-            ivPhoneIcon = itemView.findViewById(R.id.ivPhoneIcon);
-            ivVentaIcon = itemView.findViewById(R.id.ivVentaIcon);
-            imageItem = itemView.findViewById(R.id.imageitem);
-        }
-    }
-
     public void updateList(List<Client> newClients) {
         clients.clear();
         clients.addAll(newClients);
@@ -257,5 +234,70 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
 
     public List<Client> getClients() {
         return clients;
+    }
+
+    class ClientViewHolder extends RecyclerView.ViewHolder {
+        private final TextView tvBusinessName;
+        private final TextView tvFullName;
+        private final TextView tvPhoneNumber;
+        private final CircleImageView imageItem;
+        private final ImageView ivCoordinatesIcon;
+        private final ImageView ivPhoneIcon;
+        private final ImageView ivVentaIcon;
+
+        public ClientViewHolder(@NonNull View itemView) {
+            super(itemView);
+            tvBusinessName = itemView.findViewById(R.id.tvBusinessName);
+            tvFullName = itemView.findViewById(R.id.tvFullName);
+            tvPhoneNumber = itemView.findViewById(R.id.tvPhoneNumber);
+            imageItem = itemView.findViewById(R.id.imageitem);
+            ivCoordinatesIcon = itemView.findViewById(R.id.ivCoordinatesIcon);
+            ivPhoneIcon = itemView.findViewById(R.id.ivPhoneIcon);
+            ivVentaIcon = itemView.findViewById(R.id.ivVentaIcon);
+
+            // Configurar listeners para los iconos
+            setupIconListeners();
+        }
+
+        private void setupIconListeners() {
+            ivCoordinatesIcon.setOnClickListener(v -> {
+                // Manejar clic en icono de coordenadas
+            });
+
+            ivPhoneIcon.setOnClickListener(v -> {
+                // Manejar clic en icono de teléfono
+            });
+
+            ivVentaIcon.setOnClickListener(v -> {
+                // Manejar clic en icono de venta
+            });
+        }
+
+        public void bind(Client client) {
+            tvBusinessName.setText(client.getBusinessName());
+            tvFullName.setText(String.format("%s %s", client.getFirstName(), client.getLastName()));
+            tvPhoneNumber.setText(String.format("Teléfono: %s", client.getPhoneNumber()));
+
+            // Cargar imagen de perfil
+            if (client.getProfileImage() != null && !client.getProfileImage().isEmpty()) {
+                String imageUrl = Utilities.URL_FOTOS + "storage/" + client.getProfileImage();
+                
+                // Crear un RequestOptions para comprimir la imagen
+                RequestOptions options = new RequestOptions()
+                    .override(IMAGE_SIZE, IMAGE_SIZE)
+                    .centerCrop()
+                    .diskCacheStrategy(DiskCacheStrategy.ALL)
+                    .placeholder(R.drawable.cliente_icon)
+                    .error(R.drawable.cliente_icon);
+
+                // Cargar la imagen con Glide
+                Glide.with(context)
+                    .load(imageUrl)
+                    .apply(options)
+                    .into(imageItem);
+            } else {
+                imageItem.setImageResource(R.drawable.cliente_icon);
+            }
+        }
     }
 }

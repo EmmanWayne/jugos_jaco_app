@@ -17,10 +17,12 @@ public class Client implements Serializable {
     private String businessName;
     private String position;
     private String visitDay;
+    private String profileImage;
 
     public Client(String id, String firstName, String lastName, String phoneNumber, String adress, 
                  String departament, String township, String latitude, String longitude, 
-                 String plus_code, String typePrice, String businessName, String position, String visitDay) {
+                 String plus_code, String typePrice, String businessName, String position, String visitDay,
+                 String profileImage) {
         this.id = id;
         this.firstName = firstName;
         this.lastName = lastName;
@@ -35,6 +37,7 @@ public class Client implements Serializable {
         this.businessName = businessName;
         this.position = position;
         this.visitDay = visitDay;
+        this.profileImage = profileImage;
     }
 
     public String getId() {
@@ -110,5 +113,13 @@ public class Client implements Serializable {
         } catch (NumberFormatException e) {
             return false;
         }
+    }
+
+    public String getProfileImage() {
+        return profileImage;
+    }
+
+    public void setProfileImage(String profileImage) {
+        this.profileImage = profileImage;
     }
 }
