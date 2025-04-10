@@ -245,6 +245,8 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
         private final TextView tvBusinessName;
         private final TextView tvFullName;
         private final TextView tvPhoneNumber;
+        private final TextView tvVisitDay;
+
         private final CircleImageView imageItem;
         private final ImageView ivCoordinatesIcon;
         private final ImageView ivPhoneIcon;
@@ -259,6 +261,7 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
             ivCoordinatesIcon = itemView.findViewById(R.id.ivCoordinatesIcon);
             ivPhoneIcon = itemView.findViewById(R.id.ivPhoneIcon);
             ivVentaIcon = itemView.findViewById(R.id.ivVentaIcon);
+            tvVisitDay =  itemView.findViewById(R.id.tvVisitDay);
 
             // Configurar listeners para los iconos
             setupIconListeners();
@@ -280,8 +283,10 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
 
         public void bind(Client client) {
             tvBusinessName.setText(client.getBusinessName());
+            tvVisitDay.setText(client.getVisitDay());
+
             tvFullName.setText(String.format("%s %s", client.getFirstName(), client.getLastName()));
-            tvPhoneNumber.setText(String.format("Teléfono: %s", client.getPhoneNumber()));
+            tvPhoneNumber.setText(String.format("%s", client.getPhoneNumber()));
 
             // Cargar imagen de perfil comprimida
             if (client.getProfileImage() != null && !client.getProfileImage().isEmpty()) {

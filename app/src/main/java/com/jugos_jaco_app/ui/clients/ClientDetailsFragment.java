@@ -211,8 +211,8 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
         tvdepartment.setText(department);
         tvClientPhone.setText(clientPhone);
         tvTypePrice.setText(typePrice);
-        tvPosition.setText(position);
-        tvVisitDay.setText(visitDay);
+        tvPosition.setText("Posición: "+position);
+        tvVisitDay.setText("Día de visita: "+visitDay);
 
         // Obtener los argumentos
         Bundle args = getArguments();

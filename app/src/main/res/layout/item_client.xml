@@ -58,7 +58,7 @@
 
                 <TextView
                     android:id="@+id/tvFullName"
-                     android:layout_width="match_parent"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_vertical"
                     android:layout_marginLeft="3dp"
@@ -80,6 +80,18 @@
                         android:text="Teléfono:"
                         android:textColor="#757575"
                         android:textSize="15sp" />
+
+                    <TextView
+                        android:id="@+id/tvVisitDay"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentEnd="true"
+                        android:layout_marginTop="13dp"
+                        android:layout_marginEnd="20dp"
+                        android:text="Dias de la semana "
+                         android:textColor="@color/lighter_red"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
 
                 </RelativeLayout>
 
