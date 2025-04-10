@@ -97,6 +97,8 @@ import android.graphics.drawable.Drawable;
 import androidx.annotation.Nullable;
 import android.graphics.drawable.ColorDrawable;
 
+import androidx.lifecycle.ViewModelProvider;
+
 public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPhotoListener {
 
     private static final int REQUEST_CODE_PERMISSIONS = 100;
@@ -1230,7 +1232,8 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                         if (response.isSuccessful() && response.body() != null && 
                             response.body().getData() != null && 
                             response.body().getData().getPath() != null) {
-                            
+                            headerProgress.setVisibility(View.GONE);
+
                             String imagePath = response.body().getData().getPath();
                             String imageUrl = Utilities.URL_FOTOS + "storage/" + imagePath;
                             
@@ -1249,8 +1252,11 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
 
                     @Override
                     public void onFailure(Call<PhotoResponse> call, Throwable t) {
+                        headerProgress.setVisibility(View.GONE);
+
                         Toast.makeText(requireContext(), 
-                            "Error al cargar la imagen", 
+                            "Error al cargar la imagen",
+
                             Toast.LENGTH_SHORT).show();
                     }
                 });
@@ -1474,8 +1480,6 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                 .enqueue(new Callback<PhotoResponse>() {
                     @Override
                     public void onResponse(Call<PhotoResponse> call, Response<PhotoResponse> response) {
-                        // Ocultar el ProgressBar
-
                         if (response.isSuccessful() && response.body() != null) {
                             // La subida fue exitosa, obtener la URL del servidor
                             if (response.body().getData() != null && response.body().getData().getPath() != null) {
@@ -1502,6 +1506,10 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                                                 }
                                             })
                                             .into(clientHeaderImage);
+
+                                    // Actualizar el item en la lista de ClientsFragment
+                                    ClientsViewModel clientsViewModel = new ViewModelProvider(requireActivity()).get(ClientsViewModel.class);
+                                    clientsViewModel.updateClientProfileImage(id, serverImagePath);
                                 });
                             }
 

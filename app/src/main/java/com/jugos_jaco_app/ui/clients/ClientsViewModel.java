@@ -83,8 +83,7 @@ public class ClientsViewModel extends ViewModel {
                 null,
                 response -> {
 
-                    Toast.makeText(context, "recarga", Toast.LENGTH_SHORT).show();
-                    try {
+                     try {
                         List<Client> clients = new ArrayList<>();
                         JSONArray clientsJson = response.getJSONArray("data");
                         for (int i = 0; i < clientsJson.length(); i++) {
@@ -172,7 +171,8 @@ public class ClientsViewModel extends ViewModel {
         List<Client> filteredList = new ArrayList<>();
         for (Client client : cachedClients) {
             if (client.getFirstName().toLowerCase().contains(query.toLowerCase()) ||
-                    client.getLastName().toLowerCase().contains(query.toLowerCase())) {
+                    client.getLastName().toLowerCase().contains(query.toLowerCase()) ||
+                    client.getBusinessName().toLowerCase().contains(query.toLowerCase())) {
                 filteredList.add(client);
             }
         }
@@ -206,6 +206,22 @@ public class ClientsViewModel extends ViewModel {
                 }
             }
             clientList.setValue(currentClients);
+        }
+    }
+
+    public void updateClientProfileImage(String clientId, String newImagePath) {
+        List<Client> currentClients = clientList.getValue();
+        if (currentClients != null) {
+            for (int i = 0; i < currentClients.size(); i++) {
+                Client client = currentClients.get(i);
+                if (client.getId().equals(clientId)) {
+                    // Actualizar la imagen de perfil del cliente
+                    client.setProfileImage(newImagePath);
+                    // Notificar al observador que la lista ha cambiado
+                    clientList.setValue(currentClients);
+                    break;
+                }
+            }
         }
     }
 }
