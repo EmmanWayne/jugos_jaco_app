@@ -18,6 +18,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ProductsAssignedFragment extends Fragment {
+    private androidx.appcompat.widget.SearchView searchView;
+
     private RecyclerView rvProducts;
     private ProductsAdapter productsAdapter;
     private List<Product> allProducts = new ArrayList<>();
@@ -31,6 +33,8 @@ public class ProductsAssignedFragment extends Fragment {
         rvProducts.setLayoutManager(new GridLayoutManager(getContext(), 2));
         rvProducts.setAdapter(productsAdapter);
         loadProducts();
+        // Configurar búsqueda
+        setHasOptionsMenu(true);
         return view;
     }
 
@@ -86,4 +90,41 @@ public class ProductsAssignedFragment extends Fragment {
         };
         VolleySingleton.getInstance(requireContext()).addToRequestQueue(request);
     }
+
+    @Override
+    public void onCreateOptionsMenu(@NonNull android.view.Menu menu, @NonNull android.view.MenuInflater inflater) {
+        menu.clear(); // Eliminar cualquier menú anterior
+        inflater.inflate(R.menu.menu_search, menu); // Usar menú de búsqueda
+        android.view.MenuItem searchItem = menu.findItem(R.id.action_search);
+        searchView = (androidx.appcompat.widget.SearchView) searchItem.getActionView();
+        searchView.setQueryHint("Buscar producto...");
+        searchView.setOnQueryTextListener(new androidx.appcompat.widget.SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                filterProducts(query);
+                return true;
+            }
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                filterProducts(newText);
+                return true;
+            }
+        });
+    }
+
+    // Método para filtrar productos por nombre
+    private void filterProducts(String query) {
+        if (query == null || query.trim().isEmpty()) {
+            productsAdapter.updateProducts(allProducts);
+            return;
+        }
+        List<Product> filtered = new ArrayList<>();
+        for (Product p : allProducts) {
+            if (p.getName() != null && p.getName().toLowerCase().contains(query.toLowerCase())) {
+                filtered.add(p);
+            }
+        }
+        productsAdapter.updateProducts(filtered);
+    }
 }
+
