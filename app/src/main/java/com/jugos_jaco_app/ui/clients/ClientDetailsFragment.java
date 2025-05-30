@@ -309,7 +309,8 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
         TextView tvtownship = view.findViewById(R.id.tvTownship);
         TextView tvPosition = view.findViewById(R.id.tvPosition);
         TextView tvVisitDay = view.findViewById(R.id.tvVisitDay);
-        MaterialButton btnEditVisitDays = view.findViewById(R.id.btnEditVisitDays);
+        btnEditVisitDays = view.findViewById(R.id.btnEditVisitDays);
+        btnEditVisitDays.setEnabled(false); // Deshabilitado hasta cargar días
         tvVisitDayGlobal = tvVisitDay;
 
         Button btnAddPhoto = view.findViewById(R.id.btnAddPhoto);
@@ -448,9 +449,11 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
     // Mapa para guardar el id_visit_day asociado a cada día
     private HashMap<String, String> visitDayIdMap = new HashMap<>();
     private ArrayList<String> currentVisitDays = new ArrayList<>();
+    private MaterialButton btnEditVisitDays;
     private TextView tvVisitDayGlobal;
 
     private void loadVisitDays(TextView tvVisitDay) {
+        // Habilitar el botón solo cuando termine de cargar
         String urlVisitDays = Utilities.URL + "clients/" + id + "/visit-days";
         Log.d("ClientDetailsFragment", "URL días de visita: " + urlVisitDays);
         RequestQueue queue = Volley.newRequestQueue(requireContext());
@@ -478,9 +481,11 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                         }
                         String visitDaysConcat = visitDaysBuilder.toString();
                         tvVisitDay.setText("Días de visita: " + (visitDaysConcat.isEmpty() ? "No asignados" : visitDaysConcat));
+                        if (btnEditVisitDays != null) btnEditVisitDays.setEnabled(true);
                     } catch (Exception e) {
                         tvVisitDay.setText("Días de visita: Error al cargar");
                         Log.e("ClientDetailsFragment", "Error procesando días de visita: " + e.getMessage());
+                        if (btnEditVisitDays != null) btnEditVisitDays.setEnabled(false);
                     }
                 },
                 error -> {
