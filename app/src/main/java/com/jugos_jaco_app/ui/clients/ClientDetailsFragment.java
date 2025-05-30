@@ -152,10 +152,12 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                 url,
                 null,
                 response -> {
+                    if (!isAdded() || getContext() == null) return;
                     Toast.makeText(getContext(), "Día eliminado: " + day, Toast.LENGTH_SHORT).show();
                     loadVisitDays(tvVisitDayGlobal);
                 },
                 error -> {
+                    if (!isAdded() || getContext() == null) return;
                     Toast.makeText(getContext(), "Error al eliminar día: " + day, Toast.LENGTH_SHORT).show();
                     loadVisitDays(tvVisitDayGlobal);
                 }
@@ -189,10 +191,12 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                 urlVisitDays,
                 params,
                 response -> {
+                    if (!isAdded() || getContext() == null) return;
                     Toast.makeText(getContext(), "Día agregado: " + day, Toast.LENGTH_SHORT).show();
                     loadVisitDays(tvVisitDayGlobal);
                 },
                 error -> {
+                    if (!isAdded() || getContext() == null) return;
                     Toast.makeText(getContext(), "Error al agregar día: " + day, Toast.LENGTH_SHORT).show();
                     loadVisitDays(tvVisitDayGlobal);
                 }
@@ -461,8 +465,10 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                 Request.Method.GET,
                 urlVisitDays,
                 null,
-                response -> {
+                response -> { // (chequeo se agrega dentro del callback, ya corregido arriba)
+
                     try {
+                        if (!isAdded() || getContext() == null) return;
                         JSONArray visitDaysArray = response.getJSONArray("data");
                         StringBuilder visitDaysBuilder = new StringBuilder();
                         currentVisitDays.clear();
@@ -483,12 +489,14 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                         tvVisitDay.setText("Días de visita: " + (visitDaysConcat.isEmpty() ? "No asignados" : visitDaysConcat));
                         if (btnEditVisitDays != null) btnEditVisitDays.setEnabled(true);
                     } catch (Exception e) {
+                        if (!isAdded() || getContext() == null) return;
                         tvVisitDay.setText("Días de visita: Error al cargar");
                         Log.e("ClientDetailsFragment", "Error procesando días de visita: " + e.getMessage());
                         if (btnEditVisitDays != null) btnEditVisitDays.setEnabled(false);
                     }
                 },
                 error -> {
+                    if (!isAdded() || getContext() == null) return;
                     tvVisitDay.setText("Días de visita: Error de red"+id);
                     String errorMsg = (error.getMessage() != null) ? error.getMessage() : "Sin mensaje";
                     int statusCode = 0;
