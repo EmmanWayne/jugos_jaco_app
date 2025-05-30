@@ -76,6 +76,7 @@ public class ClientsViewModel extends ViewModel {
         if (currentDay != null && !currentDay.isEmpty()) {
             url += "?day=" + currentDay;
         }
+        Log.d("ClientsViewModel", "URL petición clientes: " + url);
 
         JsonObjectRequest request = new JsonObjectRequest(
                 Request.Method.GET,
@@ -86,6 +87,7 @@ public class ClientsViewModel extends ViewModel {
                      try {
                         List<Client> clients = new ArrayList<>();
                         JSONArray clientsJson = response.getJSONArray("data");
+                        Log.d("ClientsViewModel", "Clientes recibidos: " + clientsJson.length());
                         for (int i = 0; i < clientsJson.length(); i++) {
                             JSONObject clientJson = clientsJson.getJSONObject(i);
                             JSONObject locationJson = clientJson.getJSONObject("location");
@@ -94,9 +96,44 @@ public class ClientsViewModel extends ViewModel {
                                 typePrice = clientJson.getString("type_price");
                             }
 
-                            String position = clientJson.optString("position", "");
-                            String visitDay = clientJson.optString("visit_day", "");
+                            // Procesar visit_days para visitDay y position
+                            StringBuilder visitDaysBuilder = new StringBuilder();
+                            StringBuilder positionsBuilder = new StringBuilder();
+                            if (clientJson.has("visit_days") && !clientJson.isNull("visit_days")) {
+                                try {
+                                    JSONArray visitDaysArray = clientJson.getJSONArray("visit_days");
+                                    Log.d("ClientsViewModel", "Procesando visit_days para cliente id=" + clientJson.getInt("id") + ", total días: " + visitDaysArray.length());
+                                    for (int j = 0; j < visitDaysArray.length(); j++) {
+                                        try {
+                                            JSONObject visitDayObj = visitDaysArray.getJSONObject(j);
+                                            String visitDay = visitDayObj.optString("visit_day", "");
+                                            String position = visitDayObj.optString("position", "");
+                                            Log.d("ClientsViewModel", "visit_day encontrado: " + visitDay + ", position: " + position);
+                                            if (!visitDay.isEmpty()) {
+                                                if (visitDaysBuilder.length() > 0) visitDaysBuilder.append(", ");
+                                                visitDaysBuilder.append(visitDay);
+                                            }
+                                            if (!position.isEmpty()) {
+                                                if (positionsBuilder.length() > 0) positionsBuilder.append(", ");
+                                                positionsBuilder.append(position);
+                                            }
+                                        } catch (JSONException e) {
+                                            Log.e("ClientsViewModel", "Error procesando un visit_day: " + e.getMessage());
+                                        }
+                                    }
+                                } catch (JSONException e) {
+                                    Log.e("ClientsViewModel", "Error procesando array visit_days: " + e.getMessage());
+                                }
+                            }
+                            String visitDays = visitDaysBuilder.toString();
+                            String positions = positionsBuilder.toString();
+
                             String profileImage = clientJson.optString("profile_image", "");
+
+                            // Manejar posibles nulos en location
+                            String latitude = locationJson.isNull("latitude") ? "" : locationJson.optString("latitude", "");
+                            String longitude = locationJson.isNull("longitude") ? "" : locationJson.optString("longitude", "");
+                            String plusCode = locationJson.isNull("plus_code") ? "" : locationJson.optString("plus_code", "");
 
                             Client client = new Client(
                                     String.valueOf(clientJson.getInt("id")),
@@ -106,25 +143,27 @@ public class ClientsViewModel extends ViewModel {
                                     clientJson.getString("address"),
                                     clientJson.getString("department"),
                                     clientJson.getString("township"),
-                                    locationJson.getString("latitude"),
-                                    locationJson.getString("longitude"),
-                                    locationJson.getString("plus_code"),
+                                    latitude,
+                                    longitude,
+                                    plusCode,
                                     typePrice,
                                     clientJson.getString("business_name"),
-                                    position,
-                                    visitDay,
+                                    positions,
+                                    visitDays,
                                     profileImage
                             );
+                            Log.d("ClientsViewModel", "Cliente procesado: id=" + client.getId() + ", nombre=" + client.getFirstName() + " " + client.getLastName() + ", visita(s): " + visitDays + ", posición(es): " + positions);
                             clients.add(client);
                         }
 
                         cachedClients = new ArrayList<>(clients);
                         clientList.setValue(clients);
+                        Log.d("ClientsViewModel", "Clientes cargados en LiveData: " + clients.size());
                         isDataLoaded = true;
                         isLoading.setValue(false);
                     } catch (JSONException e) {
                         e.printStackTrace();
-                        Log.e("TAGASIEMPRE", e.toString());
+                        Log.e("ClientsViewModel", "Error procesando clientes: " + e.toString());
                         errorMessage.setValue("Error al procesar los datos");
                         isLoading.setValue(false);
                     }
@@ -146,6 +185,7 @@ public class ClientsViewModel extends ViewModel {
                             }
                         }
                     }
+                    Log.e("ClientsViewModel", "Error en la petición: " + message);
                     errorMessage.setValue(message);
                     isLoading.setValue(false);
                 }

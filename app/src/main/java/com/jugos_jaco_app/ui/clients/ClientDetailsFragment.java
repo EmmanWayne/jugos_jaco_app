@@ -1,5 +1,9 @@
 package com.jugos_jaco_app.ui.clients;
 
+import static com.jugos_jaco_app.Login.KEY_TOKEN;
+import static com.jugos_jaco_app.Login.PREFS_NAME;
+import static com.jugos_jaco_app.Login.TOKEN_TYPE;
+ 
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
@@ -21,6 +25,11 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.android.volley.AuthFailureError;
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.Volley;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.jugos_jaco_app.Login;
 import com.jugos_jaco_app.R;
@@ -32,6 +41,7 @@ import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 
@@ -77,6 +87,7 @@ import org.json.JSONObject;
 import android.media.ExifInterface;
 import android.graphics.Matrix;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -211,8 +222,9 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
         tvdepartment.setText(department);
         tvClientPhone.setText(clientPhone);
         tvTypePrice.setText(typePrice);
-        tvPosition.setText("Posición: "+position);
-        tvVisitDay.setText("Día de visita: "+visitDay);
+        tvPosition.setText("Posición: " + (position != null ? position : "Sin posición"));
+        // Cargar los días de visita usando un método separado
+        loadVisitDays(tvVisitDay);
 
         // Obtener los argumentos
         Bundle args = getArguments();
@@ -323,10 +335,63 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
         return view;
     }
 
+    /**
+     * Carga los días de visita del cliente y los muestra en el TextView proporcionado.
+     */
+    private void loadVisitDays(TextView tvVisitDay) {
+        String urlVisitDays = Utilities.URL + "clients/" + id + "/visit-days";
+        Log.d("ClientDetailsFragment", "URL días de visita: " + urlVisitDays);
+        RequestQueue queue = Volley.newRequestQueue(requireContext());
+        JsonObjectRequest visitDaysRequest = new JsonObjectRequest(
+                Request.Method.GET,
+                urlVisitDays,
+                null,
+                response -> {
+                    try {
+                        JSONArray visitDaysArray = response.getJSONArray("data");
+                        StringBuilder visitDaysBuilder = new StringBuilder();
+                        for (int i = 0; i < visitDaysArray.length(); i++) {
+                            JSONObject visitDayObj = visitDaysArray.getJSONObject(i);
+                            String visitDayStr = visitDayObj.optString("visit_day", "");
+                            if (!visitDayStr.isEmpty()) {
+                                if (visitDaysBuilder.length() > 0) visitDaysBuilder.append(", ");
+                                visitDaysBuilder.append(visitDayStr);
+                            }
+                        }
+                        String visitDaysConcat = visitDaysBuilder.toString();
+                        tvVisitDay.setText("Días de visita: " + (visitDaysConcat.isEmpty() ? "No asignados" : visitDaysConcat));
+                    } catch (Exception e) {
+                        tvVisitDay.setText("Días de visita: Error al cargar");
+                        Log.e("ClientDetailsFragment", "Error procesando días de visita: " + e.getMessage());
+                    }
+                },
+                error -> {
+                    tvVisitDay.setText("Días de visita: Error de red"+id);
+                    String errorMsg = (error.getMessage() != null) ? error.getMessage() : "Sin mensaje";
+                    int statusCode = 0;
+                    if (error.networkResponse != null) {
+                        statusCode = error.networkResponse.statusCode;
+                        Log.e("ClientDetailsFragment", "Error en petición de días de visita: statusCode=" + statusCode + ", mensaje=" + errorMsg);
+                    } else {
+                        Log.e("ClientDetailsFragment", "Error en petición de días de visita: mensaje=" + errorMsg);
+                    }
+                }
+        ){
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Authorization", ClientDetailsFragment.getAuthorizationHeader(getContext()));
+                headers.put("Accept", "application/json");
+                return headers;
+            }
+        };;
+        queue.add(visitDaysRequest);
+    }
+
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        
+
         // Ahora llamamos a loadServerPhotos() aquí, después de que la vista está creada
         loadServerPhotos();
         loadProfileImage();
@@ -1639,5 +1704,19 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                     }
                 });
     }
+
+    public static String getAuthorizationHeader(Context context) {
+
+
+        SharedPreferences sharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        String token = sharedPreferences.getString(KEY_TOKEN, null);
+        String tokenType = sharedPreferences.getString(TOKEN_TYPE, "Bearer");
+
+        if (token != null) {
+            return tokenType + " " + token;
+        }
+        return null;
+    }
+
 
 }
