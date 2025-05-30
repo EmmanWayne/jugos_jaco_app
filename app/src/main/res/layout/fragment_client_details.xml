@@ -349,6 +349,7 @@
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="8dp"
                                 android:textSize="16sp"
+                                android:visibility="gone"
                                 android:textColor="@color/text_secondary" />
 
                             <TextView
@@ -358,6 +359,15 @@
                                 android:layout_marginTop="8dp"
                                 android:textSize="16sp"
                                 android:textColor="@color/text_secondary" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnEditVisitDays"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Editar días de visita"
+                                android:layout_marginTop="4dp"
+                                android:layout_marginBottom="8dp"
+                                style="@style/Widget.MaterialComponents.Button.OutlinedButton"/>
 
                             <TextView
                                 android:id="@+id/tvCoordinates"

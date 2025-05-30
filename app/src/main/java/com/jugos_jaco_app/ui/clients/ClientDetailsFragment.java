@@ -110,7 +110,63 @@ import android.graphics.drawable.ColorDrawable;
 
 import androidx.lifecycle.ViewModelProvider;
 
-public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPhotoListener {
+public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPhotoListener, VisitDaysDialog.VisitDaysDialogListener {
+
+    // ... (resto de campos)
+    @Override
+    public void onVisitDaysSelected(List<String> selectedDays) {
+
+        Toast.makeText(getContext(), "si", Toast.LENGTH_SHORT).show();
+
+        // Solo enviar petición POST para días nuevos
+        for (String day : selectedDays) {
+            if (!currentVisitDays.contains(day)) {
+                 postVisitDayToServer(day);
+            }
+        }
+        // Actualiza la lista local para reflejar los cambios
+        currentVisitDays.clear();
+        currentVisitDays.addAll(selectedDays);
+    }
+
+    private void postVisitDayToServer(String day) {
+        String urlVisitDays = Utilities.URL + "clients/" + id + "/visit-days";
+        int position = (int) (10000 + Math.random() * 9000); // número arriba de 10000
+        org.json.JSONObject params = new org.json.JSONObject();
+        try {
+            params.put("position", position);
+            params.put("visit_day", day);
+        } catch (org.json.JSONException e) {
+            e.printStackTrace();
+            Toast.makeText(getContext(), "Error al preparar datos", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        RequestQueue queue = Volley.newRequestQueue(requireContext());
+        JsonObjectRequest postRequest = new JsonObjectRequest(
+                Request.Method.POST,
+                urlVisitDays,
+                params,
+                response -> {
+                    Toast.makeText(getContext(), "Día agregado: " + day, Toast.LENGTH_SHORT).show();
+                    loadVisitDays(tvVisitDayGlobal);
+                },
+                error -> {
+                    Toast.makeText(getContext(), "Error al agregar día: " + day, Toast.LENGTH_SHORT).show();
+                    loadVisitDays(tvVisitDayGlobal);
+                }
+        ) {
+            @Override
+            public java.util.Map<String, String> getHeaders() throws AuthFailureError {
+                java.util.Map<String, String> headers = new java.util.HashMap<>();
+                headers.put("Authorization", ClientDetailsFragment.getAuthorizationHeader(getContext()));
+                headers.put("Accept", "application/json");
+                headers.put("Content-Type", "application/json");
+                return headers;
+            }
+        };
+        queue.add(postRequest);
+    }
+
 
     private static final int REQUEST_CODE_PERMISSIONS = 100;
 
@@ -211,6 +267,8 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
         TextView tvtownship = view.findViewById(R.id.tvTownship);
         TextView tvPosition = view.findViewById(R.id.tvPosition);
         TextView tvVisitDay = view.findViewById(R.id.tvVisitDay);
+        MaterialButton btnEditVisitDays = view.findViewById(R.id.btnEditVisitDays);
+        tvVisitDayGlobal = tvVisitDay;
 
         Button btnAddPhoto = view.findViewById(R.id.btnAddPhoto);
         Button btnUploadPhotos = view.findViewById(R.id.btnUploadPhotos);
@@ -225,6 +283,13 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
         tvPosition.setText("Posición: " + (position != null ? position : "Sin posición"));
         // Cargar los días de visita usando un método separado
         loadVisitDays(tvVisitDay);
+
+        // Inicializa la lista de días actuales si es null
+        if (currentVisitDays == null) currentVisitDays = new ArrayList<>();
+        btnEditVisitDays.setOnClickListener(v -> {
+            VisitDaysDialog dialog = new VisitDaysDialog(new ArrayList<>(currentVisitDays), this);
+            dialog.show(getParentFragmentManager(), "VisitDaysDialog");
+        });
 
         // Obtener los argumentos
         Bundle args = getArguments();
@@ -338,6 +403,9 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
     /**
      * Carga los días de visita del cliente y los muestra en el TextView proporcionado.
      */
+    private ArrayList<String> currentVisitDays = new ArrayList<>();
+    private TextView tvVisitDayGlobal;
+
     private void loadVisitDays(TextView tvVisitDay) {
         String urlVisitDays = Utilities.URL + "clients/" + id + "/visit-days";
         Log.d("ClientDetailsFragment", "URL días de visita: " + urlVisitDays);
@@ -350,12 +418,15 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                     try {
                         JSONArray visitDaysArray = response.getJSONArray("data");
                         StringBuilder visitDaysBuilder = new StringBuilder();
+                        currentVisitDays.clear();
                         for (int i = 0; i < visitDaysArray.length(); i++) {
                             JSONObject visitDayObj = visitDaysArray.getJSONObject(i);
                             String visitDayStr = visitDayObj.optString("visit_day", "");
+                            String positionStr = visitDayObj.has("position") && !visitDayObj.isNull("position") ? visitDayObj.optString("position", "Sin posición") : "Sin posición";
                             if (!visitDayStr.isEmpty()) {
                                 if (visitDaysBuilder.length() > 0) visitDaysBuilder.append(", ");
-                                visitDaysBuilder.append(visitDayStr);
+                                visitDaysBuilder.append("Día: ").append(visitDayStr).append(" (Posición: ").append(positionStr).append(")");
+                                currentVisitDays.add(visitDayStr);
                             }
                         }
                         String visitDaysConcat = visitDaysBuilder.toString();
