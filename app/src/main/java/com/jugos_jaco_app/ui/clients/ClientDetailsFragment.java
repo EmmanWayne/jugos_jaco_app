@@ -479,14 +479,14 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                             String positionStr = visitDayObj.has("position") && !visitDayObj.isNull("position") ? visitDayObj.optString("position", "Sin posición") : "Sin posición";
                             String idVisitDay = visitDayObj.optString("id", "");
                             if (!visitDayStr.isEmpty()) {
-                                if (visitDaysBuilder.length() > 0) visitDaysBuilder.append(", ");
+                                if (visitDaysBuilder.length() > 0) visitDaysBuilder.append("\n ");
                                 visitDaysBuilder.append("Día: ").append(visitDayStr).append(" (Posición: ").append(positionStr).append(")");
                                 currentVisitDays.add(visitDayStr);
                                 if (!idVisitDay.isEmpty()) visitDayIdMap.put(visitDayStr, idVisitDay);
                             }
                         }
                         String visitDaysConcat = visitDaysBuilder.toString();
-                        tvVisitDay.setText("Días de visita: " + (visitDaysConcat.isEmpty() ? "No asignados" : visitDaysConcat));
+                        tvVisitDay.setText("Días de visita:\n " + (visitDaysConcat.isEmpty() ? "No asignados" : visitDaysConcat));
                         if (btnEditVisitDays != null) btnEditVisitDays.setEnabled(true);
                     } catch (Exception e) {
                         if (!isAdded() || getContext() == null) return;

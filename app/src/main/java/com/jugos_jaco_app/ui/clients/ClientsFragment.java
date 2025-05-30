@@ -548,12 +548,12 @@ public class ClientsFragment extends Fragment implements ChipGroup.OnCheckedChan
     }
 
     private void updateClientPosition(Client client) {
-        String url = Utilities.URL + "clients/"+client.getId()+"/visit/position";
-        
+        String url = Utilities.URL + "clients/" + client.getId()+"/visit-days/reorder";
+        Toast.makeText(getContext(), ""+client.getVisitDay(), Toast.LENGTH_SHORT).show();
         JSONObject jsonBody = new JSONObject();
         try {
             jsonBody.put("position", client.getPosition());
-            jsonBody.put("day", client.getVisitDay());
+            jsonBody.put("visit_day", client.getVisitDay());
             
             // Mostrar información antes de enviar al servidor
             Log.d("REORDER_DEBUG", String.format(
@@ -572,7 +572,7 @@ public class ClientsFragment extends Fragment implements ChipGroup.OnCheckedChan
         }
 
         JsonObjectRequest request = new JsonObjectRequest(
-                Request.Method.PUT,
+                Request.Method.PATCH,
                 url,
                 jsonBody,
                 response -> {
