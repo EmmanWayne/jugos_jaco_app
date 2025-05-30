@@ -17,6 +17,7 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
 
 import android.provider.Settings;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -55,15 +56,14 @@ import java.util.Map;
   * create an instance of this fragment.
  */
 public class EditClientFragment extends Fragment {
-    private Spinner spinnerDepartament, spinnerTownship, spinnerTypePrice, spinnerVisitDay;
-    private TextInputEditText etFirstName, etLastName, etPhoneNumber, etAddress, etLatitude, etLongitude, etBusinessName, etPosition;
-    private TextInputLayout tilFirstName, tilLastName, tilPhoneNumber, tilAddress, tilBusinessName, tilPosition;
+    private Spinner spinnerDepartament, spinnerTownship;
+    private TextInputEditText etFirstName, etLastName, etPhoneNumber, etAddress, etLatitude, etLongitude, etBusinessName;
+    private TextInputLayout tilFirstName, tilLastName, tilPhoneNumber, tilAddress, tilBusinessName;
     private MaterialButton btnSubmit, btnCaptureCoordinates;
     private String clientId;
     private String visitDay;
     private View root;
     private List<String> departamentos = new ArrayList<>();
-    private List<String> tiposPrecio = new ArrayList<>();
     private Map<String, List<String>> municipiosPorDepartamento = new HashMap<>();
     private FusedLocationProviderClient fusedLocationClient;
     private static final int REQUEST_ENABLE_GPS = 123;
@@ -77,7 +77,7 @@ public class EditClientFragment extends Fragment {
         initializeViews(root);
         loadDepartamentos();
         loadDataFromArguments();
-        setupVisitDaySpinner();
+
         
         btnSubmit.setOnClickListener(v -> {
             if (validateFields()) {
@@ -101,12 +101,10 @@ public class EditClientFragment extends Fragment {
         etLongitude = view.findViewById(R.id.etLongitude);
         spinnerDepartament = view.findViewById(R.id.spinnerDepartament);
         spinnerTownship = view.findViewById(R.id.spinnerTownship);
-        spinnerVisitDay = view.findViewById(R.id.spinnerVisitDay);
+
         btnSubmit = view.findViewById(R.id.btnSubmit);
         btnCaptureCoordinates = view.findViewById(R.id.btnCaptureCoordinates);
         linearLayoutMunicipio = view.findViewById(R.id.linearLayoutMunicipio);
-        etPosition = view.findViewById(R.id.etPosition);
-        tilPosition = view.findViewById(R.id.tilPosition);
 
         tilFirstName = view.findViewById(R.id.tilFirstName);
         tilLastName = view.findViewById(R.id.tilLastName);
@@ -115,53 +113,6 @@ public class EditClientFragment extends Fragment {
         tilAddress = view.findViewById(R.id.tilAddress);
 
         btnSubmit.setText("Actualizar Cliente");
-    }
-
-    private void setupVisitDaySpinner() {
-        String[] diasSemana = new String[]{
-            "Seleccionar día",
-            "Lunes",
-            "Martes",
-            "Miércoles",
-            "Jueves",
-            "Viernes",
-            "Sábado"
-        };
-
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(
-            requireContext(),
-            android.R.layout.simple_spinner_item,
-            diasSemana
-        );
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerVisitDay.setAdapter(adapter);
-
-        // Seleccionar el día actual si existe
-        if (visitDay != null && !visitDay.isEmpty()) {
-            // El día ya viene formateado del servidor, solo necesitamos encontrar su posición
-            for (int i = 0; i < diasSemana.length; i++) {
-                if (diasSemana[i].equals(visitDay)) {
-                    spinnerVisitDay.setSelection(i);
-                    break;
-                }
-            }
-        }
-
-        spinnerVisitDay.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (position > 0) { // Ignorar "Seleccionar día"
-                    visitDay = diasSemana[position]; // Ya está en el formato correcto
-                } else {
-                    visitDay = "";
-                }
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-                visitDay = "";
-            }
-        });
     }
 
     private void loadDataFromArguments() {
@@ -173,7 +124,6 @@ public class EditClientFragment extends Fragment {
             etAddress.setText(getArguments().getString("address"));
             etLatitude.setText(getArguments().getString("latitude"));
             etLongitude.setText(getArguments().getString("longitude"));
-            etPosition.setText(getArguments().getString("position", ""));
             
             // Cargar el día de visita
             visitDay = getArguments().getString("visit_day", "");
@@ -393,9 +343,7 @@ public class EditClientFragment extends Fragment {
         String township = spinnerTownship.getSelectedItem().toString();
         String latitude = etLatitude.getText().toString().trim();
         String longitude = etLongitude.getText().toString().trim();
-        String position = etPosition.getText().toString().trim();
         String visitDay = this.visitDay;
-
 
         String url = Utilities.URL + "clients/" + clientId;
         Map<String, String> params = new HashMap<>();
@@ -408,14 +356,13 @@ public class EditClientFragment extends Fragment {
         params.put("township", township);
         params.put("latitude", latitude);
         params.put("longitude", longitude);
-        params.put("position", position);
-        params.put("visit_day", visitDay);
-        JsonObjectRequest request = new JsonObjectRequest(
+         JsonObjectRequest request = new JsonObjectRequest(
                 Request.Method.PUT,
                 url,
                 new JSONObject(params),
                 response -> {
                     try {
+                        Log.i("TAGASIEMPRE",response.toString());
                         // Obtener el mensaje
                         String message = response.getString("message");
                         Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
@@ -446,8 +393,8 @@ public class EditClientFragment extends Fragment {
                                     locationJson.getString("plus_code"),
                                     typePrice,
                                     dataJson.getString("business_name"),
-                                    dataJson.getString("position"),
-                                    dataJson.getString("visit_day"),
+                                     "",
+                                     "",
                                     dataJson.optString("profile_image", "")
 
                             );
@@ -472,7 +419,9 @@ public class EditClientFragment extends Fragment {
                         String errorMessage = new String(error.networkResponse.data);
                         JSONObject errorResponse = new JSONObject(errorMessage);
                         if(errorResponse.has("message")){
-                            String message = errorResponse.getString("message");
+                             String message = errorResponse.getString("message");
+                            Log.e("TAGASIEMPRE",message);
+
                             Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
                         }else{
                             Toast.makeText(requireContext(), "Error inesperado", Toast.LENGTH_SHORT).show();
@@ -579,20 +528,6 @@ public class EditClientFragment extends Fragment {
                 etLongitude.setError("Coordenada inválida");
                 isValid = false;
             }
-        }
-
-        if (etPosition.getText().toString().trim().isEmpty()) {
-            tilPosition.setError("La posición es requerida");
-            isValid = false;
-        } else {
-            tilPosition.setError(null);
-        }
-
-        // Validar día de visita
-        if (spinnerVisitDay.getSelectedItemPosition() == 0) {
-            ((TextView) spinnerVisitDay.getSelectedView()).setError("Seleccione un día de visita");
-
-            isValid = false;
         }
 
         if (!isValid) {

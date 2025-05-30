@@ -51,54 +51,6 @@
 
             </com.google.android.material.textfield.TextInputLayout>
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/tilPosition"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:startIconDrawable="@drawable/ic_has_coordinates"
-                app:startIconTint="@color/primary"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etPosition"
-                    android:layout_width="match_parent"
-                    android:inputType="number"
-                    android:layout_height="wrap_content"
-                    android:hint="Posición" />
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <LinearLayout
-                android:background="@drawable/spinner_background"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginTop="5dp"
-                android:backgroundTint="@color/material_dynamic_neutral_variant50"
-                android:layout_marginBottom="5dp"
-                >
-
-                <!-- Ícono -->
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/ic_has_coordinates"
-                    android:layout_marginEnd="8dp"
-                    app:tint="@color/primary" />
-
-                <!-- Spinner -->
-                <Spinner
-                    android:id="@+id/spinnerVisitDay"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-
-                    android:background="@drawable/spinner_background"
-                    android:padding="12dp"
-                    android:spinnerMode="dropdown" />
-
-
-            </LinearLayout>
 
             <!-- First Name -->
             <com.google.android.material.textfield.TextInputLayout
