@@ -115,18 +115,60 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
     // ... (resto de campos)
     @Override
     public void onVisitDaysSelected(List<String> selectedDays) {
-
-        Toast.makeText(getContext(), "si", Toast.LENGTH_SHORT).show();
-
-        // Solo enviar petición POST para días nuevos
+        if (selectedDays == null || selectedDays.isEmpty()) {
+            Toast.makeText(getContext(), "Debe seleccionar al menos un día de visita", Toast.LENGTH_LONG).show();
+            return;
+        }
+        // Detectar días eliminados
+        ArrayList<String> daysToRemove = new ArrayList<>();
+        for (String oldDay : currentVisitDays) {
+            if (!selectedDays.contains(oldDay)) {
+                daysToRemove.add(oldDay);
+            }
+        }
+        // Eliminar días desmarcados en el servidor
+        for (String day : daysToRemove) {
+            String idVisitDay = visitDayIdMap.get(day);
+            if (idVisitDay != null && !idVisitDay.isEmpty()) {
+                deleteVisitDayFromServer(idVisitDay, day);
+            }
+        }
+        // Agregar días nuevos
         for (String day : selectedDays) {
             if (!currentVisitDays.contains(day)) {
-                 postVisitDayToServer(day);
+                postVisitDayToServer(day);
             }
         }
         // Actualiza la lista local para reflejar los cambios
         currentVisitDays.clear();
         currentVisitDays.addAll(selectedDays);
+    }
+
+    private void deleteVisitDayFromServer(String idVisitDay, String day) {
+        String url = Utilities.URL + "clients/" + id + "/visit-days/" + idVisitDay;
+        RequestQueue queue = Volley.newRequestQueue(requireContext());
+        JsonObjectRequest deleteRequest = new JsonObjectRequest(
+                Request.Method.DELETE,
+                url,
+                null,
+                response -> {
+                    Toast.makeText(getContext(), "Día eliminado: " + day, Toast.LENGTH_SHORT).show();
+                    loadVisitDays(tvVisitDayGlobal);
+                },
+                error -> {
+                    Toast.makeText(getContext(), "Error al eliminar día: " + day, Toast.LENGTH_SHORT).show();
+                    loadVisitDays(tvVisitDayGlobal);
+                }
+        ) {
+            @Override
+            public java.util.Map<String, String> getHeaders() throws AuthFailureError {
+                java.util.Map<String, String> headers = new java.util.HashMap<>();
+                headers.put("Authorization", ClientDetailsFragment.getAuthorizationHeader(getContext()));
+                headers.put("Accept", "application/json");
+                return headers;
+            }
+        };
+        queue.add(deleteRequest);
     }
 
     private void postVisitDayToServer(String day) {
@@ -403,6 +445,8 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
     /**
      * Carga los días de visita del cliente y los muestra en el TextView proporcionado.
      */
+    // Mapa para guardar el id_visit_day asociado a cada día
+    private HashMap<String, String> visitDayIdMap = new HashMap<>();
     private ArrayList<String> currentVisitDays = new ArrayList<>();
     private TextView tvVisitDayGlobal;
 
@@ -419,14 +463,17 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                         JSONArray visitDaysArray = response.getJSONArray("data");
                         StringBuilder visitDaysBuilder = new StringBuilder();
                         currentVisitDays.clear();
+                        visitDayIdMap.clear(); // Limpiar el mapa antes de llenarlo
                         for (int i = 0; i < visitDaysArray.length(); i++) {
                             JSONObject visitDayObj = visitDaysArray.getJSONObject(i);
                             String visitDayStr = visitDayObj.optString("visit_day", "");
                             String positionStr = visitDayObj.has("position") && !visitDayObj.isNull("position") ? visitDayObj.optString("position", "Sin posición") : "Sin posición";
+                            String idVisitDay = visitDayObj.optString("id", "");
                             if (!visitDayStr.isEmpty()) {
                                 if (visitDaysBuilder.length() > 0) visitDaysBuilder.append(", ");
                                 visitDaysBuilder.append("Día: ").append(visitDayStr).append(" (Posición: ").append(positionStr).append(")");
                                 currentVisitDays.add(visitDayStr);
+                                if (!idVisitDay.isEmpty()) visitDayIdMap.put(visitDayStr, idVisitDay);
                             }
                         }
                         String visitDaysConcat = visitDaysBuilder.toString();
