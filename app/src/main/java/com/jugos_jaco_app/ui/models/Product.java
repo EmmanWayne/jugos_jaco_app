@@ -3,6 +3,7 @@ package com.jugos_jaco_app.ui.models;
 import java.io.Serializable;
 
 public class Product implements Serializable {
+    private int quantity; // <- NUEVO
     private String id;
     private String name;
     private String code;
@@ -12,9 +13,8 @@ public class Product implements Serializable {
     private double price;  // Aunque no está en tu schema, probablemente lo necesites
     private String imageUrl;
     
-    // Constructor
-    public Product(String id, String name, String code, String content, 
-                  String categoryId, String categoryName, double price, String imageUrl) {
+    // Constructor actualizado para incluir quantity
+    public Product(String id, String name, String code, String content, String categoryId, String categoryName, double price, String imageUrl, int quantity) {
         this.id = id;
         this.name = name;
         this.code = code;
@@ -23,9 +23,17 @@ public class Product implements Serializable {
         this.categoryName = categoryName;
         this.price = price;
         this.imageUrl = imageUrl;
+        this.quantity = quantity;
+    }
+
+    public Product(String id, String name, String code, String content, String categoryId, String categoryName, double price, String imageUrl) {
+        this(id, name, code, content, categoryId, categoryName, price, imageUrl, 0);
     }
 
     // Getters
+    public int getQuantity() {
+        return quantity;
+    }
     public String getId() {
         return id;
     }
@@ -59,6 +67,9 @@ public class Product implements Serializable {
     }
 
     // Setters
+    public void setQuantity(int quantity) {
+        this.quantity = quantity;
+    }
     public void setId(String id) {
         this.id = id;
     }

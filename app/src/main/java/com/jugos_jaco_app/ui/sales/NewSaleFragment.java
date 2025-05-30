@@ -21,6 +21,8 @@ import com.jugos_jaco_app.ui.adapters.CartAdapter;
 import com.jugos_jaco_app.ui.adapters.ProductsAdapter;
 import com.jugos_jaco_app.ui.models.CartItem;
 import com.jugos_jaco_app.ui.models.Product;
+import com.jugos_jaco_app.ui.utilities.Utilities;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -250,48 +252,48 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
      */
     private void loadProducts() {
         allProducts = new ArrayList<>();
-        
-        // Datos de prueba
-        allProducts.add(new Product(
-            "1", "Esencia de Vainilla", "VAN-001", "15ml",
-            "1", "Esencias Dulces", 25.00,
-            "https://example.com/vanilla.jpg"
-        ));
-        
-        allProducts.add(new Product(
-            "2",
-            "Esencia de Chocolate",
-            "CHO-001",
-            "20ml",
-            "1",
-            "Esencias Dulces",
-            30.00,
-            "https://example.com/chocolate.jpg"
-        ));
-        
-        allProducts.add(new Product(
-            "3",
-            "Esencia de Fresa",
-            "FRE-001",
-            "15ml",
-            "2",
-            "Esencias Frutales",
-            28.00,
-            "https://example.com/strawberry.jpg"
-        ));
-        
-        allProducts.add(new Product(
-            "4",
-            "Esencia de Menta",
-            "MEN-001",
-            "20ml",
-            "3",
-            "Esencias Frescas",
-            32.00,
-            "https://example.com/mint.jpg"
-        ));
+        String url = Utilities.URL + "products/assigned";
 
-        productsAdapter.updateProducts(allProducts);
+        com.android.volley.toolbox.JsonObjectRequest request = new com.android.volley.toolbox.JsonObjectRequest(
+                com.android.volley.Request.Method.GET,
+                url,
+                null,
+                response -> {
+                    try {
+                        org.json.JSONArray dataArray = response.getJSONArray("data");
+                        for (int i = 0; i < dataArray.length(); i++) {
+                            org.json.JSONObject obj = dataArray.getJSONObject(i);
+                            // Ajusta los campos según tu modelo
+                            String id = obj.optString("id", "");
+                            String productId = obj.optString("productId", "");
+                            String productName = obj.optString("productName", "");
+                            String contentType = obj.optString("content_type", "");
+                            String content = obj.optString("content", "");
+                            String productCode = obj.optString("productCode", "");
+                            int quantity = obj.optInt("quantity", 0);
+                            // El modelo Product tiene más campos, rellena con vacíos o valores por defecto
+                            allProducts.add(new Product(
+                                    productId,
+                                    productName,
+                                    productCode,
+                                    content + " " + contentType,
+                                    "", // categoryId
+                                    "", // categoryName
+                                    0.0, // price
+                                    "",  // imageUrl
+                                    quantity
+                            ));
+                        }
+                        productsAdapter.updateProducts(allProducts);
+                    } catch (org.json.JSONException e) {
+                        e.printStackTrace();
+                    }
+                },
+                error -> {
+                    error.printStackTrace();
+                }
+        );
+        com.jugos_jaco_app.ui.utilities.VolleySingleton.getInstance(requireContext()).addToRequestQueue(request);
     }
     
     /**

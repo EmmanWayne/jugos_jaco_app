@@ -86,7 +86,7 @@ public class ProductsAdapter extends RecyclerView.Adapter<ProductsAdapter.ViewHo
     }
     
     class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvName, tvCode, tvContent, tvCategory, tvInCart;
+        TextView tvName, tvCode, tvContent, tvCategory, tvInCart, tvQuantity;
         MaterialButton btnAdd;
         ImageView ivProduct;
         
@@ -100,6 +100,7 @@ public class ProductsAdapter extends RecyclerView.Adapter<ProductsAdapter.ViewHo
             btnAdd = itemView.findViewById(R.id.btnAddToCart);
             ivProduct = itemView.findViewById(R.id.ivProduct);
             tvInCart = itemView.findViewById(R.id.tvInCart);
+            tvQuantity = itemView.findViewById(R.id.tvQuantity); // Asegúrate que exista en el layout
         }
         
         void bind(Product product) {
@@ -109,6 +110,10 @@ public class ProductsAdapter extends RecyclerView.Adapter<ProductsAdapter.ViewHo
             tvContent.setText(product.getContent());
             tvCategory.setText(product.getCategoryName());
             
+            // Mostrar cantidad
+            if (tvQuantity != null) {
+                tvQuantity.setText("Cantidad: " + product.getQuantity());
+            }
             // Manejar estado visual (en carrito/no en carrito)
             if (productsInCart.contains(product.getId())) {
                 btnAdd.setVisibility(View.GONE);

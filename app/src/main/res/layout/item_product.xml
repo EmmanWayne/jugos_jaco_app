@@ -18,7 +18,7 @@
             android:layout_width="match_parent"
             android:layout_height="90dp"
             android:scaleType="centerCrop"
-            android:src="@drawable/product_placeholder"/>
+            android:src="@drawable/producto_jaco"/>
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -35,6 +35,15 @@
                 android:maxLines="2"
                 android:minLines="2"
                 android:ellipsize="end"/>
+
+            <TextView
+                android:id="@+id/tvQuantity"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="12sp"
+                android:textColor="@android:color/holo_blue_dark"
+                android:layout_marginTop="2dp"
+                android:maxLines="1"/>
 
             <TextView
                 android:id="@+id/tvProductCode"
