@@ -549,8 +549,7 @@ public class ClientsFragment extends Fragment implements ChipGroup.OnCheckedChan
 
     private void updateClientPosition(Client client) {
         String url = Utilities.URL + "clients/" + client.getId()+"/visit-days/reorder";
-        Toast.makeText(getContext(), ""+client.getVisitDay(), Toast.LENGTH_SHORT).show();
-        JSONObject jsonBody = new JSONObject();
+         JSONObject jsonBody = new JSONObject();
         try {
             jsonBody.put("position", client.getPosition());
             jsonBody.put("visit_day", client.getVisitDay());
