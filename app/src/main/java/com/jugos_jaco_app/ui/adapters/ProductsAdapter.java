@@ -23,15 +23,17 @@ public class ProductsAdapter extends RecyclerView.Adapter<ProductsAdapter.ViewHo
     private List<Product> products;              // Lista de productos a mostrar
     private OnProductClickListener listener;     // Listener para clicks en productos
     private Set<String> productsInCart;         // Set de IDs de productos en carrito
+    private boolean isAssignedMode;             // Indica si estamos en modo productos asignados
 
     public interface OnProductClickListener {
         void onProductClick(Product product);
     }
     
-    public ProductsAdapter(List<Product> products, OnProductClickListener listener) {
+    public ProductsAdapter(List<Product> products, OnProductClickListener listener, boolean isAssignedMode) {
         this.products = products;
         this.listener = listener;
         this.productsInCart = new HashSet<>();
+        this.isAssignedMode = isAssignedMode;
     }
     
     @Override
@@ -114,13 +116,19 @@ public class ProductsAdapter extends RecyclerView.Adapter<ProductsAdapter.ViewHo
             if (tvQuantity != null) {
                 tvQuantity.setText("Cantidad: " + product.getQuantity());
             }
-            // Manejar estado visual (en carrito/no en carrito)
-            if (productsInCart.contains(product.getId())) {
+            // Si está en modo productos asignados, ocultar el botón de agregar
+            if (isAssignedMode) {
                 btnAdd.setVisibility(View.GONE);
-                tvInCart.setVisibility(View.VISIBLE);
-            } else {
-                btnAdd.setVisibility(View.VISIBLE);
                 tvInCart.setVisibility(View.GONE);
+            } else {
+                // Manejar estado visual (en carrito/no en carrito)
+                if (productsInCart.contains(product.getId())) {
+                    btnAdd.setVisibility(View.GONE);
+                    tvInCart.setVisibility(View.VISIBLE);
+                } else {
+                    btnAdd.setVisibility(View.VISIBLE);
+                    tvInCart.setVisibility(View.GONE);
+                }
             }
             
             // Configurar click listener

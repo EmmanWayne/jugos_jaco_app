@@ -27,8 +27,8 @@ public class ProductsAssignedFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_products_assigned, container, false);
         rvProducts = view.findViewById(R.id.rvProductsAssigned);
-        productsAdapter = new ProductsAdapter(new ArrayList<>(), product -> {});
-        rvProducts.setLayoutManager(new GridLayoutManager(getContext(), 3));
+        productsAdapter = new ProductsAdapter(new ArrayList<>(), product -> {}, true);
+        rvProducts.setLayoutManager(new GridLayoutManager(getContext(), 2));
         rvProducts.setAdapter(productsAdapter);
         loadProducts();
         return view;

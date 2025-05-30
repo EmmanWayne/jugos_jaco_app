@@ -206,7 +206,7 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
      */
     private void setupRecyclerViews() {
         // Configurar RecyclerView de productos con 3 columnas
-        productsAdapter = new ProductsAdapter(new ArrayList<>(), this::addToCart);
+        productsAdapter = new ProductsAdapter(new ArrayList<>(), this::addToCart, false);
         rvProducts.setLayoutManager(new GridLayoutManager(getContext(), 3));
         rvProducts.setAdapter(productsAdapter);
         
