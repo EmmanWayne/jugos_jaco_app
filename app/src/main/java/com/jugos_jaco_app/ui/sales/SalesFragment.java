@@ -310,6 +310,13 @@ public class SalesFragment extends Fragment implements SalesAdapter.OnSaleClickL
                             }
                         });
                         
+                        // Crear el diálogo con el layout personalizado
+                        AlertDialog dialog = new AlertDialog.Builder(requireContext())
+                                .setTitle("Seleccionar Cliente")
+                                .setView(dialogView)
+                                .setNegativeButton("Cancelar", (dialogInterface, which) -> dialogInterface.dismiss())
+                                .create();
+                        
                         // Configurar el listener para la selección de un cliente
                         clientListView.setOnItemClickListener((parent, view, position, id) -> {
                             Client selectedClient = filteredClientList.get(position);
@@ -317,15 +324,12 @@ public class SalesFragment extends Fragment implements SalesAdapter.OnSaleClickL
                             Bundle bundle = new Bundle();
                             bundle.putString("clientId", selectedClient.getId());
                             bundle.putString("clientName", selectedClient.getFirstName() + " " + selectedClient.getLastName());
+                            // Cerrar el diálogo antes de navegar
+                            dialog.dismiss();
                             Navigation.findNavController(getView()).navigate(R.id.action_nav_ventas_to_newSaleFragment, bundle);
                         });
                         
-                        // Crear y mostrar el diálogo con el layout personalizado
-                        AlertDialog dialog = new AlertDialog.Builder(requireContext())
-                                .setTitle("Seleccionar Cliente")
-                                .setView(dialogView)
-                                .setNegativeButton("Cancelar", (dialogInterface, which) -> dialogInterface.dismiss())
-                                .create();
+                        // Mostrar el diálogo
                         dialog.show();
                         
                     } catch (JSONException e) {
