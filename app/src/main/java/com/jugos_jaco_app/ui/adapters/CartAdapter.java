@@ -167,7 +167,14 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
                     }
                     try {
                         int newQuantity = Integer.parseInt(text);
+                        // Verificar que la cantidad sea mayor que 0 y no exceda la cantidad disponible
                         if (newQuantity > 0) {
+                            // Limitar la cantidad al máximo disponible
+                            if (newQuantity > item.getProduct().getQuantity()) {
+                                newQuantity = item.getProduct().getQuantity();
+                                etQuantity.setText(String.valueOf(newQuantity));
+                                etQuantity.setSelection(etQuantity.length());
+                            }
                             item.setQuantity(newQuantity);
                             updateSubtotal(item);
                             notifyTotalUpdate();
@@ -181,10 +188,13 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
             
             // Configurar botones de incremento/decremento
             btnIncrease.setOnClickListener(v -> {
-                item.incrementQuantity();
-                etQuantity.setText(String.valueOf(item.getQuantity()));
-                updateSubtotal(item);
-                notifyTotalUpdate();
+                // Verificar si la cantidad actual es menor que la cantidad asignada disponible
+                if (item.getQuantity() < item.getProduct().getQuantity()) {
+                    item.incrementQuantity();
+                    etQuantity.setText(String.valueOf(item.getQuantity()));
+                    updateSubtotal(item);
+                    notifyTotalUpdate();
+                }
             });
             
             btnDecrease.setOnClickListener(v -> {
@@ -209,4 +219,4 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
             tvSubtotal.setText(String.format("L. %.2f", subtotal));
         }
     }
-} 
+}

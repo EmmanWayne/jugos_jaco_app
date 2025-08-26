@@ -1,23 +1,42 @@
 package com.jugos_jaco_app.ui.sales;
 
+ import static com.jugos_jaco_app.Login.PREFS_NAME;
+
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.appcompat.widget.SearchView;
 import androidx.activity.OnBackPressedCallback;
+import com.android.volley.AuthFailureError;
+import com.android.volley.Request;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.Volley;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
+import com.jugos_jaco_app.ui.clients.ClientsFragment;
+
+import java.util.HashMap;
+import java.util.Map;
 import com.jugos_jaco_app.R;
 import com.jugos_jaco_app.ui.adapters.CartAdapter;
 import com.jugos_jaco_app.ui.adapters.ProductsAdapter;
@@ -25,7 +44,9 @@ import com.jugos_jaco_app.ui.models.CartItem;
 import com.jugos_jaco_app.ui.models.Product;
 import com.jugos_jaco_app.ui.utilities.Utilities;
 
+import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -106,7 +127,7 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
         // Obtener datos del cliente de los argumentos
         if (getArguments() != null) {
             clientId = getArguments().getString("clientId");
-            clientName = getArguments().getString("client_name");
+            clientName = getArguments().getString("clientName");
         }
         
         // Inicializar y configurar componentes
@@ -264,11 +285,7 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
                 null,
                 response -> {
 
-                    try {
-                        Toast.makeText(getContext(),  ""+response.getJSONArray("data"), Toast.LENGTH_SHORT).show();
-                    } catch (JSONException e) {
-                        throw new RuntimeException(e);
-                    }
+
 
                     try {
                         org.json.JSONArray dataArray = response.getJSONArray("data");
@@ -291,6 +308,9 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
                             String unitAbbreviation = obj.optString("unit_abbreviation", "u");
                             double price = obj.optDouble("price", 0.0);
                             
+                            // Obtener el product_price_id
+                            String productPriceId = obj.optString("product_price_id", "");
+                            
                             // Crear el objeto Product con los campos del nuevo formato
                             allProducts.add(new Product(
                                     id,
@@ -301,7 +321,8 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
                                     "", // categoryName (no viene en el nuevo formato)
                                     price,
                                     "", // imageUrl (no necesario según requerimiento)
-                                    quantity
+                                    quantity,
+                                    productPriceId
                             ));
                         }
                         productsAdapter.updateProducts(allProducts);
@@ -359,19 +380,245 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
      * Calcula y actualiza el total de la venta.
      */
     private void updateTotal() {
-        double total = 0;
-        for (CartItem item : cartItems) {
-            total += item.getQuantity() * item.getProduct().getPrice();
-        }
+        double total = calculateTotalAmount();
         tvTotal.setText(String.format("Total: L. %.2f", total));
     }
     
     /**
-     * Método temporal para finalizar la venta.
-     * TODO: Implementar la lógica completa de guardado
+     * Calcula el total de la venta.
+     * @return El total calculado
+     */
+    private double calculateTotalAmount() {
+        double total = 0;
+        for (CartItem item : cartItems) {
+            total += item.getQuantity() * item.getProduct().getPrice();
+        }
+        return total;
+    }
+    
+    /**
+     * Método para finalizar la venta.
+     * Muestra un diálogo para confirmar el pago y envía los datos al servidor.
      */
     private void finishSale() {
-        // TODO: Implementar guardado de la venta
+        if (cartItems.isEmpty()) {
+            Toast.makeText(requireContext(), "El carrito está vacío", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Calcular el total de la venta
+        final double totalAmount = calculateTotalAmount();
+
+        // Inflar el layout del diálogo
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_payment, null);
+        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+        builder.setTitle("Finalizar Venta");
+        builder.setView(dialogView);
+
+        // Obtener referencias a las vistas del diálogo
+        TextView tvTotalAmount = dialogView.findViewById(R.id.tvTotalAmount);
+        RadioGroup rgPaymentMethod = dialogView.findViewById(R.id.rgPaymentMethod);
+        RadioGroup rgPaymentTerm = dialogView.findViewById(R.id.rgPaymentTerm);
+        TextInputLayout tilCashAmount = dialogView.findViewById(R.id.tilCashAmount);
+        TextInputEditText etCashAmount = dialogView.findViewById(R.id.etCashAmount);
+        TextInputLayout tilPaymentReference = dialogView.findViewById(R.id.tilPaymentReference);
+        TextInputEditText etPaymentReference = dialogView.findViewById(R.id.etPaymentReference);
+        TextView tvChange = dialogView.findViewById(R.id.tvChange);
+        TextInputLayout tilNotes = dialogView.findViewById(R.id.tilNotes);
+        TextInputEditText etNotes = dialogView.findViewById(R.id.etNotes);
+
+        // Configurar el total
+        tvTotalAmount.setText(String.format("Total: L. %.2f", totalAmount));
+
+        // Configurar listeners para los radio buttons
+        rgPaymentMethod.setOnCheckedChangeListener((group, checkedId) -> {
+            if (checkedId == R.id.rbCash) {
+                tilCashAmount.setVisibility(View.VISIBLE);
+                tilPaymentReference.setVisibility(View.GONE);
+            } else if (checkedId == R.id.rbDeposit) {
+                tilCashAmount.setVisibility(View.GONE);
+                tilPaymentReference.setVisibility(View.VISIBLE);
+            } else if (checkedId == R.id.rbCredit) {
+                tilCashAmount.setVisibility(View.GONE);
+                tilPaymentReference.setVisibility(View.GONE);
+            }
+        });
+
+        // Configurar listener para el campo de monto en efectivo
+        etCashAmount.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (!s.toString().isEmpty()) {
+                    try {
+                        double cashAmount = Double.parseDouble(s.toString());
+                        if (cashAmount >= totalAmount) {
+                            double change = cashAmount - totalAmount;
+                            tvChange.setText(String.format("Cambio: L. %.2f", change));
+                            tvChange.setVisibility(View.VISIBLE);
+                        } else {
+                            tvChange.setVisibility(View.GONE);
+                        }
+                    } catch (NumberFormatException e) {
+                        tvChange.setVisibility(View.GONE);
+                    }
+                } else {
+                    tvChange.setVisibility(View.GONE);
+                }
+            }
+        });
+
+        // Configurar botones del diálogo
+        builder.setPositiveButton("Confirmar", null); // Se sobrescribirá después
+        builder.setNegativeButton("Cancelar", (dialog, which) -> dialog.dismiss());
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+
+        // Sobrescribir el botón positivo para evitar que se cierre automáticamente si hay errores
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            // Validar el método de pago seleccionado
+            int paymentMethodId = rgPaymentMethod.getCheckedRadioButtonId();
+            int paymentTermId = rgPaymentTerm.getCheckedRadioButtonId();
+            String paymentMethod = "";
+            String paymentTerm = "";
+            double cashAmount = 0;
+            String paymentReference = "";
+            String notes = etNotes.getText().toString().trim();
+
+            // Determinar el método de pago
+            if (paymentMethodId == R.id.rbCash) {
+                paymentMethod = "cash";
+                String cashAmountStr = etCashAmount.getText().toString().trim();
+                if (cashAmountStr.isEmpty()) {
+                    tilCashAmount.setError("Ingrese el monto recibido");
+                    return;
+                }
+                try {
+                    cashAmount = Double.parseDouble(cashAmountStr);
+                    if (cashAmount < totalAmount) {
+                        tilCashAmount.setError("El monto debe ser igual o mayor al total");
+                        return;
+                    }
+                } catch (NumberFormatException e) {
+                    tilCashAmount.setError("Monto inválido");
+                    return;
+                }
+            } else if (paymentMethodId == R.id.rbDeposit) {
+                paymentMethod = "deposit";
+                paymentReference = etPaymentReference.getText().toString().trim();
+                if (paymentReference.isEmpty()) {
+                    tilPaymentReference.setError("Ingrese la referencia del depósito");
+                    return;
+                }
+            } else if (paymentMethodId == R.id.rbCredit) {
+                paymentMethod = "credit";
+            }
+
+            // Determinar el plazo de pago
+            if (paymentTermId == R.id.rbCashTerm) {
+                paymentTerm = "cash";
+            } else if (paymentTermId == R.id.rbCreditTerm) {
+                paymentTerm = "credit";
+            }
+
+            // Preparar los datos para enviar al servidor
+            sendSaleData(paymentMethod, paymentTerm, cashAmount, paymentReference, notes,clientId);
+            dialog.dismiss();
+        });
+    }
+
+    /**
+     * Envía los datos de la venta al servidor.
+     */
+    private void sendSaleData(String paymentMethod, String paymentTerm, double cashAmount, String paymentReference, String notes, String clientId) {
+        // Obtener el ID del cliente de los argumentos
+
+        // Obtener el ID del empleado desde las preferencias compartidas
+        SharedPreferences sharedPreferences = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        String employeeId = sharedPreferences.getString("id_empleado","");
+
+        // Crear la lista de productos para enviar
+        JSONArray productsArray = new JSONArray();
+        try {
+            for (CartItem item : cartItems) {
+                JSONObject productObject = new JSONObject();
+                productObject.put("product_id", item.getProduct().getId());
+                productObject.put("quantity", item.getQuantity());
+                // Usar el product_price_id guardado en el objeto Product
+                productObject.put("product_price_id", item.getProduct().getProductPriceId());
+                productsArray.put(productObject);
+            }
+
+            // Crear el objeto JSON principal
+            JSONObject saleObject = new JSONObject();
+            saleObject.put("client_id", clientId);
+            saleObject.put("employee_id", employeeId);
+            saleObject.put("payment_method", paymentMethod);
+            saleObject.put("payment_term", paymentTerm);
+            saleObject.put("cash_amount", cashAmount);
+            saleObject.put("payment_reference", paymentReference.isEmpty() ? JSONObject.NULL : paymentReference);
+            saleObject.put("notes", notes.isEmpty() ? JSONObject.NULL : notes);
+            saleObject.put("products", productsArray);
+
+
+            // Enviar los datos al servidor
+            String url = Utilities.URL + "sales";
+            JsonObjectRequest request = new JsonObjectRequest(
+                    Request.Method.POST,
+                    url,
+                    saleObject,
+                    response -> {
+                        // Venta exitosa
+                        Toast.makeText(requireContext(), "Venta realizada con éxito", Toast.LENGTH_SHORT).show();
+                        // Limpiar el carrito
+                        cartItems.clear();
+                        cartAdapter.notifyDataSetChanged();
+                        updateTotal();
+                        // Actualizar el estado de los productos
+                        for (Product product : allProducts) {
+                            productsAdapter.setProductInCart(product.getId(), false);
+                        }
+                    },
+                    error -> {
+                        try {
+                            String errorMessage = new String(error.networkResponse.data);
+                            JSONObject errorResponse = new JSONObject(errorMessage);
+                            if(errorResponse.has("message")){
+                                String message = errorResponse.getString("message");
+
+                                Log.d("CREARVENTA", "sendSaleData: " + message);
+                                Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+                            }else{
+                                Toast.makeText(requireContext(), "Error inesperado", Toast.LENGTH_SHORT).show();
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            Toast.makeText(requireContext(), "Error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    }
+            ) {
+                @Override
+                public Map<String, String> getHeaders() throws AuthFailureError {
+                    Map<String, String> headers = new HashMap<>();
+                    headers.put("Authorization", ClientsFragment.getAuthorizationHeader(requireContext()));
+                    headers.put("Accept", "application/json");
+                    headers.put("Content-Type", "application/json");
+                    return headers;
+                }
+            };
+            
+            // Agregar la solicitud a la cola
+            Volley.newRequestQueue(requireContext()).add(request);
+
+        } catch (JSONException e) {
+            Toast.makeText(requireContext(), "Error al preparar los datos: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
     }
 
     /**

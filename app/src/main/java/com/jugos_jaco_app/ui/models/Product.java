@@ -12,9 +12,10 @@ public class Product implements Serializable {
     private String categoryName;
     private double price;  // Aunque no está en tu schema, probablemente lo necesites
     private String imageUrl;
+    private String productPriceId; // Nuevo campo para product_price_id
     
-    // Constructor actualizado para incluir quantity
-    public Product(String id, String name, String code, String content, String categoryId, String categoryName, double price, String imageUrl, int quantity) {
+    // Constructor actualizado para incluir quantity y productPriceId
+    public Product(String id, String name, String code, String content, String categoryId, String categoryName, double price, String imageUrl, int quantity, String productPriceId) {
         this.id = id;
         this.name = name;
         this.code = code;
@@ -24,10 +25,16 @@ public class Product implements Serializable {
         this.price = price;
         this.imageUrl = imageUrl;
         this.quantity = quantity;
+        this.productPriceId = productPriceId;
+    }
+    
+    // Constructor actualizado para incluir quantity sin productPriceId
+    public Product(String id, String name, String code, String content, String categoryId, String categoryName, double price, String imageUrl, int quantity) {
+        this(id, name, code, content, categoryId, categoryName, price, imageUrl, quantity, id);
     }
 
     public Product(String id, String name, String code, String content, String categoryId, String categoryName, double price, String imageUrl) {
-        this(id, name, code, content, categoryId, categoryName, price, imageUrl, 0);
+        this(id, name, code, content, categoryId, categoryName, price, imageUrl, 0, id);
     }
 
     // Getters
@@ -101,4 +108,12 @@ public class Product implements Serializable {
     public void setImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
     }
-} 
+    
+    public String getProductPriceId() {
+        return productPriceId;
+    }
+    
+    public void setProductPriceId(String productPriceId) {
+        this.productPriceId = productPriceId;
+    }
+}
