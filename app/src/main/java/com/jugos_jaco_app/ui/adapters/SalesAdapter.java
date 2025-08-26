@@ -68,7 +68,8 @@ public class SalesAdapter extends RecyclerView.Adapter<SalesAdapter.ViewHolder> 
     public void updateSales(List<Sale> newSales) {
         this.sales.clear();
         this.sales.addAll(newSales);
-        this.salesFull = new ArrayList<>(newSales); // Actualizar copia para filtrado
+        this.salesFull.clear();
+        this.salesFull.addAll(newSales); // Actualizar copia para filtrado
         notifyDataSetChanged();
     }
     

@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#F5F5F5"
     tools:context=".ui.sales.SaleDetailFragment">
 
     <androidx.core.widget.NestedScrollView
@@ -22,7 +23,9 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
                 app:cardCornerRadius="8dp"
-                app:cardElevation="4dp">
+                app:cardElevation="4dp"
+                app:strokeColor="@color/primary"
+                app:strokeWidth="1dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -36,6 +39,7 @@
                         android:layout_height="wrap_content"
                         android:textAppearance="?attr/textAppearanceHeadline6"
                         android:textStyle="bold"
+                        android:textColor="@color/primary"
                         tools:text="Venta #123" />
 
                     <LinearLayout
@@ -138,7 +142,7 @@
                         android:layout_height="1dp"
                         android:layout_marginTop="8dp"
                         android:layout_marginBottom="8dp"
-                        android:background="#DDDDDD" />
+                        android:background="@color/primary_dark" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -170,7 +174,8 @@
                             android:layout_height="wrap_content"
                             android:text="Total: "
                             android:textAppearance="?attr/textAppearanceSubtitle1"
-                            android:textStyle="bold" />
+                            android:textStyle="bold"
+                            android:textColor="@color/primary" />
 
                         <TextView
                             android:id="@+id/tvTotal"
@@ -179,6 +184,7 @@
                             android:gravity="end"
                             android:textAppearance="?attr/textAppearanceSubtitle1"
                             android:textStyle="bold"
+                            android:textColor="@color/primary"
                             tools:text="L. 115.00" />
                     </LinearLayout>
                 </LinearLayout>
@@ -191,7 +197,11 @@
                 android:layout_marginBottom="8dp"
                 android:text="Detalles de la venta"
                 android:textAppearance="?attr/textAppearanceSubtitle1"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                android:textColor="@color/tamarind_brown"
+                android:background="@color/white"
+                android:padding="8dp"
+                android:elevation="2dp" />
 
             <!-- Lista de detalles -->
             <androidx.recyclerview.widget.RecyclerView
@@ -222,6 +232,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
+        android:indeterminateTint="@color/primary"
         android:visibility="gone"
         tools:visibility="visible" />
 

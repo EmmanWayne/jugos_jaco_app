@@ -153,7 +153,9 @@ public class SalesFragment extends Fragment implements SalesAdapter.OnSaleClickL
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 // Filtrar la lista de ventas por nombre de cliente
-                salesAdapter.getFilter().filter(s);
+                if (salesAdapter != null) {
+                    salesAdapter.getFilter().filter(s.toString());
+                }
             }
 
             @Override

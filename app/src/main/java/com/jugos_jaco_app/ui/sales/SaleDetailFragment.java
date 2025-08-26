@@ -1,7 +1,7 @@
 package com.jugos_jaco_app.ui.sales;
 
-import android.content.Context;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,7 +23,7 @@ import com.jugos_jaco_app.R;
 import com.jugos_jaco_app.ui.adapters.SaleDetailAdapter;
 import com.jugos_jaco_app.ui.models.Sale;
 import com.jugos_jaco_app.ui.models.SaleDetail;
-import com.jugos_jaco_app.utils.Utilities;
+import com.jugos_jaco_app.ui.utilities.Utilities;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -31,7 +31,6 @@ import org.json.JSONObject;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -58,11 +57,20 @@ public class SaleDetailFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_sale_detail, container, false);
-        initializeViews(root);
-        setupRecyclerView();
-        loadSaleData();
-        loadSaleDetails();
+
+        try {
+            // Configurar el fondo de la vista principal
+            root.setBackgroundColor(getResources().getColor(R.color.white));
+            
+            initializeViews(root);
+            setupRecyclerView();
+            loadSaleData();
+            loadSaleDetails();
+         }catch (Exception e){
+            Log.e("DETALLEVENTA",e.toString());
+        }
         return root;
+
     }
 
     private void initializeViews(View view) {
@@ -181,9 +189,16 @@ public class SaleDetailFragment extends Fragment {
         Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
     }
 
-    private String formatDate(Date date) {
-        if (date == null) return "";
-        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
-        return sdf.format(date);
+    private String formatDate(String date) {
+        if (date == null || date.isEmpty()) return "";
+        try {
+            // Asumiendo que la fecha viene en formato ISO 8601 (yyyy-MM-dd)
+            SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+            SimpleDateFormat outputFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+            return outputFormat.format(inputFormat.parse(date));
+        } catch (Exception e) {
+            Log.e("DETALLEVENTA", "Error al formatear fecha: " + e.getMessage());
+            return date; // Devolver la fecha original si hay error
+        }
     }
 }
