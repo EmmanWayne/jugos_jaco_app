@@ -8,9 +8,11 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ArrayAdapter;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
@@ -205,12 +207,27 @@ public class SalesFragment extends Fragment implements SalesAdapter.OnSaleClickL
     }
     
     /**
+     * Actualiza el adaptador con la lista filtrada de clientes
+     * @param adapter El adaptador a actualizar
+     * @param clientList La lista de clientes filtrada
+     */
+    private void updateClientAdapter(ArrayAdapter<String> adapter, List<Client> clientList) {
+        adapter.clear();
+        for (Client client : clientList) {
+            String displayName = client.getFirstName() + " " + client.getLastName();
+            if (client.getBusinessName() != null && !client.getBusinessName().isEmpty()) {
+                displayName += " - " + client.getBusinessName();
+            }
+            adapter.add(displayName);
+        }
+        adapter.notifyDataSetChanged();
+    }
+    
+    /**
      * Muestra un diálogo para seleccionar un cliente antes de crear una nueva venta
+     * con un campo de búsqueda para filtrar la lista de clientes
      */
     private void showClientSelectionDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
-        builder.setTitle("Seleccionar Cliente");
-        
         // Mostrar un diálogo de progreso mientras se cargan los clientes
         AlertDialog progressDialog = new AlertDialog.Builder(requireContext())
                 .setMessage("Cargando clientes...")
@@ -229,6 +246,7 @@ public class SalesFragment extends Fragment implements SalesAdapter.OnSaleClickL
                     progressDialog.dismiss();
                     try {
                         List<Client> clientList = new ArrayList<>();
+                        List<Client> filteredClientList = new ArrayList<>();
                         JSONArray clientsJson = response.getJSONArray("data");
                         
                         for (int i = 0; i < clientsJson.length(); i++) {
@@ -244,22 +262,57 @@ public class SalesFragment extends Fragment implements SalesAdapter.OnSaleClickL
                                     businessName, "", "", ""
                             );
                             clientList.add(client);
+                            filteredClientList.add(client);
                         }
                         
-                        // Crear array de nombres para mostrar en el diálogo
-                        String[] clientNames = new String[clientList.size()];
-                        for (int i = 0; i < clientList.size(); i++) {
-                            Client client = clientList.get(i);
-                            String displayName = client.getFirstName() + " " + client.getLastName();
-                            if (client.getBusinessName() != null && !client.getBusinessName().isEmpty()) {
-                                displayName += " - " + client.getBusinessName();
+                        // Crear un layout personalizado para el diálogo con un campo de búsqueda
+                        View dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_client_search, null);
+                        EditText searchEditText = dialogView.findViewById(R.id.etSearchClient);
+                        ListView clientListView = dialogView.findViewById(R.id.lvClients);
+                        
+                        // Crear un adaptador para la lista de clientes
+                        ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(), 
+                                android.R.layout.simple_list_item_1);
+                        clientListView.setAdapter(adapter);
+                        
+                        // Actualizar el adaptador con la lista de clientes
+                        updateClientAdapter(adapter, filteredClientList);
+                        
+                        // Configurar el listener para el campo de búsqueda
+                        searchEditText.addTextChangedListener(new TextWatcher() {
+                            @Override
+                            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                                // No se necesita implementación
                             }
-                            clientNames[i] = displayName;
-                        }
+                            
+                            @Override
+                            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                                // Filtrar la lista de clientes según el texto de búsqueda
+                                String searchText = s.toString().toLowerCase();
+                                filteredClientList.clear();
+                                
+                                for (Client client : clientList) {
+                                    String fullName = client.getFirstName().toLowerCase() + " " + client.getLastName().toLowerCase();
+                                    String business = client.getBusinessName() != null ? client.getBusinessName().toLowerCase() : "";
+                                    
+                                    if (fullName.contains(searchText) || business.contains(searchText)) {
+                                        filteredClientList.add(client);
+                                    }
+                                }
+                                
+                                // Actualizar el adaptador con la lista filtrada
+                                updateClientAdapter(adapter, filteredClientList);
+                            }
+                            
+                            @Override
+                            public void afterTextChanged(Editable s) {
+                                // No se necesita implementación
+                            }
+                        });
                         
-                        // Mostrar el diálogo con la lista de clientes
-                        builder.setItems(clientNames, (dialog, which) -> {
-                            Client selectedClient = clientList.get(which);
+                        // Configurar el listener para la selección de un cliente
+                        clientListView.setOnItemClickListener((parent, view, position, id) -> {
+                            Client selectedClient = filteredClientList.get(position);
                             // Navegar a NewSaleFragment con el cliente seleccionado
                             Bundle bundle = new Bundle();
                             bundle.putString("clientId", selectedClient.getId());
@@ -267,8 +320,13 @@ public class SalesFragment extends Fragment implements SalesAdapter.OnSaleClickL
                             Navigation.findNavController(getView()).navigate(R.id.action_nav_ventas_to_newSaleFragment, bundle);
                         });
                         
-                        builder.setNegativeButton("Cancelar", (dialog, which) -> dialog.dismiss());
-                        builder.show();
+                        // Crear y mostrar el diálogo con el layout personalizado
+                        AlertDialog dialog = new AlertDialog.Builder(requireContext())
+                                .setTitle("Seleccionar Cliente")
+                                .setView(dialogView)
+                                .setNegativeButton("Cancelar", (dialogInterface, which) -> dialogInterface.dismiss())
+                                .create();
+                        dialog.show();
                         
                     } catch (JSONException e) {
                         Toast.makeText(requireContext(), "Error al procesar los datos de clientes", Toast.LENGTH_SHORT).show();
