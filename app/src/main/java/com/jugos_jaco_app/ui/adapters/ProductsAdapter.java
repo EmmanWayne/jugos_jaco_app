@@ -38,8 +38,16 @@ public class ProductsAdapter extends RecyclerView.Adapter<ProductsAdapter.ViewHo
     
     @Override
     public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext())
-            .inflate(R.layout.item_product, parent, false);
+        View view;
+        if (isAssignedMode) {
+            // Usar layout de lista para modo asignado
+            view = LayoutInflater.from(parent.getContext())
+                .inflate(R.layout.item_product_list, parent, false);
+        } else {
+            // Usar layout de grid para modo normal
+            view = LayoutInflater.from(parent.getContext())
+                .inflate(R.layout.item_product, parent, false);
+        }
         return new ViewHolder(view);
     }
     
@@ -116,19 +124,13 @@ public class ProductsAdapter extends RecyclerView.Adapter<ProductsAdapter.ViewHo
             if (tvQuantity != null) {
                 tvQuantity.setText("Cantidad: " + product.getQuantity());
             }
-            // Si está en modo productos asignados, ocultar el botón de agregar
-            if (isAssignedMode) {
+            // Manejar estado visual (en carrito/no en carrito)
+            if (productsInCart.contains(product.getId())) {
                 btnAdd.setVisibility(View.GONE);
-                tvInCart.setVisibility(View.GONE);
+                tvInCart.setVisibility(View.VISIBLE);
             } else {
-                // Manejar estado visual (en carrito/no en carrito)
-                if (productsInCart.contains(product.getId())) {
-                    btnAdd.setVisibility(View.GONE);
-                    tvInCart.setVisibility(View.VISIBLE);
-                } else {
-                    btnAdd.setVisibility(View.VISIBLE);
-                    tvInCart.setVisibility(View.GONE);
-                }
+                btnAdd.setVisibility(View.VISIBLE);
+                tvInCart.setVisibility(View.GONE);
             }
             
             // Configurar click listener
@@ -138,14 +140,10 @@ public class ProductsAdapter extends RecyclerView.Adapter<ProductsAdapter.ViewHo
                 }
             });
             
-            // Cargar imagen con Glide
-            if (product.getImageUrl() != null && !product.getImageUrl().isEmpty()) {
-                Glide.with(itemView.getContext())
-                    .load(product.getImageUrl())
-                    .placeholder(R.drawable.producto_jaco)
-                    .centerCrop()
-                    .into(ivProduct);
+            // Ocultar la imagen del producto como solicitó el usuario
+            if (ivProduct != null) {
+                ivProduct.setVisibility(View.GONE);
             }
         }
     }
-} 
+}

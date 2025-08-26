@@ -8,6 +8,8 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -22,6 +24,8 @@ import com.jugos_jaco_app.ui.adapters.ProductsAdapter;
 import com.jugos_jaco_app.ui.models.CartItem;
 import com.jugos_jaco_app.ui.models.Product;
 import com.jugos_jaco_app.ui.utilities.Utilities;
+
+import org.json.JSONException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -102,7 +106,7 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
         // Obtener datos del cliente de los argumentos
         if (getArguments() != null) {
             clientId = getArguments().getString("clientId");
-            clientName = getArguments().getString("clientName");
+            clientName = getArguments().getString("client_name");
         }
         
         // Inicializar y configurar componentes
@@ -205,9 +209,9 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
      * Establece los adaptadores y sus listeners.
      */
     private void setupRecyclerViews() {
-        // Configurar RecyclerView de productos con 3 columnas
-        productsAdapter = new ProductsAdapter(new ArrayList<>(), this::addToCart, false);
-        rvProducts.setLayoutManager(new GridLayoutManager(getContext(), 3));
+        // Configurar RecyclerView de productos en formato lista
+        productsAdapter = new ProductsAdapter(new ArrayList<>(), this::addToCart, true);
+        rvProducts.setLayoutManager(new LinearLayoutManager(getContext()));
         rvProducts.setAdapter(productsAdapter);
         
         // Configurar RecyclerView del carrito
@@ -252,47 +256,76 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
      */
     private void loadProducts() {
         allProducts = new ArrayList<>();
-        String url = Utilities.URL + "products/assigned";
+        String url = Utilities.URL + "products?client_id=" + clientId;
 
         com.android.volley.toolbox.JsonObjectRequest request = new com.android.volley.toolbox.JsonObjectRequest(
                 com.android.volley.Request.Method.GET,
                 url,
                 null,
                 response -> {
+
+                    try {
+                        Toast.makeText(getContext(),  ""+response.getJSONArray("data"), Toast.LENGTH_SHORT).show();
+                    } catch (JSONException e) {
+                        throw new RuntimeException(e);
+                    }
+
                     try {
                         org.json.JSONArray dataArray = response.getJSONArray("data");
                         for (int i = 0; i < dataArray.length(); i++) {
                             org.json.JSONObject obj = dataArray.getJSONObject(i);
-                            // Ajusta los campos según tu modelo
+                            // Procesar los campos según el nuevo formato
                             String id = obj.optString("id", "");
-                            String productId = obj.optString("productId", "");
-                            String productName = obj.optString("productName", "");
-                            String contentType = obj.optString("content_type", "");
-                            String content = obj.optString("content", "");
-                            String productCode = obj.optString("productCode", "");
-                            int quantity = obj.optInt("quantity", 0);
-                            // El modelo Product tiene más campos, rellena con vacíos o valores por defecto
+                            String name = obj.optString("name", "");
+                            String code = obj.optString("code", "");
+                            String description = obj.optString("description", "Sin descripción");
+                            
+                            // Obtener la cantidad asignada del objeto quantity
+                            org.json.JSONObject quantityObj = obj.optJSONObject("quantity");
+                            int quantity = 0;
+                            if (quantityObj != null) {
+                                quantity = quantityObj.optInt("assigned", 0);
+                            }
+                            
+                            String unit = obj.optString("unit", "Unidad");
+                            String unitAbbreviation = obj.optString("unit_abbreviation", "u");
+                            double price = obj.optDouble("price", 0.0);
+                            
+                            // Crear el objeto Product con los campos del nuevo formato
                             allProducts.add(new Product(
-                                    productId,
-                                    productName,
-                                    productCode,
-                                    content + " " + contentType,
-                                    "", // categoryId
-                                    "", // categoryName
-                                    0.0, // price
-                                    "",  // imageUrl
+                                    id,
+                                    name,
+                                    code,
+                                    description + " (" + unit + ")",
+                                    "", // categoryId (no viene en el nuevo formato)
+                                    "", // categoryName (no viene en el nuevo formato)
+                                    price,
+                                    "", // imageUrl (no necesario según requerimiento)
                                     quantity
                             ));
                         }
                         productsAdapter.updateProducts(allProducts);
                     } catch (org.json.JSONException e) {
+                        Toast.makeText(getContext(), ""+e.toString() + " "+clientId, Toast.LENGTH_SHORT).show();
+
                         e.printStackTrace();
                     }
                 },
                 error -> {
+
+                    Toast.makeText(getContext(), ""+error.toString() + " "+clientId, Toast.LENGTH_SHORT).show();
                     error.printStackTrace();
                 }
-        );
+        ) {
+            @Override
+            public java.util.Map<String, String> getHeaders() {
+                java.util.Map<String, String> headers = new java.util.HashMap<>();
+                android.content.Context context = requireContext();
+                headers.put("Authorization", com.jugos_jaco_app.ui.clients.ClientsFragment.getAuthorizationHeader(context));
+                headers.put("Accept", "application/json");
+                return headers;
+            }
+        };
         com.jugos_jaco_app.ui.utilities.VolleySingleton.getInstance(requireContext()).addToRequestQueue(request);
     }
     
@@ -459,4 +492,4 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
             .setNegativeButton("Cancelar", null)
             .show();
     }
-} 
+}

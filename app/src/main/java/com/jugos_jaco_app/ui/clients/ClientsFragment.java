@@ -514,34 +514,10 @@ public class ClientsFragment extends Fragment implements ChipGroup.OnCheckedChan
         }
 
         // Mostrar información de las posiciones antes del cambio
-        Log.d("REORDER_DEBUG", String.format(
-            "Movimiento iniciado:\n" +
-            "Cliente: %s %s\n" +
-            "De posición lista: %d (position=%s)\n" +
-            "A posición lista: %d (nueva position será=%s)",
-            movedClient.getFirstName(),
-            movedClient.getLastName(),
-            fromPosition,
-            oldPosition,
-            toPosition,
-            movedClient.getPosition()
-        ));
+
 
         // Mostrar información final del movimiento
-        Log.d("REORDER_DEBUG", String.format(
-            "Movimiento completado:\n" +
-            "Cliente %s %s\n" +
-            "Position anterior: %s\n" +
-            "Position nueva: %s\n" +
-            "Position del cliente anterior: %s\n" +
-            "Position del cliente siguiente: %s",
-            movedClient.getFirstName(),
-            movedClient.getLastName(),
-            oldPosition,
-            movedClient.getPosition(),
-            toPosition > 0 ? clients.get(toPosition - 1).getPosition() : "ninguna",
-            toPosition < clients.size() - 1 ? clients.get(toPosition + 1).getPosition() : "ninguna"
-        ));
+
 
         // Notificar el cambio del item movido
         clientAdapter.notifyItemChanged(toPosition);
