@@ -125,9 +125,11 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
         View view = inflater.inflate(R.layout.fragment_new_sale, container, false);
         
         // Obtener datos del cliente de los argumentos
+        boolean fromProductsAssigned = false;
         if (getArguments() != null) {
             clientId = getArguments().getString("clientId");
             clientName = getArguments().getString("clientName");
+            fromProductsAssigned = getArguments().getBoolean("fromProductsAssigned", false);
         }
         
         // Inicializar y configurar componentes
@@ -230,8 +232,19 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
      * Establece los adaptadores y sus listeners.
      */
     private void setupRecyclerViews() {
+        // Verificar si viene desde ProductsAssignedFragment
+        boolean fromProductsAssigned = false;
+        if (getArguments() != null) {
+            fromProductsAssigned = getArguments().getBoolean("fromProductsAssigned", false);
+        }
+        
         // Configurar RecyclerView de productos en formato lista
-        productsAdapter = new ProductsAdapter(new ArrayList<>(), this::addToCart, true);
+        // Si viene desde ProductsAssignedFragment, pasar null como listener para ocultar el botón
+        if (fromProductsAssigned) {
+            productsAdapter = new ProductsAdapter(new ArrayList<>(), null, true);
+        } else {
+            productsAdapter = new ProductsAdapter(new ArrayList<>(), this::addToCart, true);
+        }
         rvProducts.setLayoutManager(new LinearLayoutManager(getContext()));
         rvProducts.setAdapter(productsAdapter);
         

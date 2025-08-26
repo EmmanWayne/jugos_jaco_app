@@ -157,6 +157,12 @@
         android:id="@+id/productsAssignedFragment"
         android:name="com.jugos_jaco_app.ui.products.ProductsAssignedFragment"
         android:label="Productos Asignados"
-        tools:layout="@layout/fragment_products_assigned" />
+        tools:layout="@layout/fragment_products_assigned">
+        
+        <!-- Acción para navegar a NewSaleFragment -->
+        <action
+            android:id="@+id/action_productsAssignedFragment_to_newSaleFragment"
+            app:destination="@id/newSaleFragment" />
+    </fragment>
 
 </navigation>

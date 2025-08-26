@@ -7,6 +7,7 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.jugos_jaco_app.R;
@@ -29,13 +30,27 @@ public class ProductsAssignedFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_products_assigned, container, false);
         rvProducts = view.findViewById(R.id.rvProductsAssigned);
-        productsAdapter = new ProductsAdapter(new ArrayList<>(), product -> {}, true);
+        productsAdapter = new ProductsAdapter(new ArrayList<>(), this::navigateToNewSale, true);
         rvProducts.setLayoutManager(new GridLayoutManager(getContext(), 2));
         rvProducts.setAdapter(productsAdapter);
         loadProducts();
         // Configurar búsqueda
         setHasOptionsMenu(true);
         return view;
+    }
+    
+    /**
+     * Navega a NewSaleFragment cuando se hace clic en un producto
+     * Pasa el parámetro fromProductsAssigned=true para indicar que viene desde este fragmento
+     */
+    private void navigateToNewSale(Product product) {
+        Bundle args = new Bundle();
+        args.putString("client_id", ""); // No hay cliente seleccionado aún
+        args.putString("client_name", "Sin cliente");
+        args.putBoolean("fromProductsAssigned", true); // Indicador de origen
+        
+        Navigation.findNavController(requireView())
+                .navigate(R.id.action_productsAssignedFragment_to_newSaleFragment, args);
     }
 
     private void loadProducts() {

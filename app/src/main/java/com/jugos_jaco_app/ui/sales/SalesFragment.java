@@ -1,5 +1,6 @@
 package com.jugos_jaco_app.ui.sales;
 
+import android.app.Dialog;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -12,20 +13,33 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.android.volley.Request;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.Volley;
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 import com.jugos_jaco_app.R;
 import com.jugos_jaco_app.databinding.FragmentSalesBinding;
 import com.jugos_jaco_app.ui.adapters.SalesAdapter;
+import com.jugos_jaco_app.ui.clients.ClientsFragment;
+import com.jugos_jaco_app.ui.models.Client;
 import com.jugos_jaco_app.ui.models.Sale;
+import com.jugos_jaco_app.ui.utilities.Utilities;
+
+import org.json.JSONArray;
+import org.json.JSONException;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * Fragment para mostrar la lista de ventas.
@@ -139,8 +153,7 @@ public class SalesFragment extends Fragment implements SalesAdapter.OnSaleClickL
     private void setupListeners() {
         // Listener para el botón de nueva venta
         fabNewSale.setOnClickListener(v -> {
-            // Navegar a la pantalla de nueva venta
-            Navigation.findNavController(v).navigate(R.id.action_nav_ventas_to_newSaleFragment);
+            showClientSelectionDialog();
         });
         
         // Listener para el campo de búsqueda
@@ -189,5 +202,92 @@ public class SalesFragment extends Fragment implements SalesAdapter.OnSaleClickL
     public void onDestroyView() {
         super.onDestroyView();
         binding = null;
+    }
+    
+    /**
+     * Muestra un diálogo para seleccionar un cliente antes de crear una nueva venta
+     */
+    private void showClientSelectionDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+        builder.setTitle("Seleccionar Cliente");
+        
+        // Mostrar un diálogo de progreso mientras se cargan los clientes
+        AlertDialog progressDialog = new AlertDialog.Builder(requireContext())
+                .setMessage("Cargando clientes...")
+                .setCancelable(false)
+                .create();
+        progressDialog.show();
+        
+        // Cargar la lista de clientes desde el servidor
+        String url = Utilities.URL + "clients";
+        
+        JsonObjectRequest request = new JsonObjectRequest(
+                Request.Method.GET,
+                url,
+                null,
+                response -> {
+                    progressDialog.dismiss();
+                    try {
+                        List<Client> clientList = new ArrayList<>();
+                        JSONArray clientsJson = response.getJSONArray("data");
+                        
+                        for (int i = 0; i < clientsJson.length(); i++) {
+                            org.json.JSONObject clientJson = clientsJson.getJSONObject(i);
+                            String id = String.valueOf(clientJson.getInt("id"));
+                            String firstName = clientJson.getString("first_name");
+                            String lastName = clientJson.getString("last_name");
+                            String businessName = clientJson.getString("business_name");
+                            
+                            // Crear un objeto Client con los datos mínimos necesarios
+                            Client client = new Client(
+                                    id, firstName, lastName, "", "", "", "", "", "", "", "", 
+                                    businessName, "", "", ""
+                            );
+                            clientList.add(client);
+                        }
+                        
+                        // Crear array de nombres para mostrar en el diálogo
+                        String[] clientNames = new String[clientList.size()];
+                        for (int i = 0; i < clientList.size(); i++) {
+                            Client client = clientList.get(i);
+                            String displayName = client.getFirstName() + " " + client.getLastName();
+                            if (client.getBusinessName() != null && !client.getBusinessName().isEmpty()) {
+                                displayName += " - " + client.getBusinessName();
+                            }
+                            clientNames[i] = displayName;
+                        }
+                        
+                        // Mostrar el diálogo con la lista de clientes
+                        builder.setItems(clientNames, (dialog, which) -> {
+                            Client selectedClient = clientList.get(which);
+                            // Navegar a NewSaleFragment con el cliente seleccionado
+                            Bundle bundle = new Bundle();
+                            bundle.putString("clientId", selectedClient.getId());
+                            bundle.putString("clientName", selectedClient.getFirstName() + " " + selectedClient.getLastName());
+                            Navigation.findNavController(getView()).navigate(R.id.action_nav_ventas_to_newSaleFragment, bundle);
+                        });
+                        
+                        builder.setNegativeButton("Cancelar", (dialog, which) -> dialog.dismiss());
+                        builder.show();
+                        
+                    } catch (JSONException e) {
+                        Toast.makeText(requireContext(), "Error al procesar los datos de clientes", Toast.LENGTH_SHORT).show();
+                    }
+                },
+                error -> {
+                    progressDialog.dismiss();
+                    Toast.makeText(requireContext(), "Error al cargar los clientes", Toast.LENGTH_SHORT).show();
+                }
+        ) {
+            @Override
+            public Map<String, String> getHeaders() {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Authorization", ClientsFragment.getAuthorizationHeader(requireContext()));
+                headers.put("Accept", "application/json");
+                return headers;
+            }
+        };
+        
+        Volley.newRequestQueue(requireContext()).add(request);
     }
 }

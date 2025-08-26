@@ -124,8 +124,14 @@ public class ProductsAdapter extends RecyclerView.Adapter<ProductsAdapter.ViewHo
             if (tvQuantity != null) {
                 tvQuantity.setText("Cantidad: " + product.getQuantity());
             }
-            // Manejar estado visual (en carrito/no en carrito)
-            if (productsInCart.contains(product.getId())) {
+            
+            // Si el listener es null, ocultar el botón de agregar (modo solo visualización)
+            if (listener == null) {
+                btnAdd.setVisibility(View.GONE);
+                tvInCart.setVisibility(View.GONE);
+            }
+            // Si no, manejar estado visual normal (en carrito/no en carrito)
+            else if (productsInCart.contains(product.getId())) {
                 btnAdd.setVisibility(View.GONE);
                 tvInCart.setVisibility(View.VISIBLE);
             } else {
