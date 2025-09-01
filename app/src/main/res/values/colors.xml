@@ -17,5 +17,12 @@
     <color name="error_color">#B00020</color>
     <color name="warning_color">#FFA000</color>
     <color name="text_secondary">#757575</color>
+    
+    <!-- Colores adicionales para cuentas por cobrar -->
+    <color name="primary_color">@color/primary</color>
+    <color name="background_color">#F5F5F5</color>
+    <color name="text_primary">#212121</color>
+    <color name="success_color">#4CAF50</color>
+    <color name="divider_color">#E0E0E0</color>
 
 </resources>

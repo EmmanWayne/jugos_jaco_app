@@ -148,6 +148,30 @@
         app:destination="@id/newSaleFragment" />
 
     <fragment
+        android:id="@+id/nav_accounts_receivable"
+        android:name="com.jugos_jaco_app.ui.accounts.AccountsReceivableFragment"
+        android:label="Cuentas por Cobrar"
+        tools:layout="@layout/fragment_accounts_receivable">
+        
+        <action
+            android:id="@+id/action_accountsReceivableFragment_to_accountReceivableDetailFragment"
+            app:destination="@id/accountReceivableDetailFragment" />
+            
+    </fragment>
+
+    <fragment
+        android:id="@+id/accountReceivableDetailFragment"
+        android:name="com.jugos_jaco_app.ui.accounts_receivable.AccountReceivableDetailFragment"
+        android:label="Detalle de Cuenta por Cobrar"
+        tools:layout="@layout/fragment_account_receivable_detail">
+        
+        <argument
+            android:name="account_id"
+            app:argType="integer" />
+            
+    </fragment>
+
+    <fragment
         android:id="@+id/nav_profile"
         android:name="com.jugos_jaco_app.ui.employee.EmployeeProfileFragment"
         android:label="Mi Perfil"

@@ -13,6 +13,10 @@
             android:icon="@drawable/ic_sales"
             android:title="@string/Ventas" />
         <item
+            android:id="@+id/nav_accounts_receivable"
+            android:icon="@drawable/ic_accounts_receivable"
+            android:title="Cuentas por Cobrar" />
+        <item
             android:id="@+id/productsAssignedFragment"
             android:icon="@drawable/ic_assignment"
             android:title="Productos Asignados"/>
