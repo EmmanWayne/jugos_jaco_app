@@ -6,6 +6,7 @@ import static com.jugos_jaco_app.Login.TOKEN_TYPE;
 
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -19,6 +20,9 @@ import android.widget.ProgressBar;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.text.TextWatcher;
+import android.text.Editable;
+import com.google.android.material.textfield.TextInputLayout;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -34,6 +38,7 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.jugos_jaco_app.R;
 import com.jugos_jaco_app.ui.adapters.PaymentAdapter;
+import com.jugos_jaco_app.ui.models.AccountReceivable;
 import com.jugos_jaco_app.ui.models.Payment;
 import com.jugos_jaco_app.ui.utilities.Utilities;
 import com.jugos_jaco_app.ui.utilities.VolleySingleton;
@@ -73,6 +78,7 @@ public class AccountReceivableDetailFragment extends Fragment {
 
     // Data
     private int accountId;
+    private AccountReceivable accountReceivable;
     private PaymentAdapter paymentAdapter;
     private List<Payment> paymentsList;
 
@@ -145,34 +151,113 @@ public class AccountReceivableDetailFragment extends Fragment {
         AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
         View dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_add_payment, null);
         
+        TextView tvBalanceInfo = dialogView.findViewById(R.id.tvBalanceInfo);
         EditText etAmount = dialogView.findViewById(R.id.etAmount);
         Spinner spinnerPaymentMethod = dialogView.findViewById(R.id.spinnerPaymentMethod);
         EditText etNotes = dialogView.findViewById(R.id.etNotes);
         
-        // Configurar spinner de métodos de pago
-        String[] paymentMethods = {"Efectivo", "Depósito"};
-        String[] paymentMethodValues = {"cash", "deposit"};
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, paymentMethods);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerPaymentMethod.setAdapter(adapter);
+        // Mostrar el saldo restante
+         if (accountReceivable != null) {
+             tvBalanceInfo.setText(String.format("Saldo restante: $%.2f", accountReceivable.getRemainingBalance()));
+         }
+         
+         // Configurar spinner de métodos de pago
+         String[] paymentMethods = {"Efectivo", "Depósito"};
+         String[] paymentMethodValues = {"cash", "deposit"};
+         ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, paymentMethods);
+         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+         spinnerPaymentMethod.setAdapter(adapter);
+         
+         // Obtener referencia al TextInputLayout para mostrar errores
+         final TextInputLayout tilAmount = (TextInputLayout) etAmount.getParent().getParent();
+         
+         // Agregar validación en tiempo real para el monto
+         etAmount.addTextChangedListener(new TextWatcher() {
+             @Override
+             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+             
+             @Override
+             public void onTextChanged(CharSequence s, int start, int before, int count) {
+                 tilAmount.setError(null); // Limpiar error anterior
+             }
+             
+             @Override
+             public void afterTextChanged(Editable s) {
+                 String amountStr = s.toString().trim();
+                 if (!amountStr.isEmpty()) {
+                     try {
+                         double amount = Double.parseDouble(amountStr);
+                         if (amount <= 0) {
+                             tilAmount.setError("El monto debe ser mayor a cero");
+                         } else if (accountReceivable != null && amount > accountReceivable.getRemainingBalance()) {
+                             tilAmount.setError(String.format("Excede el saldo restante: $%.2f", accountReceivable.getRemainingBalance()));
+                         } else if (amount > 1000000) {
+                             tilAmount.setError("El monto es demasiado grande");
+                         }
+                     } catch (NumberFormatException e) {
+                         tilAmount.setError("Formato de monto inválido");
+                     }
+                 }
+             }
+         });
         
         builder.setView(dialogView)
                 .setTitle("Agregar Abono")
-                .setIcon(R.drawable.ic_add)
-                .setPositiveButton("Agregar", (dialog, which) -> {
+                .setIcon(R.drawable.ic_add);
+        
+        // Crear el dialog para poder acceder al botón
+        AlertDialog dialog = builder.create();
+        
+        dialog.setButton(AlertDialog.BUTTON_POSITIVE, "Agregar", (dialogInterface, which) -> {
                     String amountStr = etAmount.getText().toString().trim();
                     String notes = etNotes.getText().toString().trim();
                     int selectedPosition = spinnerPaymentMethod.getSelectedItemPosition();
                     
-                    if (TextUtils.isEmpty(amountStr)) {
-                        Toast.makeText(requireContext(), "Por favor ingrese el monto", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
+                    // Validar que el monto no esté vacío
+                     if (TextUtils.isEmpty(amountStr)) {
+                         Toast.makeText(requireContext(), "Por favor ingrese el monto", Toast.LENGTH_SHORT).show();
+                         return;
+                     }
+                     
+                     // Validar que la cuenta esté disponible
+                     if (accountReceivable == null) {
+                         Toast.makeText(requireContext(), "Error: No se pudo cargar la información de la cuenta", Toast.LENGTH_SHORT).show();
+                         return;
+                     }
+                     
+                     // Validar que la cuenta tenga saldo pendiente
+                     if (accountReceivable.getRemainingBalance() <= 0) {
+                         Toast.makeText(requireContext(), "Esta cuenta ya está completamente pagada", Toast.LENGTH_SHORT).show();
+                         return;
+                     }
                     
                     try {
                         double amount = Double.parseDouble(amountStr);
-                        if (amount <= 0) {
-                            Toast.makeText(requireContext(), "El monto debe ser mayor a 0", Toast.LENGTH_SHORT).show();
+                        
+                        // Validar que el monto sea mayor a cero
+                         if (amount <= 0) {
+                             Toast.makeText(requireContext(), "El monto debe ser mayor a cero", Toast.LENGTH_SHORT).show();
+                             return;
+                         }
+                         
+                         // Validar que el monto no exceda el saldo restante
+                         if (accountReceivable != null && amount > accountReceivable.getRemainingBalance()) {
+                             Toast.makeText(requireContext(), 
+                                 String.format("El monto no puede exceder el saldo restante: $%.2f", 
+                                     accountReceivable.getRemainingBalance()), 
+                                 Toast.LENGTH_LONG).show();
+                             return;
+                         }
+                         
+                         // Validar que el monto no sea excesivamente grande (más de 1 millón)
+                         if (amount > 1000000) {
+                             Toast.makeText(requireContext(), "El monto es demasiado grande", Toast.LENGTH_SHORT).show();
+                             return;
+                         }
+                        
+                        // Validar que las notas no sean excesivamente largas
+                        if (notes.length() > 500) {
+                            Toast.makeText(requireContext(), "Las notas no pueden exceder 500 caracteres", Toast.LENGTH_SHORT).show();
                             return;
                         }
                         
@@ -180,11 +265,16 @@ public class AccountReceivableDetailFragment extends Fragment {
                         createPayment(amount, paymentMethod, notes);
                         
                     } catch (NumberFormatException e) {
-                        Toast.makeText(requireContext(), "Monto inválido", Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .setNegativeButton("Cancelar", null)
-                .show();
+                          Toast.makeText(requireContext(), "Formato de monto inválido", Toast.LENGTH_SHORT).show();
+                      }
+                  });
+         
+         dialog.setButton(AlertDialog.BUTTON_NEGATIVE, "Cancelar", (DialogInterface.OnClickListener) null);
+         
+         dialog.show();
+         
+         // Validar el estado inicial del botón
+         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(accountReceivable != null && accountReceivable.getRemainingBalance() > 0);
     }
 
     private void createPayment(double amount, String paymentMethod, String notes) {
@@ -301,6 +391,9 @@ public class AccountReceivableDetailFragment extends Fragment {
             double remainingBalance = data.getDouble("remaining_balance");
             String dueDate = data.getString("due_date");
             String status = data.getString("status");
+            
+            // Crear objeto AccountReceivable
+            accountReceivable = new AccountReceivable(accountId, clientName, totalAmount, remainingBalance, dueDate, status);
             
             // Actualizar UI con información de la cuenta
             updateAccountInfo(clientName, totalAmount, remainingBalance, dueDate, status);
