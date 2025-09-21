@@ -537,7 +537,9 @@ public class NewClientFragment extends Fragment {
                                     dataJson.getString("business_name"),
                                     dataJson.optString("position", ""),
                                     dataJson.optString("visit_day", ""),
-                                    ""
+                                    "",
+                                    0,
+                                    0
                             );
                             Toast.makeText(requireContext(), locationJson.getString("plus_code")
                                     , Toast.LENGTH_SHORT).show();

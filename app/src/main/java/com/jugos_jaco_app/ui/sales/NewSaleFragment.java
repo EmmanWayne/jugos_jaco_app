@@ -318,6 +318,9 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
                                 quantity = quantityObj.optInt("assigned", 0);
                             }
                             
+                            // Obtener el stock disponible
+                            int stock = quantityObj.optInt("available", 0);
+
                             String unit = obj.optString("unit", "Unidad");
                             String unitAbbreviation = obj.optString("unit_abbreviation", "u");
                             double price = obj.optDouble("price", 0.0);
@@ -335,7 +338,8 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
                                     "", // categoryName (no viene en el nuevo formato)
                                     price,
                                     "", // imageUrl (no necesario según requerimiento)
-                                    quantity,
+                                    stock,
+                                    stock,
                                     productPriceId
                             ));
                         }

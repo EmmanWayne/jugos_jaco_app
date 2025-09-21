@@ -317,6 +317,11 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
         btnEditVisitDays.setEnabled(false); // Deshabilitado hasta cargar días
         tvVisitDayGlobal = tvVisitDay;
 
+        // Elementos de créditos activos
+        androidx.cardview.widget.CardView cardActiveCredits = view.findViewById(R.id.cardActiveCredits);
+        TextView tvCreditCount = view.findViewById(R.id.tvCreditCount);
+        TextView tvCreditTotal = view.findViewById(R.id.tvCreditTotal);
+
         Button btnAddPhoto = view.findViewById(R.id.btnAddPhoto);
         Button btnUploadPhotos = view.findViewById(R.id.btnUploadPhotos);
         rvPhotos = view.findViewById(R.id.rvPhotos);
@@ -347,12 +352,25 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
             String address = args.getString("adress", "");
             String typePrice = args.getString("typePrice", "");
             String businessName = args.getString("businessName", "Sin nombre de negocio");
+            
+            // Obtener información de créditos activos
+            int countAccountReceivable = args.getInt("countAccountReceivable", 0);
+            double totalAccountReceivable = args.getDouble("totalAccountReceivable", 0.0);
 
             tvClientName.setText(firstName + " " + lastName);
             tvClientPhone.setText(phoneNumber);
             tvAddress.setText(address);
             tvTypePrice.setText(typePrice);
             tvBusinessName.setText(businessName);
+            
+            // Mostrar información de créditos activos si existe
+            if (countAccountReceivable > 0 && totalAccountReceivable > 0) {
+                cardActiveCredits.setVisibility(View.VISIBLE);
+                tvCreditCount.setText(String.format("Facturas pendientes: %d", countAccountReceivable));
+                tvCreditTotal.setText(String.format("Total adeudado: $%.2f", totalAccountReceivable));
+            } else {
+                cardActiveCredits.setVisibility(View.GONE);
+            }
         }
 
         // Configurar el adaptador para el RecyclerView

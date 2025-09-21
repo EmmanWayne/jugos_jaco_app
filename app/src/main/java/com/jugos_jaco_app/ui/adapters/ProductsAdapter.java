@@ -115,14 +115,14 @@ public class ProductsAdapter extends RecyclerView.Adapter<ProductsAdapter.ViewHo
         
         void bind(Product product) {
             // Configurar datos del producto
-            tvName.setText(product.getName());
-            tvCode.setText(product.getCode());
-            tvContent.setText(product.getContent());
-            tvCategory.setText(product.getCategoryName());
+            if (tvName != null) tvName.setText(product.getName());
+            if (tvCode != null) tvCode.setText("Código: " + product.getCode());
+            if (tvContent != null) tvContent.setText(product.getContent());
+            if (tvCategory != null) tvCategory.setText(product.getCategoryName());
             
             // Mostrar cantidad
             if (tvQuantity != null) {
-                tvQuantity.setText("Cantidad: " + product.getQuantity());
+                tvQuantity.setText("Stock: " + product.getStock());
             }
             
             // Si el listener es null, ocultar el botón de agregar (modo solo visualización)

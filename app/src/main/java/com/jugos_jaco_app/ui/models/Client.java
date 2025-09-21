@@ -18,11 +18,13 @@ public class Client implements Serializable {
     private String position;
     private String visitDay;
     private String profileImage;
+    private int countAccountReceivable;
+    private double totalAccountReceivable;
 
     public Client(String id, String firstName, String lastName, String phoneNumber, String adress, 
                  String departament, String township, String latitude, String longitude, 
                  String plus_code, String typePrice, String businessName, String position, String visitDay,
-                 String profileImage) {
+                 String profileImage, int countAccountReceivable, double totalAccountReceivable) {
         this.id = id;
         this.firstName = firstName;
         this.lastName = lastName;
@@ -38,6 +40,8 @@ public class Client implements Serializable {
         this.position = position;
         this.visitDay = visitDay;
         this.profileImage = profileImage;
+        this.countAccountReceivable = countAccountReceivable;
+        this.totalAccountReceivable = totalAccountReceivable;
     }
 
     public String getId() {
@@ -121,5 +125,25 @@ public class Client implements Serializable {
 
     public void setProfileImage(String profileImage) {
         this.profileImage = profileImage;
+    }
+
+    public int getCountAccountReceivable() {
+        return countAccountReceivable;
+    }
+
+    public void setCountAccountReceivable(int countAccountReceivable) {
+        this.countAccountReceivable = countAccountReceivable;
+    }
+
+    public double getTotalAccountReceivable() {
+        return totalAccountReceivable;
+    }
+
+    public void setTotalAccountReceivable(double totalAccountReceivable) {
+        this.totalAccountReceivable = totalAccountReceivable;
+    }
+
+    public boolean hasActiveCredits() {
+        return countAccountReceivable > 0 && totalAccountReceivable > 0;
     }
 }

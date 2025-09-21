@@ -395,7 +395,9 @@ public class EditClientFragment extends Fragment {
                                     dataJson.getString("business_name"),
                                      "",
                                      "",
-                                    dataJson.optString("profile_image", "")
+                                    dataJson.optString("profile_image", ""),
+                                    0,
+                                    0
 
                             );
                             // Actualizar el ViewModel

@@ -36,8 +36,11 @@ import com.jugos_jaco_app.ui.utilities.Utilities;
 
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -52,10 +55,14 @@ public class SalesFragment extends Fragment implements SalesAdapter.OnSaleClickL
     private SaleViewModel saleViewModel;
     private SalesAdapter salesAdapter;
     
+    // Variables para almacenar los totales
+    private double currentCashSales = 0.0;
+    private double currentCreditSales = 0.0;
+    private double currentTotalPayments = 0.0;
+    
     // Vistas
     private RecyclerView rvSales;
-    private TextView tvCashSales, tvCreditSales, tvTotalSales;
-    private TextView tvNoSales;
+    private TextView tvCashSales, tvCreditSales, tvTotalSales, tvNoSales, tvTotalPayments, tvTotalExpected;
     private ProgressBar progressBar;
     private ExtendedFloatingActionButton fabNewSale;
     private EditText etSearchClient;
@@ -90,6 +97,8 @@ public class SalesFragment extends Fragment implements SalesAdapter.OnSaleClickL
         tvCashSales = view.findViewById(R.id.tvCashSales);
         tvCreditSales = view.findViewById(R.id.tvCreditSales);
         tvTotalSales = view.findViewById(R.id.tvTotalSales);
+        tvTotalPayments = view.findViewById(R.id.tvTotalPayments);
+        tvTotalExpected = view.findViewById(R.id.tvTotalExpected);
         tvNoSales = view.findViewById(R.id.tvNoSales);
         progressBar = view.findViewById(R.id.progressBar);
         fabNewSale = view.findViewById(R.id.fabNewSale);
@@ -137,15 +146,19 @@ public class SalesFragment extends Fragment implements SalesAdapter.OnSaleClickL
 
         // Observar totales
         saleViewModel.getCashSalesTotal().observe(getViewLifecycleOwner(), total -> {
+            currentCashSales = total;
             tvCashSales.setText(String.format(Locale.getDefault(), "L. %.2f", total));
+            updateCalculatedTotals();
         });
 
         saleViewModel.getCreditSalesTotal().observe(getViewLifecycleOwner(), total -> {
+            currentCreditSales = total;
             tvCreditSales.setText(String.format(Locale.getDefault(), "L. %.2f", total));
+            updateCalculatedTotals();
         });
 
         saleViewModel.getTotalSales().observe(getViewLifecycleOwner(), total -> {
-            tvTotalSales.setText(String.format(Locale.getDefault(), "L. %.2f", total));
+            // El total acumulado ahora incluye abonos, se calcula en updateCalculatedTotals()
         });
     }
 
@@ -186,7 +199,75 @@ public class SalesFragment extends Fragment implements SalesAdapter.OnSaleClickL
     private void loadSales() {
         if (getContext() != null) {
             saleViewModel.loadSales(getContext());
+            loadTodayPayments(); // Cargar también los pagos del día
         }
+    }
+
+    /**
+     * Carga los pagos del día actual desde el servidor.
+     */
+    private void loadTodayPayments() {
+        // Obtener la fecha actual en formato yyyy-MM-dd
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+        String todayDate = dateFormat.format(new Date());
+        
+        String url = Utilities.URL + "account-receivable/payments?date=" + todayDate;
+        
+        JsonObjectRequest request = new JsonObjectRequest(
+                Request.Method.GET,
+                url,
+                null,
+                response -> {
+                    try {
+                        JSONArray dataArray = response.getJSONArray("data");
+                        double totalPayments = 0.0;
+                        
+                        // Sumar todos los pagos del día
+                        for (int i = 0; i < dataArray.length(); i++) {
+                            JSONObject payment = dataArray.getJSONObject(i);
+                            double amount = payment.getDouble("amount");
+                            totalPayments += amount;
+                        }
+                        
+                        // Actualizar la vista con el total
+                        currentTotalPayments = totalPayments;
+                        tvTotalPayments.setText(String.format(Locale.getDefault(), "L. %.2f", totalPayments));
+                        updateCalculatedTotals();
+                        
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        tvTotalPayments.setText("L. 0.00");
+                    }
+                },
+                error -> {
+                    // En caso de error, mostrar 0.00
+                    tvTotalPayments.setText("L. 0.00");
+                }
+        ) {
+            @Override
+            public Map<String, String> getHeaders() {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Authorization", ClientsFragment.getAuthorizationHeader(requireContext()));
+                headers.put("Accept", "application/json");
+                return headers;
+            }
+        };
+        
+        // Agregar la solicitud a la cola
+        Volley.newRequestQueue(requireContext()).add(request);
+    }
+
+    /**
+     * Actualiza los totales calculados (Total Esperado y Total Acumulado).
+     */
+    private void updateCalculatedTotals() {
+        // Total Esperado = Ventas al Contado + Abonos del Día
+        double totalExpected = currentCashSales + currentTotalPayments;
+        tvTotalExpected.setText(String.format(Locale.getDefault(), "L. %.2f", totalExpected));
+        
+        // Total Acumulado = Ventas al Contado + Ventas al Crédito + Abonos del Día
+        double totalAccumulated = currentCashSales + currentCreditSales + currentTotalPayments;
+        tvTotalSales.setText(String.format(Locale.getDefault(), "L. %.2f", totalAccumulated));
     }
 
     /**
@@ -259,7 +340,7 @@ public class SalesFragment extends Fragment implements SalesAdapter.OnSaleClickL
                             // Crear un objeto Client con los datos mínimos necesarios
                             Client client = new Client(
                                     id, firstName, lastName, "", "", "", "", "", "", "", "", 
-                                    businessName, "", "", ""
+                                    businessName, "", "", "", 0, 0.0
                             );
                             clientList.add(client);
                             filteredClientList.add(client);

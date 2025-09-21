@@ -130,6 +130,10 @@ public class ClientsViewModel extends ViewModel {
 
                             String profileImage = clientJson.optString("profile_image", "");
 
+                            // Obtener los campos de cuentas por cobrar
+                            int countAccountReceivable = clientJson.optInt("count_account_receivable", 0);
+                            double totalAccountReceivable = clientJson.optDouble("total_account_receivable", 0.0);
+
                             // Manejar posibles nulos en location
                             String latitude = locationJson.isNull("latitude") ? "" : locationJson.optString("latitude", "");
                             String longitude = locationJson.isNull("longitude") ? "" : locationJson.optString("longitude", "");
@@ -150,7 +154,9 @@ public class ClientsViewModel extends ViewModel {
                                     clientJson.getString("business_name"),
                                     positions,
                                     visitDays,
-                                    profileImage
+                                    profileImage,
+                                    countAccountReceivable,
+                                    totalAccountReceivable
                             );
                             Log.d("ClientsViewModel", "Cliente procesado: id=" + client.getId() + ", nombre=" + client.getFirstName() + " " + client.getLastName() + ", visita(s): " + visitDays + ", posición(es): " + positions);
                             clients.add(client);

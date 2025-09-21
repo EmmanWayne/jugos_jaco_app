@@ -137,6 +137,10 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
             bundle.putString("phoneNumber", client.getPhoneNumber());
             bundle.putString("position", client.getPosition());
             bundle.putString("visit_day", client.getVisitDay());
+            
+            // Agregar información de créditos activos
+            bundle.putInt("countAccountReceivable", client.getCountAccountReceivable());
+            bundle.putDouble("totalAccountReceivable", client.getTotalAccountReceivable());
 
             if (client.hasCoordinates()) {
                 bundle.putString("latitude", client.getLatitude() != null ? client.getLatitude() : null);
@@ -246,6 +250,7 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
         private final TextView tvFullName;
         private final TextView tvPhoneNumber;
         private final TextView tvVisitDay;
+        private final TextView tvAccountReceivable;
 
         private final CircleImageView imageItem;
         private final ImageView ivCoordinatesIcon;
@@ -262,6 +267,7 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
             ivPhoneIcon = itemView.findViewById(R.id.ivPhoneIcon);
             ivVentaIcon = itemView.findViewById(R.id.ivVentaIcon);
             tvVisitDay =  itemView.findViewById(R.id.tvVisitDay);
+            tvAccountReceivable = itemView.findViewById(R.id.tvAccountReceivable);
 
             // Configurar listeners para los iconos
             setupIconListeners();
@@ -287,6 +293,15 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
 
             tvFullName.setText(String.format("%s %s", client.getFirstName(), client.getLastName()));
             tvPhoneNumber.setText(String.format("%s", client.getPhoneNumber()));
+
+            // Mostrar información de cuentas por cobrar si existe
+            if (client.hasActiveCredits()) {
+                tvAccountReceivable.setVisibility(View.VISIBLE);
+                tvAccountReceivable.setText(String.format("Deuda: %d facturas - $%.2f", 
+                    client.getCountAccountReceivable(), client.getTotalAccountReceivable()));
+            } else {
+                tvAccountReceivable.setVisibility(View.GONE);
+            }
 
             // Cargar imagen de perfil comprimida
             if (client.getProfileImage() != null && !client.getProfileImage().isEmpty()) {
