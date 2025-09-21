@@ -548,6 +548,17 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
     }
 
     /**
+     * Muestra un AlertDialog con el error del servidor.
+     */
+    private void showErrorDialog(String errorMessage) {
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Error al crear la venta")
+                .setMessage(errorMessage)
+                .setPositiveButton("Aceptar", (dialog, which) -> dialog.dismiss())
+                .show();
+    }
+
+    /**
      * Envía los datos de la venta al servidor.
      */
     private void sendSaleData(String paymentMethod, String paymentTerm, double cashAmount, String paymentReference, String notes, String clientId) {
@@ -603,17 +614,22 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
                         try {
                             String errorMessage = new String(error.networkResponse.data);
                             JSONObject errorResponse = new JSONObject(errorMessage);
-                            if(errorResponse.has("message")){
-                                String message = errorResponse.getString("message");
-
-                                Log.d("CREARVENTA", "sendSaleData: " + message);
-                                Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
-                            }else{
-                                Toast.makeText(requireContext(), "Error inesperado", Toast.LENGTH_SHORT).show();
+                            
+                            String displayMessage = "Error inesperado";
+                            
+                            // Verificar si hay un mensaje específico del servidor
+                            if(errorResponse.has("error")){
+                                displayMessage = errorResponse.getString("error");
+                            } else if(errorResponse.has("error")) {
+                                displayMessage = errorResponse.getString("error");
                             }
+                            
+                            Log.d("CREARVENTA", "sendSaleData: " + displayMessage);
+                            showErrorDialog(displayMessage);
+                            
                         } catch (Exception e) {
                             e.printStackTrace();
-                            Toast.makeText(requireContext(), "Error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                            showErrorDialog("Error: " + error.getMessage());
                         }
                     }
             ) {
