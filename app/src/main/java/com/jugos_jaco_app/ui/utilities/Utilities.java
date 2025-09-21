@@ -7,11 +7,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Utilities {
-    public static String URL = "https://b7db6f722544.ngrok-free.app/api/";
+    public static String URL = "http://192.168.1.60/api/";
 
     public static int id_cliente = 0;
 
-    public static String URL_FOTOS="https://b7db6f722544.ngrok-free.app/";
+    public static String URL_FOTOS="http://192.168.1.60" +
+            "/";
     
     private static final String PREFS_NAME = "LoginPrefs";
     private static final String KEY_TOKEN = "token";

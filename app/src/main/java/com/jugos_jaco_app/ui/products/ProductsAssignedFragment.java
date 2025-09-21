@@ -8,7 +8,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.Navigation;
-import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.jugos_jaco_app.R;
 import com.jugos_jaco_app.ui.adapters.ProductsAdapter;
@@ -30,8 +30,8 @@ public class ProductsAssignedFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_products_assigned, container, false);
         rvProducts = view.findViewById(R.id.rvProductsAssigned);
-        productsAdapter = new ProductsAdapter(new ArrayList<>(), this::navigateToNewSale, true);
-        rvProducts.setLayoutManager(new GridLayoutManager(getContext(), 2));
+        productsAdapter = new ProductsAdapter(new ArrayList<>(), null, true);
+        rvProducts.setLayoutManager(new LinearLayoutManager(getContext()));
         rvProducts.setAdapter(productsAdapter);
         loadProducts();
         // Configurar búsqueda

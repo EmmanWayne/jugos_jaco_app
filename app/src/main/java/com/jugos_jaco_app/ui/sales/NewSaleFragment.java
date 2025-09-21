@@ -128,6 +128,7 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
         boolean fromProductsAssigned = false;
         if (getArguments() != null) {
             clientId = getArguments().getString("clientId");
+            Toast.makeText(getContext(), ""+clientId, Toast.LENGTH_SHORT).show();
             clientName = getArguments().getString("clientName");
             fromProductsAssigned = getArguments().getBoolean("fromProductsAssigned", false);
         }
