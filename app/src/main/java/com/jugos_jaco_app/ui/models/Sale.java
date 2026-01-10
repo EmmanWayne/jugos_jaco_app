@@ -8,6 +8,7 @@ import java.io.Serializable;
 public class Sale implements Serializable {
     private int id;
     private String clientName;
+    private String businessName;
     private String employeeName;
     private String saleDate;
     private String formattedSaleDate; // Fecha formateada en letras
@@ -19,11 +20,12 @@ public class Sale implements Serializable {
     private double subtotal;
     private double totalAmount;
 
-    public Sale(int id, String clientName, String employeeName, String saleDate, 
+    public Sale(int id, String clientName, String businessName, String employeeName, String saleDate,
                double cashAmount, String paymentReference, String notes, 
                String paymentMethod, String paymentTerm, double subtotal, double totalAmount) {
         this.id = id;
         this.clientName = clientName;
+        this.businessName = businessName;
         this.employeeName = employeeName;
         this.saleDate = saleDate;
         this.cashAmount = cashAmount;
@@ -49,6 +51,14 @@ public class Sale implements Serializable {
 
     public void setClientName(String clientName) {
         this.clientName = clientName;
+    }
+
+    public String getBusinessName() {
+        return businessName;
+    }
+
+    public void setBusinessName(String businessName) {
+        this.businessName = businessName;
     }
 
     public String getEmployeeName() {

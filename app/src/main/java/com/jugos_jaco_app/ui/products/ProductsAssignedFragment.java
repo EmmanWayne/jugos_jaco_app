@@ -74,6 +74,7 @@ public class ProductsAssignedFragment extends Fragment {
                             String productCode = obj.optString("productCode", "");
                             int quantity = obj.optInt("quantity", 0);
                             int stock = obj.optInt("stock", 0);
+                            int sold = obj.optInt("sale_quantity", 0);
                             allProducts.add(new Product(
                                     productId,
                                     productName,
@@ -85,6 +86,7 @@ public class ProductsAssignedFragment extends Fragment {
                                     "",
                                     quantity,
                                     stock,
+                                    sold,
                                     productId
                             ));
                         }

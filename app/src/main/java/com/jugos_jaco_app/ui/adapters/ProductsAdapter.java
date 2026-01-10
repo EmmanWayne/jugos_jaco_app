@@ -104,25 +104,35 @@ public class ProductsAdapter extends RecyclerView.Adapter<ProductsAdapter.ViewHo
             super(itemView);
             // Inicializar vistas
             tvName = itemView.findViewById(R.id.tvProductName);
-            tvCode = itemView.findViewById(R.id.tvProductCode);
+            // tvCode ya no se usa individualmente
+            // tvCode = itemView.findViewById(R.id.tvProductCode);
             tvContent = itemView.findViewById(R.id.tvContent);
             tvCategory = itemView.findViewById(R.id.tvCategory);
             btnAdd = itemView.findViewById(R.id.btnAddToCart);
             ivProduct = itemView.findViewById(R.id.ivProduct);
             tvInCart = itemView.findViewById(R.id.tvInCart);
-            tvQuantity = itemView.findViewById(R.id.tvQuantity); // Asegúrate que exista en el layout
+            tvQuantity = itemView.findViewById(R.id.tvQuantity);
         }
         
         void bind(Product product) {
             // Configurar datos del producto
-            if (tvName != null) tvName.setText(product.getName());
-            if (tvCode != null) tvCode.setText("Código: " + product.getCode());
+            if (tvName != null) {
+                // Formato: Codigo - Product Name
+                String formattedName = product.getCode() + " - " + product.getName();
+                tvName.setText(formattedName);
+            }
+            // if (tvCode != null) tvCode.setText("Código: " + product.getCode());
             if (tvContent != null) tvContent.setText(product.getContent());
             if (tvCategory != null) tvCategory.setText(product.getCategoryName());
             
             // Mostrar cantidad
             if (tvQuantity != null) {
-                tvQuantity.setText("Stock: " + product.getStock());
+                // Agregar Stock a la par de Cantidad
+                if (product.getSold() > 0 ) {
+                    tvQuantity.setText("Cantidad: " + product.getQuantity() + " | Stock: " + product.getStock() + " | Vendidos: " + product.getSold());
+                } else {
+                    tvQuantity.setText("Cantidad: " + product.getQuantity() + " | Stock: " + product.getStock());
+                }
             }
             
             // Si el listener es null, ocultar el botón de agregar (modo solo visualización)

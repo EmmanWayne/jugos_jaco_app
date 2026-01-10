@@ -117,6 +117,7 @@ public class SaleViewModel extends ViewModel {
                 
                 int id = saleJson.getInt("id");
                 String clientName = saleJson.getString("client_name");
+                String businessName = saleJson.optString("business_name", "");
                 String employeeName = saleJson.optString("employee_name", "");
                 String saleDate = saleJson.getString("sale_date");
                 double cashAmount = saleJson.getDouble("cash_amount");
@@ -127,7 +128,7 @@ public class SaleViewModel extends ViewModel {
                 double subtotal = saleJson.getDouble("subtotal");
                 double totalAmount = saleJson.getDouble("total_amount");
 
-                Sale sale = new Sale(id, clientName, employeeName, saleDate, cashAmount, 
+                Sale sale = new Sale(id, clientName, businessName, employeeName, saleDate, cashAmount, 
                         paymentReference, notes, paymentMethod, paymentTerm, subtotal, totalAmount);
                 
                 // Formatear la fecha en letras

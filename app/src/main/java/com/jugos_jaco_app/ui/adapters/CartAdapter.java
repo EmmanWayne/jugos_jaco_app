@@ -79,6 +79,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
         ImageButton btnRemove;
         com.google.android.material.button.MaterialButton btnIncrease, btnDecrease;
         TextInputEditText etQuantity;
+        android.text.TextWatcher currentTextWatcher; // Referencia al watcher actual
         
         ViewHolder(View itemView) {
             super(itemView);
@@ -93,6 +94,11 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
         }
         
         void bind(CartItem item) {
+            // Remover el watcher anterior si existe para evitar updates fantasma
+            if (currentTextWatcher != null) {
+                etQuantity.removeTextChangedListener(currentTextWatcher);
+            }
+
             // Configurar datos básicos
             tvName.setText(item.getProduct().getName());
             etQuantity.setText(String.valueOf(item.getQuantity()));
@@ -152,7 +158,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
             });
             
             // Manejar cambios en el texto
-            etQuantity.addTextChangedListener(new android.text.TextWatcher() {
+            currentTextWatcher = new android.text.TextWatcher() {
                 @Override
                 public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
@@ -167,24 +173,35 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
                     }
                     try {
                         int newQuantity = Integer.parseInt(text);
-                        // Verificar que la cantidad sea mayor que 0 y no exceda la cantidad disponible
+                        // Verificar que la cantidad sea mayor que 0
                         if (newQuantity > 0) {
                             // Limitar la cantidad al máximo disponible
                             if (newQuantity > item.getProduct().getQuantity()) {
                                 newQuantity = item.getProduct().getQuantity();
+                                // IMPORTANTE: Remover listener temporalmente para evitar loop infinito
+                                etQuantity.removeTextChangedListener(this);
                                 etQuantity.setText(String.valueOf(newQuantity));
                                 etQuantity.setSelection(etQuantity.length());
+                                etQuantity.addTextChangedListener(this);
                             }
-                            item.setQuantity(newQuantity);
-                            updateSubtotal(item);
-                            notifyTotalUpdate();
+                            
+                            // Solo actualizar si el valor cambió realmente
+                            if (item.getQuantity() != newQuantity) {
+                                item.setQuantity(newQuantity);
+                                updateSubtotal(item);
+                                notifyTotalUpdate();
+                            }
                         }
                     } catch (NumberFormatException e) {
+                        // Remover listener temporalmente
+                        etQuantity.removeTextChangedListener(this);
                         etQuantity.setText(String.valueOf(item.getQuantity()));
                         etQuantity.setSelection(etQuantity.length());
+                        etQuantity.addTextChangedListener(this);
                     }
                 }
-            });
+            };
+            etQuantity.addTextChangedListener(currentTextWatcher);
             
             // Configurar botones de incremento/decremento
             btnIncrease.setOnClickListener(v -> {

@@ -92,9 +92,13 @@ public class SalesAdapter extends RecyclerView.Adapter<SalesAdapter.ViewHolder> 
             } else {
                 String filterPattern = constraint.toString().toLowerCase().trim();
                 
-                // Filtrar por nombre de cliente
+                // Filtrar por nombre de cliente o nombre del negocio
                 for (Sale sale : salesFull) {
-                    if (sale.getClientName().toLowerCase().contains(filterPattern)) {
+                    boolean matchesClient = sale.getClientName().toLowerCase().contains(filterPattern);
+                    boolean matchesBusiness = sale.getBusinessName() != null && 
+                                            sale.getBusinessName().toLowerCase().contains(filterPattern);
+                    
+                    if (matchesClient || matchesBusiness) {
                         filteredList.add(sale);
                     }
                 }
@@ -150,7 +154,11 @@ public class SalesAdapter extends RecyclerView.Adapter<SalesAdapter.ViewHolder> 
             }
             
             // Configurar nombre del cliente
-            tvClientName.setText(sale.getClientName());
+            String clientInfo = sale.getClientName();
+            if (sale.getBusinessName() != null && !sale.getBusinessName().isEmpty() && !sale.getBusinessName().equals("null")) {
+                clientInfo += " (" + sale.getBusinessName() + ")";
+            }
+            tvClientName.setText(clientInfo);
             
             // Configurar método y término de pago
             tvPaymentMethod.setText(sale.getPaymentMethod());

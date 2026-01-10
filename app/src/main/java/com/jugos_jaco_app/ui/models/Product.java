@@ -5,6 +5,7 @@ import java.io.Serializable;
 public class Product implements Serializable {
     private int quantity; // <- NUEVO
     private int stock; // Campo para el stock disponible
+    private int sold;
     private String id;
     private String name;
     private String code;
@@ -16,7 +17,7 @@ public class Product implements Serializable {
     private String productPriceId; // Nuevo campo para product_price_id
     
     // Constructor actualizado para incluir quantity, stock y productPriceId
-    public Product(String id, String name, String code, String content, String categoryId, String categoryName, double price, String imageUrl, int quantity, int stock, String productPriceId) {
+    public Product(String id, String name, String code, String content, String categoryId, String categoryName, double price, String imageUrl, int quantity, int stock, int sold, String productPriceId) {
         this.id = id;
         this.name = name;
         this.code = code;
@@ -27,21 +28,22 @@ public class Product implements Serializable {
         this.imageUrl = imageUrl;
         this.quantity = quantity;
         this.stock = stock;
+        this.sold = sold;
         this.productPriceId = productPriceId;
     }
     
     // Constructor actualizado para incluir quantity y productPriceId
     public Product(String id, String name, String code, String content, String categoryId, String categoryName, double price, String imageUrl, int quantity, String productPriceId) {
-        this(id, name, code, content, categoryId, categoryName, price, imageUrl, quantity, 0, productPriceId);
+        this(id, name, code, content, categoryId, categoryName, price, imageUrl, quantity, 0, 0, productPriceId);
     }
     
     // Constructor actualizado para incluir quantity sin productPriceId
     public Product(String id, String name, String code, String content, String categoryId, String categoryName, double price, String imageUrl, int quantity) {
-        this(id, name, code, content, categoryId, categoryName, price, imageUrl, quantity, 0, id);
+        this(id, name, code, content, categoryId, categoryName, price, imageUrl, quantity, 0, 0, id);
     }
 
     public Product(String id, String name, String code, String content, String categoryId, String categoryName, double price, String imageUrl) {
-        this(id, name, code, content, categoryId, categoryName, price, imageUrl, 0, 0, id);
+        this(id, name, code, content, categoryId, categoryName, price, imageUrl, 0, 0, 0, id);
     }
 
     // Getters
@@ -51,6 +53,10 @@ public class Product implements Serializable {
     
     public int getStock() {
         return stock;
+    }
+
+    public int getSold() {
+        return sold;
     }
     
     public String getId() {
@@ -92,6 +98,10 @@ public class Product implements Serializable {
     
     public void setStock(int stock) {
         this.stock = stock;
+    }
+
+    public void setSold(int sold){
+        this.sold = sold;
     }
     
     public void setId(String id) {

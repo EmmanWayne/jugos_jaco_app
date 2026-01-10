@@ -338,8 +338,9 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
                                     "", // categoryName (no viene en el nuevo formato)
                                     price,
                                     "", // imageUrl (no necesario según requerimiento)
+                                    quantity,
                                     stock,
-                                    stock,
+                                    0,
                                     productPriceId
                             ));
                         }

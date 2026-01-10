@@ -97,7 +97,13 @@ public class SaleDetailFragment extends Fragment {
     private void loadSaleData() {
         if (sale != null) {
             tvSaleId.setText(String.format(Locale.getDefault(), "Venta #%d", sale.getId()));
-            tvClientName.setText(sale.getClientName());
+            
+            String clientInfo = sale.getClientName();
+            if (sale.getBusinessName() != null && !sale.getBusinessName().isEmpty() && !sale.getBusinessName().equals("null")) {
+                clientInfo += " (" + sale.getBusinessName() + ")";
+            }
+            tvClientName.setText(clientInfo);
+            
             tvEmployeeName.setText(sale.getEmployeeName());
             tvSaleDate.setText(formatDate(sale.getSaleDate()));
             tvPaymentMethod.setText(sale.getPaymentMethod());
