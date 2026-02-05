@@ -65,6 +65,7 @@ public class NewClientFragment extends Fragment {
 
     private Map<String, List<String>> municipiosPorDepartamento = new HashMap<>();
     private List<String> tiposPrecio = new ArrayList<>();
+    private Map<String, Integer> typePriceMap = new HashMap<>();
 
     private FusedLocationProviderClient fusedLocationClient;
     private static final int REQUEST_ENABLE_GPS = 123;
@@ -82,8 +83,9 @@ public class NewClientFragment extends Fragment {
 
         // Cargar departamentos, municipios y tipos de precio
         loadDepartamentos();
-         setupDepartamentosSpinner();
-         setupVisitDaySpinner();
+        setupDepartamentosSpinner();
+        setupVisitDaySpinner();
+        loadTypePrices();
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity());
 
@@ -102,6 +104,7 @@ public class NewClientFragment extends Fragment {
     private void setupViews(View root) {
         spinnerDepartament = root.findViewById(R.id.spinnerDepartament);
         spinnerTownship = root.findViewById(R.id.spinnerTownship);
+        spinnerTypePrice = root.findViewById(R.id.spinnerTypePrice);
         spinnerVisitDay = root.findViewById(R.id.spinnerVisitDay);
         etFirstName = root.findViewById(R.id.etFirstName);
         etLastName = root.findViewById(R.id.etLastName);
@@ -136,6 +139,49 @@ public class NewClientFragment extends Fragment {
         municipiosPorDepartamento = LocationData.getMunicipiosPorDepartamento();
     }
 
+    private void loadTypePrices() {
+        String url = Utilities.URL + "type-prices";
+        com.android.volley.toolbox.JsonObjectRequest request = new com.android.volley.toolbox.JsonObjectRequest(
+                Request.Method.GET,
+                url,
+                null,
+                response -> {
+                    try {
+                        List<String> typePriceNames = new ArrayList<>();
+                        typePriceMap.clear();
+                        org.json.JSONArray data = response.getJSONArray("data");
+                        for (int i = 0; i < data.length(); i++) {
+                            JSONObject jsonObject = data.getJSONObject(i);
+                            int id = jsonObject.getInt("id");
+                            String name = jsonObject.getString("name");
+                            typePriceNames.add(name);
+                            typePriceMap.put(name, id);
+                        }
+                        
+                        // Agregar opción por defecto si se desea, o usar la primera
+                        // typePriceNames.add(0, "Seleccionar precio");
+                        
+                        ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, typePriceNames);
+                        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                        spinnerTypePrice.setAdapter(adapter);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        Toast.makeText(getContext(), "Error al procesar precios de lista", Toast.LENGTH_SHORT).show();
+                    }
+                },
+                error -> {
+                    error.printStackTrace();
+                    Toast.makeText(getContext(), "Error al cargar precios de lista", Toast.LENGTH_SHORT).show();
+                }
+        ) {
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                return Utilities.getAuthHeaders(requireContext());
+            }
+        };
+        VolleySingleton.getInstance(getContext()).addToRequestQueue(request);
+    }
+
     private void setupDepartamentosSpinner() {
         ArrayAdapter<String> departamentosAdapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, departamentos);
         departamentosAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -158,12 +204,6 @@ public class NewClientFragment extends Fragment {
                 // No hacer nada
             }
         });
-    }
-
-    private void setupTiposPrecioSpinner() {
-        ArrayAdapter<String> tiposPrecioAdapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, tiposPrecio);
-        tiposPrecioAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerTypePrice.setAdapter(tiposPrecioAdapter);
     }
 
     private void loadMunicipios(String departament) {
@@ -480,6 +520,13 @@ public class NewClientFragment extends Fragment {
         String latitude = etLatitude.getText().toString().trim();
         String longitude = etLongitude.getText().toString().trim();
         String position = etPosition.getText().toString().trim();
+        
+        String selectedTypePriceName = "";
+        if (spinnerTypePrice.getSelectedItem() != null) {
+            selectedTypePriceName = spinnerTypePrice.getSelectedItem().toString();
+        }
+        Integer typePriceId = typePriceMap.get(selectedTypePriceName);
+        String selectedTypePriceId = (typePriceId != null) ? String.valueOf(typePriceId) : "";
 
         String url = Utilities.URL + "clients";
         Map<String, String> params = new HashMap<>();
@@ -494,6 +541,7 @@ public class NewClientFragment extends Fragment {
         params.put("longitude", longitude);
         params.put("position", position);
         params.put("visit_day", visitDay);
+        params.put("type_price_id", selectedTypePriceId);
 
         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(
                 Request.Method.POST,
@@ -534,6 +582,7 @@ public class NewClientFragment extends Fragment {
                                     locationJson.getString("longitude"),
                                     locationJson.getString("plus_code"),
                                     typePrice,
+                                    selectedTypePriceId,
                                     dataJson.getString("business_name"),
                                     dataJson.optString("position", ""),
                                     dataJson.optString("visit_day", ""),

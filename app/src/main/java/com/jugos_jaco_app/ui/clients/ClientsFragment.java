@@ -524,20 +524,33 @@ public class ClientsFragment extends Fragment implements ChipGroup.OnCheckedChan
     }
 
     private void updateClientPosition(Client client) {
+        String selectedDay = viewModel.getSelectedDay().getValue();
+        if (selectedDay == null) {
+            Log.e("ClientsFragment", "Error: Intento de actualizar posición sin día seleccionado");
+            return;
+        }
+        
+        // Formatear el día seleccionado para el servidor (ej: "lunes" -> "Lunes")
+        String serverDay = formatDayForServer(selectedDay);
+
         String url = Utilities.URL + "clients/" + client.getId()+"/visit-days/reorder";
          JSONObject jsonBody = new JSONObject();
         try {
             jsonBody.put("position", client.getPosition());
-            jsonBody.put("visit_day", client.getVisitDay());
+            // USAR EL DÍA SELECCIONADO en lugar de client.getVisitDay()
+            // client.getVisitDay() puede contener múltiples días ("Lunes, Jueves")
+            // lo cual causaría errores en el servidor al intentar identificar qué día reordenar.
+            jsonBody.put("visit_day", serverDay);
             
             // Mostrar información antes de enviar al servidor
             Log.d("REORDER_DEBUG", String.format(
                 "Enviando al servidor:\n" +
                 "Cliente ID: %s\n" +
                 "Nueva posición: %s\n" +
-                "Día: %s",
+                "Día (seleccionado): %s (original: %s)",
                 client.getId(),
                 client.getPosition(),
+                serverDay,
                 client.getVisitDay()
             ));
             

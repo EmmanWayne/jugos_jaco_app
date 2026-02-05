@@ -339,7 +339,7 @@ public class SalesFragment extends Fragment implements SalesAdapter.OnSaleClickL
                             
                             // Crear un objeto Client con los datos mínimos necesarios
                             Client client = new Client(
-                                    id, firstName, lastName, "", "", "", "", "", "", "", "", 
+                                    id, firstName, lastName, "", "", "", "", "", "", "", "", "",
                                     businessName, "", "", "", 0, 0.0
                             );
                             clientList.add(client);

@@ -235,6 +235,7 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
     private String clientLastName;
     private String id;
     private String typePrice;
+    private String typePriceId;
     private String businessName;
     private String position;
     private String visitDay;
@@ -253,6 +254,7 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
 
     private MenuItem deleteMenuItem;
     private String plus_code;
+
 
     private ImageView clientHeaderImage;
     private Uri headerPhotoUri;
@@ -273,6 +275,7 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
             clientLastName = getArguments().getString("lastName");
             id = getArguments().getString("id");
             typePrice = getArguments().getString("typePrice");
+            typePriceId = getArguments().getString("type_price_id");
             businessName = getArguments().getString("businessName");
             clientPhone = getArguments().getString("phoneNumber");
             adress = getArguments().getString("adress");
@@ -395,6 +398,7 @@ public class ClientDetailsFragment extends Fragment implements PhotoAdapter.OnPh
                 bundle.putString("business_name", businessName);
                 bundle.putString("position", position);
                 bundle.putString("visit_day", visitDay);
+                bundle.putString("type_price_id", typePriceId);
 
                 try {
                     NavController navController = Navigation.findNavController(v);

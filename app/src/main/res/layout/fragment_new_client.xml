@@ -235,6 +235,32 @@
                     android:spinnerMode="dropdown" />
             </LinearLayout>
 
+            <!-- Type Price (Spinner) -->
+            <LinearLayout
+                android:background="@drawable/spinner_background"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="5dp">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_store"
+                    android:layout_marginEnd="8dp"
+                    app:tint="@color/primary" />
+
+                <Spinner
+                    android:id="@+id/spinnerTypePrice"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@drawable/spinner_background"
+                    android:padding="10dp"
+                    android:spinnerMode="dropdown" />
+            </LinearLayout>
+
             <!-- Type Price ID (Spinner) -->
 
 

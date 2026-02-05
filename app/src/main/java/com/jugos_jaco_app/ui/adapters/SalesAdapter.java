@@ -54,7 +54,7 @@ public class SalesAdapter extends RecyclerView.Adapter<SalesAdapter.ViewHolder> 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Sale sale = sales.get(position);
-        holder.bind(sale);
+        holder.bind(sale, position);
     }
     
     @Override
@@ -141,9 +141,9 @@ public class SalesAdapter extends RecyclerView.Adapter<SalesAdapter.ViewHolder> 
             });
         }
         
-        void bind(Sale sale) {
-            // Configurar ID de venta
-            tvSaleId.setText(String.format("Venta #%d", sale.getId()));
+        void bind(Sale sale, int position) {
+            // Configurar ID de venta (ahora muestra el número de índice en la lista)
+            tvSaleId.setText(String.format("Venta #%d", position + 1));
             
             // Configurar fecha formateada
             if (sale.getFormattedSaleDate() != null) {

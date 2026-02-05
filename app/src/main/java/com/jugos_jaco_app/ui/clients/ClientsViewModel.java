@@ -151,6 +151,7 @@ public class ClientsViewModel extends ViewModel {
                                     longitude,
                                     plusCode,
                                     typePrice,
+                                    clientJson.optString("type_price_id", ""),
                                     clientJson.getString("business_name"),
                                     positions,
                                     visitDays,

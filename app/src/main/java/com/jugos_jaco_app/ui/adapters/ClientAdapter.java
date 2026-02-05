@@ -132,6 +132,7 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
             bundle.putString("township", client.getTownship());
             bundle.putString("id", client.getId());
             bundle.putString("typePrice", client.getTypePrice());
+            bundle.putString("type_price_id", client.getTypePriceId());
             bundle.putString("businessName", client.getBusinessName() != null && !client.getBusinessName().isEmpty() ? 
                 client.getBusinessName() : "Sin nombre de negocio");
             bundle.putString("phoneNumber", client.getPhoneNumber());

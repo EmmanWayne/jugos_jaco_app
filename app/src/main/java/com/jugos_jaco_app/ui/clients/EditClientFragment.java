@@ -62,6 +62,7 @@ public class EditClientFragment extends Fragment {
     private MaterialButton btnSubmit, btnCaptureCoordinates;
     private String clientId;
     private String visitDay;
+    private String typePriceId;
     private View root;
     private List<String> departamentos = new ArrayList<>();
     private Map<String, List<String>> municipiosPorDepartamento = new HashMap<>();
@@ -127,6 +128,7 @@ public class EditClientFragment extends Fragment {
             
             // Cargar el día de visita
             visitDay = getArguments().getString("visit_day", "");
+            typePriceId = getArguments().getString("type_price_id");
             
             clientId = getArguments().getString("client_id");
 
@@ -356,6 +358,7 @@ public class EditClientFragment extends Fragment {
         params.put("township", township);
         params.put("latitude", latitude);
         params.put("longitude", longitude);
+        params.put("type_price_id", typePriceId);
          JsonObjectRequest request = new JsonObjectRequest(
                 Request.Method.PUT,
                 url,
@@ -392,6 +395,7 @@ public class EditClientFragment extends Fragment {
                                     locationJson.getString("longitude"),
                                     locationJson.getString("plus_code"),
                                     typePrice,
+                                    typePriceId,
                                     dataJson.getString("business_name"),
                                      "",
                                      "",
