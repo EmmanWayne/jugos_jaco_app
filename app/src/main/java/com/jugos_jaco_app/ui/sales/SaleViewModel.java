@@ -68,12 +68,16 @@ public class SaleViewModel extends ViewModel {
 
     /**
      * Carga la lista de ventas desde el servidor.
+     * @param date Fecha opcional en formato dd-MM-yyyy para filtrar las ventas.
      */
-    public void loadSales(Context context) {
+    public void loadSales(Context context, String date) {
         isLoading.setValue(true);
         errorMessage.setValue(null);
 
         String url = Utilities.URL + "sales";
+        if (date != null && !date.isEmpty()) {
+            url += "?date=" + date;
+        }
 
         JsonObjectRequest request = new JsonObjectRequest(
                 Request.Method.GET, url, null,

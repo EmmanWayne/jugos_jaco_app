@@ -73,6 +73,9 @@ public class SalesFragment extends Fragment implements SalesAdapter.OnSaleClickL
         // Inicializar ViewModel
         saleViewModel = new ViewModelProvider(this).get(SaleViewModel.class);
 
+        // Habilitar menú de opciones para el calendario
+        setHasOptionsMenu(true);
+
         // Inflar layout
         binding = FragmentSalesBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
@@ -87,6 +90,35 @@ public class SalesFragment extends Fragment implements SalesAdapter.OnSaleClickL
         loadSales();
 
         return root;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull android.view.MenuItem item) {
+        if (item.getItemId() == R.id.action_select_day) {
+            showDatePicker();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    private void showDatePicker() {
+        java.util.Calendar today = java.util.Calendar.getInstance();
+        android.app.DatePickerDialog datePickerDialog = new android.app.DatePickerDialog(
+                requireContext(),
+                (view, year, month, dayOfMonth) -> {
+                    // Formato para ventas: dd-MM-yyyy
+                    String salesDate = String.format(Locale.getDefault(), "%02d-%02d-%04d", dayOfMonth, month + 1, year);
+                    // Formato para pagos: yyyy-MM-dd (mantenemos consistencia con loadTodayPayments original)
+                    String paymentsDate = String.format(Locale.getDefault(), "%04d-%02d-%02d", year, month + 1, dayOfMonth);
+                    
+                    loadSales(salesDate, paymentsDate);
+                },
+                today.get(java.util.Calendar.YEAR),
+                today.get(java.util.Calendar.MONTH),
+                today.get(java.util.Calendar.DAY_OF_MONTH)
+        );
+        datePickerDialog.getDatePicker().setCalendarViewShown(true);
+        datePickerDialog.show();
     }
 
     /**
@@ -194,24 +226,34 @@ public class SalesFragment extends Fragment implements SalesAdapter.OnSaleClickL
     }
 
     /**
-     * Carga las ventas desde el servidor.
+     * Carga las ventas desde el servidor (fecha actual por defecto).
      */
     private void loadSales() {
+        loadSales(null, null);
+    }
+
+    /**
+     * Carga las ventas desde el servidor para una fecha específica.
+     */
+    private void loadSales(String salesDate, String paymentsDate) {
         if (getContext() != null) {
-            saleViewModel.loadSales(getContext());
-            loadTodayPayments(); // Cargar también los pagos del día
+            saleViewModel.loadSales(getContext(), salesDate);
+            loadTodayPayments(paymentsDate); // Cargar también los pagos de la fecha seleccionada
         }
     }
 
     /**
-     * Carga los pagos del día actual desde el servidor.
+     * Carga los pagos de la fecha seleccionada (o actual) desde el servidor.
      */
-    private void loadTodayPayments() {
-        // Obtener la fecha actual en formato yyyy-MM-dd
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-        String todayDate = dateFormat.format(new Date());
+    private void loadTodayPayments(String date) {
+        // Obtener la fecha actual en formato yyyy-MM-dd si no se proporciona
+        String queryDate = date;
+        if (queryDate == null) {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+            queryDate = dateFormat.format(new Date());
+        }
         
-        String url = Utilities.URL + "account-receivable/payments?date=" + todayDate;
+        String url = Utilities.URL + "account-receivable/payments?date=" + queryDate;
         
         JsonObjectRequest request = new JsonObjectRequest(
                 Request.Method.GET,
