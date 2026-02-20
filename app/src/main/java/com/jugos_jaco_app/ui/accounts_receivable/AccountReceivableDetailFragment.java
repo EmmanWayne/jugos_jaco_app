@@ -29,7 +29,9 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.navigation.Navigation;
 
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import com.android.volley.Request;
@@ -40,6 +42,7 @@ import com.jugos_jaco_app.R;
 import com.jugos_jaco_app.ui.adapters.PaymentAdapter;
 import com.jugos_jaco_app.ui.models.AccountReceivable;
 import com.jugos_jaco_app.ui.models.Payment;
+import com.jugos_jaco_app.ui.models.Sale;
 import com.jugos_jaco_app.ui.utilities.Utilities;
 import com.jugos_jaco_app.ui.utilities.VolleySingleton;
 
@@ -75,6 +78,7 @@ public class AccountReceivableDetailFragment extends Fragment {
     private TextView tvNoPayments;
     private ProgressBar progressBar;
     private FloatingActionButton fabAddPayment;
+    private MaterialButton btnViewSaleDetail;
 
     // Data
     private int accountId;
@@ -124,6 +128,32 @@ public class AccountReceivableDetailFragment extends Fragment {
         loadAccountDetail();
     }
 
+    private void setupButton() {
+        if (btnViewSaleDetail == null || accountReceivable == null) return;
+        
+        btnViewSaleDetail.setOnClickListener(v -> {
+            if (accountReceivable != null && accountReceivable.getSalesId() > 0) {
+                // Pass only the sales_id as requested
+                Bundle bundle = new Bundle();
+                bundle.putInt("sales_id", accountReceivable.getSalesId());
+
+                try {
+                    Navigation.findNavController(v).navigate(R.id.action_accountReceivableDetailFragment_to_saleDetailFragment, bundle);
+                } catch (Exception e) {
+                    Log.e(TAG, "Error navigating to sale detail: " + e.getMessage());
+                    // Fallback
+                    try {
+                        Navigation.findNavController(v).navigate(R.id.saleDetailFragment, bundle);
+                    } catch (Exception ex) {
+                        Toast.makeText(getContext(), "Error al abrir el detalle de venta", Toast.LENGTH_SHORT).show();
+                    }
+                }
+            } else {
+                Toast.makeText(getContext(), "No hay información de venta asociada", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
     private void initializeViews(View view) {
         tvClientName = view.findViewById(R.id.tvClientName);
         tvTotalAmount = view.findViewById(R.id.tvTotalAmount);
@@ -134,6 +164,8 @@ public class AccountReceivableDetailFragment extends Fragment {
         tvNoPayments = view.findViewById(R.id.tvNoPayments);
         progressBar = view.findViewById(R.id.progressBar);
         fabAddPayment = view.findViewById(R.id.fabAddPayment);
+        btnViewSaleDetail = view.findViewById(R.id.btnViewSaleDetail);
+        btnViewSaleDetail.setVisibility(View.GONE);
     }
 
     private void setupRecyclerView() {
@@ -385,6 +417,9 @@ public class AccountReceivableDetailFragment extends Fragment {
         try {
             JSONObject data = response.getJSONObject("data");
             
+            // Log para depuración
+            Log.d(TAG, "Respuesta de cuenta: " + data.toString());
+            
             // Información básica de la cuenta
             String clientName = data.getString("client_name");
             double totalAmount = data.getDouble("total_amount");
@@ -392,8 +427,25 @@ public class AccountReceivableDetailFragment extends Fragment {
             String dueDate = data.getString("due_date");
             String status = data.getString("status");
             
+            // Intentar obtener sales_id o sale_id
+            int salesId = data.optInt("sales_id", 0);
+            if (salesId == 0) {
+                salesId = data.optInt("sale_id", 0);
+            }
+            
+            Log.d(TAG, "Sales ID encontrado: " + salesId);
+            
             // Crear objeto AccountReceivable
-            accountReceivable = new AccountReceivable(accountId, clientName, totalAmount, remainingBalance, dueDate, status);
+            accountReceivable = new AccountReceivable(accountId, salesId, clientName, totalAmount, remainingBalance, dueDate, status);
+            
+            if (salesId > 0) {
+                btnViewSaleDetail.setVisibility(View.VISIBLE);
+                // Configurar el listener aquí para asegurarnos de tener el objeto actualizado
+                setupButton();
+            } else {
+                btnViewSaleDetail.setVisibility(View.GONE);
+                Log.w(TAG, "No se encontró sales_id válido en la respuesta");
+            }
             
             // Actualizar UI con información de la cuenta
             updateAccountInfo(clientName, totalAmount, remainingBalance, dueDate, status);

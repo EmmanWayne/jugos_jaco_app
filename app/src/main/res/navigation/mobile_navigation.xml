@@ -168,6 +168,10 @@
         <argument
             android:name="account_id"
             app:argType="integer" />
+
+        <action
+            android:id="@+id/action_accountReceivableDetailFragment_to_saleDetailFragment"
+            app:destination="@id/saleDetailFragment" />
             
     </fragment>
 

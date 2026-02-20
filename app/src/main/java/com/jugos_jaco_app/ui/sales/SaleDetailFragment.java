@@ -37,6 +37,7 @@ import java.util.Locale;
 public class SaleDetailFragment extends Fragment {
 
     private Sale sale;
+    private int salesId;
     private TextView tvSaleId, tvClientName, tvEmployeeName, tvSaleDate;
     private TextView tvPaymentMethod, tvPaymentTerm, tvSubtotal, tvTotal;
     private RecyclerView rvSaleDetails;
@@ -49,7 +50,14 @@ public class SaleDetailFragment extends Fragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
-            sale = (Sale) getArguments().getSerializable("sale");
+            if (getArguments().containsKey("sale")) {
+                sale = (Sale) getArguments().getSerializable("sale");
+                if (sale != null) {
+                    salesId = sale.getId();
+                }
+            } else if (getArguments().containsKey("sales_id")) {
+                salesId = getArguments().getInt("sales_id");
+            }
         }
     }
 
@@ -114,12 +122,12 @@ public class SaleDetailFragment extends Fragment {
     }
 
     private void loadSaleDetails() {
-        if (sale == null || getContext() == null) return;
+        if (salesId == 0 || getContext() == null) return;
 
         progressBar.setVisibility(View.VISIBLE);
         tvNoDetails.setVisibility(View.GONE);
 
-        String url = Utilities.URL + "sales/" + sale.getId();
+        String url = Utilities.URL + "sales/" + salesId;
         RequestQueue queue = Volley.newRequestQueue(requireContext());
 
         JsonObjectRequest request = new JsonObjectRequest(
@@ -131,11 +139,13 @@ public class SaleDetailFragment extends Fragment {
                     try {
                         processSaleDetailsResponse(response);
                     } catch (JSONException e) {
+                        Log.e("DETALLEVENTA", "Error parsing response: " + e.getMessage());
                         showError("Error al procesar los detalles de la venta");
                     }
                 },
                 error -> {
                     progressBar.setVisibility(View.GONE);
+                    Log.e("DETALLEVENTA", "Error fetching details: " + error.toString());
                     showError("Error al cargar los detalles de la venta");
                 }
         ) {
@@ -149,43 +159,116 @@ public class SaleDetailFragment extends Fragment {
     }
 
     private void processSaleDetailsResponse(JSONObject response) throws JSONException {
-        saleDetailList.clear();
-
+        JSONObject dataObj = null;
+        
+        // Verificar si la respuesta tiene la estructura { data: { header: ..., details: ... } }
         if (response.has("data")) {
-            JSONArray dataArray = response.getJSONArray("data");
-
-            for (int i = 0; i < dataArray.length(); i++) {
-                JSONObject detailObject = dataArray.getJSONObject(i);
-
-                SaleDetail detail = new SaleDetail();
-                detail.setId(detailObject.getInt("id"));
-                detail.setProductId(detailObject.getInt("product_id"));
-                detail.setProductName(detailObject.getString("product_name"));
-                detail.setProductCode(detailObject.getString("product_code"));
-                detail.setUnitName(detailObject.getString("unit_name"));
-                detail.setUnitAbbreviation(detailObject.getString("unit_abbreviation"));
-                detail.setQuantity(detailObject.getInt("quantity"));
-                detail.setTaxCategoryName(detailObject.getString("tax_category_name"));
-                detail.setTaxRate(detailObject.getDouble("tax_rate"));
-                detail.setLineSubtotal(detailObject.getDouble("line_subtotal"));
-                detail.setLineTaxAmount(detailObject.getDouble("line_tax_amount"));
-                detail.setLineTotal(detailObject.getDouble("line_total"));
-                detail.setPriceIncludeTax(detailObject.getBoolean("price_include_tax"));
-                detail.setDiscountPercentage(detailObject.getDouble("discount_percentage"));
-                detail.setDiscountAmount(detailObject.getDouble("discount_amount"));
-
-                saleDetailList.add(detail);
-            }
-
-            adapter.notifyDataSetChanged();
-
-            if (saleDetailList.isEmpty()) {
-                tvNoDetails.setVisibility(View.VISIBLE);
-            } else {
-                tvNoDetails.setVisibility(View.GONE);
+            Object dataContent = response.get("data");
+            if (dataContent instanceof JSONObject) {
+                dataObj = (JSONObject) dataContent;
+            } else if (dataContent instanceof JSONArray) {
+                // Estructura antigua donde data era un array de detalles
+                // En este caso no hay header, solo detalles
+                processLegacyResponse((JSONArray) dataContent);
+                return;
             }
         } else {
-            showError("No se encontraron detalles para esta venta");
+            // Si no hay 'data', intentamos buscar header/details en la raíz (por si acaso)
+            dataObj = response;
+        }
+        
+        if (dataObj == null) return;
+
+        // 1. Procesar Header (Información de la Venta)
+        if (dataObj.has("header")) {
+            JSONObject header = dataObj.getJSONObject("header");
+            
+            int id = header.getInt("id");
+            String clientName = header.getString("client_name");
+            String businessName = header.optString("business_name", "");
+            String employeeName = header.optString("employee_name", "");
+            String saleDate = header.getString("sale_date");
+            double cashAmount = header.getDouble("cash_amount");
+            String paymentReference = header.isNull("payment_reference") ? null : header.getString("payment_reference");
+            String notes = header.isNull("notes") ? null : header.getString("notes");
+            String paymentMethod = header.getString("payment_method");
+            String paymentTerm = header.getString("payment_term");
+            double subtotal = header.getDouble("subtotal");
+            double totalAmount = header.getDouble("total_amount");
+
+            this.sale = new Sale(id, clientName, businessName, employeeName, saleDate, cashAmount, 
+                    paymentReference, notes, paymentMethod, paymentTerm, subtotal, totalAmount);
+            
+            // Formatear la fecha
+            this.sale.setFormattedSaleDate(formatDate(saleDate));
+            
+            // Actualizar UI con la información de la venta
+            loadSaleData();
+        }
+
+        // 2. Procesar Details (Lista de productos)
+        saleDetailList.clear();
+        JSONArray dataArray = null;
+
+        if (dataObj.has("details")) {
+            Object detailsObj = dataObj.get("details");
+            if (detailsObj instanceof JSONObject) {
+                // Si details es un objeto, buscamos "data" dentro
+                JSONObject detailsJson = (JSONObject) detailsObj;
+                if (detailsJson.has("data")) {
+                    dataArray = detailsJson.getJSONArray("data");
+                }
+            } else if (detailsObj instanceof JSONArray) {
+                // Si details es directamente el array
+                dataArray = (JSONArray) detailsObj;
+            }
+        }
+        
+        if (dataArray != null) {
+            processDetailsArray(dataArray);
+        } else {
+            // Si no hay detalles, mostrar mensaje
+            if (saleDetailList.isEmpty()) {
+                tvNoDetails.setVisibility(View.VISIBLE);
+            }
+        }
+    }
+
+    private void processLegacyResponse(JSONArray dataArray) throws JSONException {
+        saleDetailList.clear();
+        processDetailsArray(dataArray);
+    }
+
+    private void processDetailsArray(JSONArray dataArray) throws JSONException {
+        for (int i = 0; i < dataArray.length(); i++) {
+            JSONObject detailObject = dataArray.getJSONObject(i);
+
+            SaleDetail detail = new SaleDetail();
+            detail.setId(detailObject.getInt("id"));
+            detail.setProductId(detailObject.getInt("product_id"));
+            detail.setProductName(detailObject.getString("product_name"));
+            detail.setProductCode(detailObject.getString("product_code"));
+            detail.setUnitName(detailObject.getString("unit_name"));
+            detail.setUnitAbbreviation(detailObject.getString("unit_abbreviation"));
+            detail.setQuantity(detailObject.getInt("quantity"));
+            detail.setTaxCategoryName(detailObject.getString("tax_category_name"));
+            detail.setTaxRate(detailObject.getDouble("tax_rate"));
+            detail.setLineSubtotal(detailObject.getDouble("line_subtotal"));
+            detail.setLineTaxAmount(detailObject.getDouble("line_tax_amount"));
+            detail.setLineTotal(detailObject.getDouble("line_total"));
+            detail.setPriceIncludeTax(detailObject.getBoolean("price_include_tax"));
+            detail.setDiscountPercentage(detailObject.getDouble("discount_percentage"));
+            detail.setDiscountAmount(detailObject.getDouble("discount_amount"));
+
+            saleDetailList.add(detail);
+        }
+
+        adapter.notifyDataSetChanged();
+
+        if (saleDetailList.isEmpty()) {
+            tvNoDetails.setVisibility(View.VISIBLE);
+        } else {
+            tvNoDetails.setVisibility(View.GONE);
         }
     }
 

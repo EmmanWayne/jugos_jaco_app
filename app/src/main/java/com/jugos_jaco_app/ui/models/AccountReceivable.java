@@ -2,6 +2,7 @@ package com.jugos_jaco_app.ui.models;
 
 public class AccountReceivable {
     private int id;
+    private int salesId;
     private String clientName;
     private double totalAmount;
     private double remainingBalance;
@@ -11,8 +12,9 @@ public class AccountReceivable {
     public AccountReceivable() {
     }
 
-    public AccountReceivable(int id, String clientName, double totalAmount, double remainingBalance, String dueDate, String status) {
+    public AccountReceivable(int id, int salesId, String clientName, double totalAmount, double remainingBalance, String dueDate, String status) {
         this.id = id;
+        this.salesId = salesId;
         this.clientName = clientName;
         this.totalAmount = totalAmount;
         this.remainingBalance = remainingBalance;
@@ -20,9 +22,17 @@ public class AccountReceivable {
         this.status = status;
     }
 
+    public AccountReceivable(int id, String clientName, double totalAmount, double remainingBalance, String dueDate, String status) {
+        this(id, 0, clientName, totalAmount, remainingBalance, dueDate, status);
+    }
+
     // Getters
     public int getId() {
         return id;
+    }
+
+    public int getSalesId() {
+        return salesId;
     }
 
     public String getClientName() {
@@ -48,6 +58,10 @@ public class AccountReceivable {
     // Setters
     public void setId(int id) {
         this.id = id;
+    }
+
+    public void setSalesId(int salesId) {
+        this.salesId = salesId;
     }
 
     public void setClientName(String clientName) {
