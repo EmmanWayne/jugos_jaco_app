@@ -180,8 +180,8 @@ public class SaleDetailFragment extends Fragment {
         if (dataObj == null) return;
 
         // 1. Procesar Header (Información de la Venta)
-        if (dataObj.has("header")) {
-            JSONObject header = dataObj.getJSONObject("header");
+        if (dataObj.has("sale")) {
+            JSONObject header = dataObj.getJSONObject("sale");
             
             int id = header.getInt("id");
             String clientName = header.getString("client_name");
