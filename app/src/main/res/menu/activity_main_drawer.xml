@@ -21,6 +21,10 @@
             android:icon="@drawable/ic_assignment"
             android:title="Productos Asignados"/>
         <item
+            android:id="@+id/nav_product_movements"
+            android:icon="@drawable/ic_products"
+            android:title="Movimientos"/>
+        <item
             android:id="@+id/nav_profile"
             android:icon="@drawable/ic_profile"
             android:title="Mi Perfil"/>
