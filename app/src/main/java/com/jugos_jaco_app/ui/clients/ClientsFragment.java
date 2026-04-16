@@ -34,6 +34,9 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import androidx.lifecycle.ViewModelProvider;
 import com.android.volley.Request;
 import com.android.volley.toolbox.JsonObjectRequest;
@@ -64,6 +67,12 @@ public class ClientsFragment extends Fragment implements ChipGroup.OnCheckedChan
     private SwipeRefreshLayout swipeRefreshLayout;
     private static final String URL_CLIENTS = Utilities.URL +"clients/"; // Reemplaza con tu URL real
     private boolean hasShownDaySelectionMessage = false; // Nueva variable para controlar el mensaje
+    private boolean isProcessingSwipe = false; // Bloqueo anti-rafaga para swipe
+    
+    // Objetos para dibujo de swipe (reutilizados para evitar alocaciones en onChildDraw)
+    private final Paint swipePaint = new Paint();
+    private final Paint swipeTextPaint = new Paint();
+    private final android.graphics.Rect textBounds = new android.graphics.Rect();
 
     private ActivityResultLauncher<Intent> locationSettingsLauncher;
     private final ActivityResultLauncher<String> locationPermissionLauncher = registerForActivityResult(
@@ -186,7 +195,17 @@ public class ClientsFragment extends Fragment implements ChipGroup.OnCheckedChan
         // Configurar ItemTouchHelper para el arrastre
         ItemTouchHelper.Callback callback = new ItemTouchHelper.SimpleCallback(
                 ItemTouchHelper.UP | ItemTouchHelper.DOWN,
-                0) {
+                ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
+
+            private boolean isItemMoved = false;
+
+            @Override
+            public void onSelectedChanged(@Nullable RecyclerView.ViewHolder viewHolder, int actionState) {
+                super.onSelectedChanged(viewHolder, actionState);
+                if (actionState == ItemTouchHelper.ACTION_STATE_DRAG) {
+                    isItemMoved = false; // Resetear bandera al iniciar nuevo arrastre
+                }
+            }
 
             @Override
             public boolean isLongPressDragEnabled() {
@@ -216,31 +235,105 @@ public class ClientsFragment extends Fragment implements ChipGroup.OnCheckedChan
                 // Luego calculamos y actualizamos las posiciones
                 updatePositionsAfterMove(fromPosition, toPosition);
                 
+                isItemMoved = true; // Marcar como realmente movido
+                
                 return true;
             }
 
             @Override
             public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
-                // No implementamos el deslizamiento
+                int position = viewHolder.getAdapterPosition();
+                if (position == RecyclerView.NO_POSITION) return;
+
+                // TRUCO VITAL: Restaurar el item visualmente de inmediato.
+                // Esto fuerza a que el ItemTouchHelper limpie el estado del swipe en memoria
+                // y previene que el fondo verde o rojo se quede "pegado" al reciclar la vista o hacer peticiones.
+                clientAdapter.notifyItemChanged(position);
+
+                Client client = clientAdapter.getClients().get(position);
+
+                if (direction == ItemTouchHelper.LEFT) {
+                    performVisitAction(client, Request.Method.POST, "Día de visita agregado", position);
+                } else if (direction == ItemTouchHelper.RIGHT) {
+                    showDeleteConfirmation(client, position);
+                }
+            }
+
+            @Override
+            public void onChildDraw(@NonNull Canvas c, @NonNull RecyclerView recyclerView,
+                                   @NonNull RecyclerView.ViewHolder viewHolder, float dX, float dY,
+                                   int actionState, boolean isCurrentlyActive) {
+
+                if (actionState == ItemTouchHelper.ACTION_STATE_SWIPE) {
+                    View itemView = viewHolder.itemView;
+                    
+                    // Configurar Paint para el texto si es necesario
+                    swipeTextPaint.setAntiAlias(true);
+                    swipeTextPaint.setColor(Color.WHITE);
+                    swipeTextPaint.setTextSize(16 * getResources().getDisplayMetrics().density);
+                    swipeTextPaint.setFakeBoldText(true);
+
+                    if (dX > 0) { // Swipe Right (Eliminar - Rojo)
+                        swipePaint.setColor(Color.parseColor("#dc3545"));
+                        c.drawRect((float) itemView.getLeft(), (float) itemView.getTop(), 
+                                itemView.getLeft() + dX, (float) itemView.getBottom(), swipePaint);
+
+                        String text = "Eliminando visita";
+                        swipeTextPaint.getTextBounds(text, 0, text.length(), textBounds);
+                        float textY = itemView.getTop() + (itemView.getHeight() + textBounds.height()) / 2f;
+                        float margin = 32f * getResources().getDisplayMetrics().density;
+                        float textX = itemView.getLeft() + margin;
+
+                        if (dX > margin) {
+                            swipeTextPaint.setTextAlign(Paint.Align.LEFT);
+                            c.drawText(text, textX, textY, swipeTextPaint);
+                        }
+
+                    } else if (dX < 0) { // Swipe Left (Agregar - Verde)
+                        swipePaint.setColor(Color.parseColor("#28a745"));
+                        c.drawRect((float) itemView.getRight() + dX, (float) itemView.getTop(),
+                                (float) itemView.getRight(), (float) itemView.getBottom(), swipePaint);
+
+                        String text = "Marcando visita";
+                        swipeTextPaint.getTextBounds(text, 0, text.length(), textBounds);
+                        float textY = itemView.getTop() + (itemView.getHeight() + textBounds.height()) / 2f;
+                        float margin = 32f * getResources().getDisplayMetrics().density;
+                        float textX = itemView.getRight() - margin;
+
+                        if (Math.abs(dX) > margin) {
+                            swipeTextPaint.setTextAlign(Paint.Align.RIGHT);
+                            c.drawText(text, textX, textY, swipeTextPaint);
+                        }
+                    }
+                }
+                
+                // Si dx es 0 y no está activo, asegurarnos de que el canvas esté limpio para este item
+                // super.onChildDraw maneja la traslación de la vista.
+                super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
             }
 
             @Override
             public void clearView(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
                 super.clearView(recyclerView, viewHolder);
-                // Cuando se suelta el item, actualizamos en el servidor solo si hay un día seleccionado
-                if (viewModel.getSelectedDay().getValue() != null) {
+                // Asegurarnos de que el canvas se redibuje para limpiar cualquier rastro del fondo
+                recyclerView.invalidate();
+                
+                // Cuando se suelta el item, actualizamos en el servidor SOLO si realmente se movió (y hay un día seleccionado)
+                if (isItemMoved && viewModel.getSelectedDay().getValue() != null) {
                     List<Client> clients = clientAdapter.getClients();
                     if (viewHolder.getAdapterPosition() != RecyclerView.NO_POSITION) {
                         Client movedClient = clients.get(viewHolder.getAdapterPosition());
                         updateClientPosition(movedClient);
                     }
                 }
+                
+                // Siempre limpiar la bandera de movimiento al soltar la vista, no importa la acción.
+                isItemMoved = false;
             }
         };
 
         ItemTouchHelper touchHelper = new ItemTouchHelper(callback);
         touchHelper.attachToRecyclerView(recyclerView);
-        clientAdapter.attachTouchHelper(touchHelper);
 
         // Configurar SwipeRefreshLayout
         swipeRefreshLayout.setOnRefreshListener(() -> {
@@ -276,13 +369,14 @@ public class ClientsFragment extends Fragment implements ChipGroup.OnCheckedChan
         isRestoringState = true; // Indicar que estamos restaurando el estado
         isUserInteraction = false; // Desactivar la interacción del usuario
         
-        switch (day) {
+        switch (day.toLowerCase()) {
             case "lunes":
                 chipMonday.setChecked(true);
                 break;
             case "martes":
                 chipTuesday.setChecked(true);
                 break;
+            case "miércoles":
             case "miercoles":
                 chipWednesday.setChecked(true);
                 break;
@@ -292,6 +386,7 @@ public class ClientsFragment extends Fragment implements ChipGroup.OnCheckedChan
             case "viernes":
                 chipFriday.setChecked(true);
                 break;
+            case "sábado":
             case "sabado":
                 chipSaturday.setChecked(true);
                 break;
@@ -316,19 +411,19 @@ public class ClientsFragment extends Fragment implements ChipGroup.OnCheckedChan
     private String getDayName(int dayOfWeek) {
         switch (dayOfWeek) {
             case Calendar.MONDAY:
-                return "lunes";
+                return "Lunes";
             case Calendar.TUESDAY:
-                return "martes";
+                return "Martes";
             case Calendar.WEDNESDAY:
-                return "miercoles";
+                return "Miércoles";
             case Calendar.THURSDAY:
-                return "jueves";
+                return "Jueves";
             case Calendar.FRIDAY:
-                return "viernes";
+                return "Viernes";
             case Calendar.SATURDAY:
-                return "sabado";
+                return "Sábado";
             default:
-                return ""; // Retornar string vacío en lugar de "lunes" por defecto
+                return ""; 
         }
     }
 
@@ -638,6 +733,75 @@ public class ClientsFragment extends Fragment implements ChipGroup.OnCheckedChan
         Log.d("ClientsFragment", "Estado actual - isUserInteraction: " + isUserInteraction + 
                                 ", isRestoringState: " + isRestoringState + 
                                 ", lastSelectedDay: " + lastSelectedDay);
+    }
+
+    private void performVisitAction(Client client, int method, String successMsg, int position) {
+        if (isProcessingSwipe) return;
+        isProcessingSwipe = true;
+
+        showLoading();
+        String url = Utilities.URL + "clients/" + client.getId() + "/visit";
+
+        JsonObjectRequest request = new JsonObjectRequest(
+                method,
+                url,
+                null,
+                response -> {
+                    isProcessingSwipe = false;
+                    hideLoading();
+                    Toast.makeText(requireContext(), successMsg, Toast.LENGTH_SHORT).show();
+                    viewModel.forceLoadClients(requireContext());
+                },
+                error -> {
+                    isProcessingSwipe = false;
+                    hideLoading();
+                    if (position != RecyclerView.NO_POSITION) {
+                        clientAdapter.notifyItemChanged(position); // Reset visual usando posición (mejor rendimiento vs notifyDataSetChanged)
+                    } else {
+                        clientAdapter.notifyDataSetChanged();
+                    }
+
+                    String message = "Error en la operación";
+                    if (error.networkResponse != null) {
+                        try {
+                            String responseBody = new String(error.networkResponse.data);
+                            JSONObject jsonError = new JSONObject(responseBody);
+                            if (jsonError.has("message")) {
+                                message = jsonError.getString("message");
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show();
+                }
+        ) {
+            @Override
+            public Map<String, String> getHeaders() {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Authorization", getAuthorizationHeader(requireContext()));
+                headers.put("Accept", "application/json");
+                return headers;
+            }
+        };
+
+        VolleySingleton.getInstance(requireContext()).addToRequestQueue(request);
+    }
+
+    private void showDeleteConfirmation(Client client, int position) {
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Confirmar eliminación")
+                .setMessage("¿Desea eliminar el día de visita para " + client.getFirstName() + " " + client.getLastName() + "?")
+                .setPositiveButton("Eliminar", (dialog, which) -> {
+                    performVisitAction(client, Request.Method.DELETE, "Día de visita eliminado", position);
+                })
+                .setNegativeButton("Cancelar", (dialog, which) -> {
+                    clientAdapter.notifyItemChanged(position); // Volver el item a su lugar
+                })
+                .setOnCancelListener(dialog -> {
+                    clientAdapter.notifyItemChanged(position);
+                })
+                .show();
     }
 
     @Override

@@ -54,16 +54,11 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
     private Context context;
     private static final int REQUEST_ENABLE_GPS = 123;
     private static final int REQUEST_CALL_PERMISSION = 124;
-    private ItemTouchHelper touchHelper;
     private static final int IMAGE_SIZE = 100; // Tamaño en dp para las imágenes en miniatura
 
     public ClientAdapter(List<Client> clients, Context context) {
         this.clients = clients;
         this.context = context;
-    }
-
-    public void attachTouchHelper(ItemTouchHelper touchHelper) {
-        this.touchHelper = touchHelper;
     }
 
     @NonNull
@@ -75,6 +70,10 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
 
     @Override
     public void onBindViewHolder(@NonNull ClientViewHolder holder, int position) {
+        // RESET DE TRANSLATION: Previene que vistas recicladas de ItemTouchHelper retengan el swipe
+        holder.itemView.setTranslationX(0f);
+        holder.itemView.setTranslationY(0f);
+
         Client client = clients.get(position);
         holder.bind(client);
 
@@ -158,11 +157,10 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
             }
         });
 
-        // Configurar el evento de mantener presionado
-        holder.itemView.setOnLongClickListener(v -> {
-            touchHelper.startDrag(holder);
-            return true;
-        });
+        // Eliminar el setOnLongClickListener manual.
+        // ItemTouchHelper ya gestiona automáticamente el long press drag nativamente,
+        // esto evita conflictos fatales que causan que el fondo del swipe se quede pegado 
+        // cuando interactúas simultáneamente con el elemento durante el deslizamiento.
     }
 
     @Override
