@@ -80,6 +80,7 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
     // Control de estado
     private int currentView = 0;  // 0: ambos, 1: solo productos, 2: solo carrito
     private int previousView = 0; // Para recordar la vista anterior al mostrar teclado
+    private boolean isSubmitting = false; // Guard: previene doble envío de venta
     
     // Constantes para guardar estado
     private static final String KEY_CART_ITEMS = "cart_items";
@@ -283,6 +284,9 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
         });
         rvCart.setLayoutManager(new LinearLayoutManager(getContext()));
         rvCart.setAdapter(cartAdapter);
+
+        // Attach swipe-to-reveal buttons for movement type
+        cartAdapter.attachSwipe(rvCart);
     }
     
     /**
@@ -341,7 +345,9 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
                                     quantity,
                                     stock,
                                     0,
-                                    productPriceId
+                                    productPriceId,
+                                    0,
+                                    0
                             ));
                         }
                         productsAdapter.updateProducts(allProducts);
@@ -410,7 +416,9 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
     private double calculateTotalAmount() {
         double total = 0;
         for (CartItem item : cartItems) {
-            total += item.getQuantity() * item.getProduct().getPrice();
+            if (!item.hasMovementType()) {
+                total += item.getQuantity() * item.getProduct().getPrice();
+            }
         }
         return total;
     }
@@ -424,6 +432,7 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
             Toast.makeText(requireContext(), "El carrito está vacío", Toast.LENGTH_SHORT).show();
             return;
         }
+        btnFinishSale.setEnabled(false);
 
         // Calcular el total de la venta
         final double totalAmount = calculateTotalAmount();
@@ -499,6 +508,12 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
         AlertDialog dialog = builder.create();
         dialog.show();
 
+        dialog.setOnDismissListener(d -> {
+            if (!isSubmitting) {
+                btnFinishSale.setEnabled(true);
+            }
+        });
+
         // Sobrescribir el botón positivo para evitar que se cierre automáticamente si hay errores
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
             // Validar el método de pago seleccionado
@@ -567,6 +582,21 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
      * Envía los datos de la venta al servidor.
      */
     private void sendSaleData(String paymentMethod, String paymentTerm, double cashAmount, String paymentReference, String notes, String clientId) {
+        if (isSubmitting) return;
+        isSubmitting = true;
+
+        // Deshabilitar el botón de finalizar venta
+        btnFinishSale.setEnabled(false);
+        btnFinishSale.setText("Procesando...");
+
+        // Mostrar diálogo de progreso
+        AlertDialog progressDialog = new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(" Procesando venta")
+                .setMessage("Por favor espere...")
+                .setCancelable(false)
+                .create();
+        progressDialog.show();
+
         // Obtener el ID del cliente de los argumentos
 
         // Obtener el ID del empleado desde las preferencias compartidas
@@ -582,6 +612,9 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
                 productObject.put("quantity", item.getQuantity());
                 // Usar el product_price_id guardado en el objeto Product
                 productObject.put("product_price_id", item.getProduct().getProductPriceId());
+                if (item.hasMovementType()) {
+                    productObject.put("movement_type", item.getMovementType());
+                }
                 productsArray.put(productObject);
             }
 
@@ -604,6 +637,12 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
                     url,
                     saleObject,
                     response -> {
+                        // Cerrar diálogo de progreso
+                        progressDialog.dismiss();
+                        // Habilitar el botón
+                        btnFinishSale.setEnabled(true);
+                        btnFinishSale.setText("Finalizar Venta");
+
                         // Venta exitosa
                         Toast.makeText(requireContext(), "Venta realizada con éxito", Toast.LENGTH_SHORT).show();
                         // Limpiar el carrito
@@ -616,6 +655,13 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
                         }
                     },
                     error -> {
+                        // Cerrar diálogo de progreso
+                        progressDialog.dismiss();
+                        // Habilitar el botón y permitir reintento
+                        isSubmitting = false;
+                        btnFinishSale.setEnabled(true);
+                        btnFinishSale.setText("Finalizar Venta");
+
                         try {
                             String errorMessage = new String(error.networkResponse.data);
                             JSONObject errorResponse = new JSONObject(errorMessage);
