@@ -639,7 +639,8 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
                     response -> {
                         // Cerrar diálogo de progreso
                         progressDialog.dismiss();
-                        // Habilitar el botón
+                        // Habilitar el botón y resetear guard
+                        isSubmitting = false;
                         btnFinishSale.setEnabled(true);
                         btnFinishSale.setText("Finalizar Venta");
 
