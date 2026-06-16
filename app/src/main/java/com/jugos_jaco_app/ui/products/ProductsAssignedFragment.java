@@ -75,6 +75,8 @@ public class ProductsAssignedFragment extends Fragment {
                             int quantity = obj.optInt("quantity", 0);
                             int stock = obj.optInt("stock", 0);
                             int sold = obj.optInt("sale_quantity", 0);
+                            int royalties = obj.optInt("royalties_quantity", 0);
+                            int changes = obj.optInt("changes_quantity", 0);
                             allProducts.add(new Product(
                                     productId,
                                     productName,
@@ -87,7 +89,9 @@ public class ProductsAssignedFragment extends Fragment {
                                     quantity,
                                     stock,
                                     sold,
-                                    productId
+                                    productId,
+                                    royalties,
+                                    changes
                             ));
                         }
                         productsAdapter.updateProducts(allProducts);

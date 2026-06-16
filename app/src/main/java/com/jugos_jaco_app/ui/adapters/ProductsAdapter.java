@@ -125,14 +125,50 @@ public class ProductsAdapter extends RecyclerView.Adapter<ProductsAdapter.ViewHo
             if (tvContent != null) tvContent.setText(product.getContent());
             if (tvCategory != null) tvCategory.setText(product.getCategoryName());
             
-            // Mostrar cantidad
+            // Mostrar cantidad con badges visuales usando Spannable
             if (tvQuantity != null) {
-                // Agregar Stock a la par de Cantidad
-                if (product.getSold() > 0 ) {
-                    tvQuantity.setText("Cantidad: " + product.getQuantity() + " | Stock: " + product.getStock() + " | Vendidos: " + product.getSold());
-                } else {
-                    tvQuantity.setText("Cantidad: " + product.getQuantity() + " | Stock: " + product.getStock());
+                android.text.SpannableStringBuilder spannable = new android.text.SpannableStringBuilder();
+                int grayColor = android.graphics.Color.GRAY;
+                int blueColor = 0xFF1976D2; // Azul para vendidos
+                int greenColor = 0xFF388E3C; // Verde para regalías
+                int orangeColor = 0xFFF57C00; // Naranja para cambios
+                
+                // Cantidad
+                spannable.append("Cant: ");
+                spannable.append(String.valueOf(product.getQuantity()));
+                spannable.setSpan(new android.text.style.ForegroundColorSpan(grayColor), 0, spannable.length(), android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                
+                // Stock
+                spannable.append(" | Stock: ");
+                int stockStart = spannable.length();
+                spannable.append(String.valueOf(product.getStock()));
+                spannable.setSpan(new android.text.style.ForegroundColorSpan(grayColor), stockStart, spannable.length(), android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                
+                // Vendidos
+                if (product.getSold() > 0) {
+                    spannable.append(" | Vend: ");
+                    int soldStart = spannable.length();
+                    spannable.append(String.valueOf(product.getSold()));
+                    spannable.setSpan(new android.text.style.ForegroundColorSpan(blueColor), soldStart, spannable.length(), android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                 }
+                
+                // Regalías
+                if (product.getRoyaltiesQuantity() > 0) {
+                    spannable.append(" | Reg: ");
+                    int regStart = spannable.length();
+                    spannable.append(String.valueOf(product.getRoyaltiesQuantity()));
+                    spannable.setSpan(new android.text.style.ForegroundColorSpan(greenColor), regStart, spannable.length(), android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
+                
+                // Cambios
+                if (product.getChangesQuantity() > 0) {
+                    spannable.append(" | Cam: ");
+                    int camStart = spannable.length();
+                    spannable.append(String.valueOf(product.getChangesQuantity()));
+                    spannable.setSpan(new android.text.style.ForegroundColorSpan(orangeColor), camStart, spannable.length(), android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
+                
+                tvQuantity.setText(spannable);
             }
             
             // Si el listener es null, ocultar el botón de agregar (modo solo visualización)
