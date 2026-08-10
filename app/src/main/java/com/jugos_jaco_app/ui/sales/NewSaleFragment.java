@@ -37,6 +37,7 @@ import com.jugos_jaco_app.ui.clients.ClientsFragment;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import com.jugos_jaco_app.R;
 import com.jugos_jaco_app.ui.adapters.CartAdapter;
 import com.jugos_jaco_app.ui.adapters.ProductsAdapter;
@@ -80,10 +81,15 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
     // Control de estado
     private int currentView = 0;  // 0: ambos, 1: solo productos, 2: solo carrito
     private int previousView = 0; // Para recordar la vista anterior al mostrar teclado
+
+    // Idempotencia y control de envío de la venta
+    private String pendingSaleUuid = null; // UUID de la venta en curso; se conserva entre reintentos del mismo carrito
+    private boolean isSubmittingSale = false; // Evita envíos dobles mientras hay una petición en vuelo
     
     // Constantes para guardar estado
     private static final String KEY_CART_ITEMS = "cart_items";
     private static final String KEY_CURRENT_VIEW = "current_view";
+    private static final String KEY_SALE_UUID = "sale_uuid";
 
     /**
      * Inicialización del Fragment.
@@ -110,6 +116,7 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
         // Restaurar estado del carrito si existe
         if (savedInstanceState != null) {
             cartItems = (ArrayList<CartItem>) savedInstanceState.getSerializable(KEY_CART_ITEMS);
+            pendingSaleUuid = savedInstanceState.getString(KEY_SALE_UUID);
         }
         if (cartItems == null) {
             cartItems = new ArrayList<>();
@@ -168,6 +175,7 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
         super.onSaveInstanceState(outState);
         outState.putSerializable(KEY_CART_ITEMS, cartItems);
         outState.putInt(KEY_CURRENT_VIEW, currentView);
+        outState.putString(KEY_SALE_UUID, pendingSaleUuid);
     }
 
     /**
@@ -254,12 +262,14 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
         cartAdapter.setOnCartUpdateListener(new CartAdapter.OnCartUpdateListener() {
             @Override
             public void onCartItemRemoved(CartItem item) {
+                pendingSaleUuid = null;
                 productsAdapter.setProductInCart(item.getProduct().getId(), false);
                 updateTotal();
             }
 
             @Override
             public void onCartUpdated() {
+                pendingSaleUuid = null;
                 updateTotal();
             }
 
@@ -374,6 +384,7 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
      * Actualiza la UI y el total.
      */
     private void addToCart(Product product) {
+        pendingSaleUuid = null; // El carrito cambió: la próxima venta es una operación nueva
         CartItem existingItem = null;
         for (CartItem item : cartItems) {
             if (item.getProduct().getId().equals(product.getId())) {
@@ -420,6 +431,10 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
      * Muestra un diálogo para confirmar el pago y envía los datos al servidor.
      */
     private void finishSale() {
+        if (isSubmittingSale) {
+            Toast.makeText(requireContext(), "La venta se está procesando, espere...", Toast.LENGTH_SHORT).show();
+            return;
+        }
         if (cartItems.isEmpty()) {
             Toast.makeText(requireContext(), "El carrito está vacío", Toast.LENGTH_SHORT).show();
             return;
@@ -547,6 +562,7 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
             }
 
             // Preparar los datos para enviar al servidor
+            v.setEnabled(false); // Evitar doble tap en Confirmar mientras se cierra el diálogo
             sendSaleData(paymentMethod, paymentTerm, cashAmount, paymentReference, notes,clientId);
             dialog.dismiss();
         });
@@ -567,11 +583,15 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
      * Envía los datos de la venta al servidor.
      */
     private void sendSaleData(String paymentMethod, String paymentTerm, double cashAmount, String paymentReference, String notes, String clientId) {
-        // Obtener el ID del cliente de los argumentos
-
         // Obtener el ID del empleado desde las preferencias compartidas
         SharedPreferences sharedPreferences = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         String employeeId = sharedPreferences.getString("id_empleado","");
+
+        // UUID de idempotencia: se genera una sola vez por carrito y se reutiliza
+        // en los reintentos, para que el servidor descarte ventas duplicadas
+        if (pendingSaleUuid == null) {
+            pendingSaleUuid = UUID.randomUUID().toString();
+        }
 
         // Crear la lista de productos para enviar
         JSONArray productsArray = new JSONArray();
@@ -594,8 +614,14 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
             saleObject.put("cash_amount", cashAmount);
             saleObject.put("payment_reference", paymentReference.isEmpty() ? JSONObject.NULL : paymentReference);
             saleObject.put("notes", notes.isEmpty() ? JSONObject.NULL : notes);
+            saleObject.put("client_request_uuid", pendingSaleUuid);
             saleObject.put("products", productsArray);
 
+
+            // Bloquear nuevos envíos mientras esta petición está en vuelo
+            isSubmittingSale = true;
+            btnFinishSale.setEnabled(false);
+            btnFinishSale.setText("Procesando...");
 
             // Enviar los datos al servidor
             String url = Utilities.URL + "sales";
@@ -604,6 +630,11 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
                     url,
                     saleObject,
                     response -> {
+                        isSubmittingSale = false;
+                        pendingSaleUuid = null; // Venta registrada: el UUID ya no debe reutilizarse
+                        if (!isAdded()) return;
+                        btnFinishSale.setEnabled(true);
+                        btnFinishSale.setText("Finalizar Venta");
                         // Venta exitosa
                         Toast.makeText(requireContext(), "Venta realizada con éxito", Toast.LENGTH_SHORT).show();
                         // Limpiar el carrito
@@ -616,25 +647,34 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
                         }
                     },
                     error -> {
+                        isSubmittingSale = false;
+                        if (!isAdded()) return;
+                        btnFinishSale.setEnabled(true);
+                        btnFinishSale.setText("Finalizar Venta");
                         try {
                             String errorMessage = new String(error.networkResponse.data);
                             JSONObject errorResponse = new JSONObject(errorMessage);
-                            
+
                             String displayMessage = "Error inesperado";
-                            
+
                             // Verificar si hay un mensaje específico del servidor
                             if(errorResponse.has("error")){
                                 displayMessage = errorResponse.getString("error");
-                            } else if(errorResponse.has("error")) {
-                                displayMessage = errorResponse.getString("error");
+                            } else if(errorResponse.has("message")) {
+                                displayMessage = errorResponse.getString("message");
                             }
-                            
+
                             Log.d("CREARVENTA", "sendSaleData: " + displayMessage);
                             showErrorDialog(displayMessage);
-                            
+
                         } catch (Exception e) {
                             e.printStackTrace();
-                            showErrorDialog("Error: " + error.getMessage());
+                            // Sin respuesta del servidor (timeout / sin conexión): la venta pudo
+                            // haberse registrado; al reintentar se reutiliza el mismo UUID y el
+                            // servidor la descarta si ya existe
+                            showErrorDialog("No se pudo confirmar la venta por problemas de conexión. " +
+                                    "Verifique su señal y presione Finalizar Venta de nuevo: " +
+                                    "el sistema evitará que se duplique.");
                         }
                     }
             ) {
@@ -647,9 +687,18 @@ public class NewSaleFragment extends Fragment implements CartAdapter.OnCartUpdat
                     return headers;
                 }
             };
-            
-            // Agregar la solicitud a la cola
-            Volley.newRequestQueue(requireContext()).add(request);
+
+            // Sin reintentos automáticos: un POST reintentado por Volley duplica la venta.
+            // Timeout amplio (30s) para conexiones lentas; los reintentos son manuales
+            // y quedan protegidos por el client_request_uuid
+            request.setRetryPolicy(new com.android.volley.DefaultRetryPolicy(
+                    30000, // 30 segundos de timeout
+                    0,     // 0 reintentos automáticos
+                    1.0f
+            ));
+
+            // Agregar la solicitud a la cola compartida
+            com.jugos_jaco_app.ui.utilities.VolleySingleton.getInstance(requireContext()).addToRequestQueue(request);
 
         } catch (JSONException e) {
             Toast.makeText(requireContext(), "Error al preparar los datos: " + e.getMessage(), Toast.LENGTH_SHORT).show();
