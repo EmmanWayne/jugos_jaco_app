@@ -158,8 +158,8 @@ public class NewClientFragment extends Fragment {
                             typePriceMap.put(name, id);
                         }
                         
-                        // Agregar opción por defecto si se desea, o usar la primera
-                        // typePriceNames.add(0, "Seleccionar precio");
+                        // Agregar opción por defecto obligatoria
+                        typePriceNames.add(0, "Seleccionar precio");
                         
                         ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, typePriceNames);
                         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -472,6 +472,12 @@ public class NewClientFragment extends Fragment {
         // Validar día de visita
         if (spinnerVisitDay.getSelectedItemPosition() == 0) {
             ((TextView) spinnerVisitDay.getSelectedView()).setError("Seleccione un día de visita");
+            isValid = false;
+        }
+
+        // Validar tipo de precio (obligatorio)
+        if (spinnerTypePrice.getSelectedItemPosition() == 0) {
+            Toast.makeText(requireContext(), "Seleccione un tipo de precio", Toast.LENGTH_SHORT).show();
             isValid = false;
         }
 

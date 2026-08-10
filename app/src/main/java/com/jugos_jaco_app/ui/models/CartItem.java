@@ -9,10 +9,12 @@ import java.io.Serializable;
 public class CartItem implements Serializable {
     private Product product;    // Producto seleccionado
     private int quantity;       // Cantidad del producto
+    private String movementType; // Tipo de movimiento: null=normal, "royalty"=Regalía, "change"=Cambio
 
     public CartItem(Product product, int quantity) {
         this.product = product;
         this.quantity = quantity;
+        this.movementType = null;
     }
 
     // Métodos para manejar la cantidad
@@ -37,5 +39,17 @@ public class CartItem implements Serializable {
 
     public void setQuantity(int quantity) {
         this.quantity = quantity;
+    }
+
+    public String getMovementType() {
+        return movementType;
+    }
+
+    public void setMovementType(String movementType) {
+        this.movementType = movementType;
+    }
+
+    public boolean hasMovementType() {
+        return movementType != null;
     }
 } 
