@@ -15,6 +15,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.android.volley.Request;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.jugos_jaco_app.R;
 import com.jugos_jaco_app.ui.adapters.ProductMovementsAdapter;
@@ -61,6 +62,60 @@ public class ProductMovementsFragment extends Fragment {
         adapter = new ProductMovementsAdapter();
         rvProductMovements.setLayoutManager(new LinearLayoutManager(getContext()));
         rvProductMovements.setAdapter(adapter);
+        adapter.setOnMovementLongClickListener(this::confirmDeleteMovement);
+    }
+
+    /**
+     * Mantener presionado un movimiento pregunta si se quiere borrar. Sólo
+     * revierte el acumulador (regalías/cambios) del producto asignado; no
+     * toca inventario, igual que su creación.
+     */
+    private void confirmDeleteMovement(ProductMovement movement) {
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Eliminar movimiento")
+                .setMessage("¿Desea eliminar el movimiento de " + movement.getType().toLowerCase()
+                        + " de " + movement.getQuantity() + " unidades de \"" + movement.getProductName() + "\"?")
+                .setNegativeButton("Cancelar", (dialog, which) -> dialog.dismiss())
+                .setPositiveButton("Eliminar", (dialog, which) -> deleteMovement(movement))
+                .show();
+    }
+
+    private void deleteMovement(ProductMovement movement) {
+        progressBar.setVisibility(View.VISIBLE);
+
+        String url = Utilities.URL + "product-movements/" + movement.getId();
+
+        JsonObjectRequest request = new JsonObjectRequest(
+                Request.Method.DELETE,
+                url,
+                null,
+                response -> {
+                    if (!isAdded()) return;
+                    Toast.makeText(getContext(), "Movimiento eliminado", Toast.LENGTH_SHORT).show();
+                    loadMovements(); // Recarga la lista y recalcula los totales
+                },
+                error -> {
+                    progressBar.setVisibility(View.GONE);
+                    if (!isAdded()) return;
+                    error.printStackTrace();
+                    String errorMsg = "Error al eliminar el movimiento";
+                    if (error.networkResponse != null && error.networkResponse.data != null) {
+                        try {
+                            String errorData = new String(error.networkResponse.data);
+                            JSONObject errorJson = new JSONObject(errorData);
+                            errorMsg = errorJson.optString("message", errorMsg);
+                        } catch (Exception e) {}
+                    }
+                    Toast.makeText(getContext(), errorMsg, Toast.LENGTH_LONG).show();
+                }
+        ) {
+            @Override
+            public Map<String, String> getHeaders() {
+                return Utilities.getAuthHeaders(requireContext());
+            }
+        };
+
+        VolleySingleton.getInstance(requireContext()).addToRequestQueue(request);
     }
 
     private void setupFab() {

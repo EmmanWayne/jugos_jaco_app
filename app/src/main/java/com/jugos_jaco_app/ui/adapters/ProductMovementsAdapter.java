@@ -13,10 +13,19 @@ import java.util.List;
 
 public class ProductMovementsAdapter extends RecyclerView.Adapter<ProductMovementsAdapter.ViewHolder> {
 
+    public interface OnMovementLongClickListener {
+        void onMovementLongClick(ProductMovement movement);
+    }
+
     private List<ProductMovement> movements;
+    private OnMovementLongClickListener longClickListener;
 
     public ProductMovementsAdapter() {
         this.movements = new ArrayList<>();
+    }
+
+    public void setOnMovementLongClickListener(OnMovementLongClickListener listener) {
+        this.longClickListener = listener;
     }
 
     @NonNull
@@ -31,6 +40,14 @@ public class ProductMovementsAdapter extends RecyclerView.Adapter<ProductMovemen
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         ProductMovement movement = movements.get(position);
         holder.bind(movement);
+
+        holder.itemView.setOnLongClickListener(v -> {
+            if (longClickListener != null) {
+                longClickListener.onMovementLongClick(movement);
+                return true;
+            }
+            return false;
+        });
     }
 
     @Override
