@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 public class CreateProductMovementFragment extends Fragment {
 
@@ -41,6 +42,7 @@ public class CreateProductMovementFragment extends Fragment {
     private List<ProductSelectionItem> productList = new ArrayList<>();
     private ArrayAdapter<ProductSelectionItem> productAdapter;
     private ProductSelectionItem selectedProduct;
+    private String pendingMovementUuid = null; // UUID de idempotencia; se conserva entre reintentos del mismo formulario
 
     @Nullable
     @Override
@@ -57,6 +59,7 @@ public class CreateProductMovementFragment extends Fragment {
         setupTypeSelector();
         loadProducts();
         setupSaveButton();
+        setupUuidResetOnFormChange();
 
         return view;
     }
@@ -65,6 +68,31 @@ public class CreateProductMovementFragment extends Fragment {
         String[] types = new String[]{"Cambio", "Regalía"};
         ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_dropdown_item_1line, types);
         actvType.setAdapter(adapter);
+
+        actvType.setOnItemClickListener((parent, view, position, id) -> pendingMovementUuid = null);
+    }
+
+    /**
+     * Si el usuario cambia algún dato del formulario, el UUID pendiente ya no
+     * corresponde a esta operación: reutilizarlo haría que el servidor
+     * descarte un movimiento distinto por creerlo un reintento del anterior.
+     */
+    private void setupUuidResetOnFormChange() {
+        TextWatcher resetWatcher = new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                pendingMovementUuid = null;
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {}
+        };
+
+        etQuantity.addTextChangedListener(resetWatcher);
+        etNote.addTextChangedListener(resetWatcher);
     }
 
     private void loadProducts() {
@@ -118,6 +146,7 @@ public class CreateProductMovementFragment extends Fragment {
         
         actvProduct.setOnItemClickListener((parent, view, position, id) -> {
             selectedProduct = productAdapter.getItem(position);
+            pendingMovementUuid = null;
         });
     }
 
@@ -186,11 +215,18 @@ public class CreateProductMovementFragment extends Fragment {
         btnSave.setEnabled(false);
 
         String url = Utilities.URL + "product-movements";
-        
+
+        // UUID de idempotencia: se genera una sola vez por formulario y se
+        // reutiliza en los reintentos, para que el servidor descarte
+        // movimientos duplicados (ver client_request_uuid en el backend).
+        if (pendingMovementUuid == null) {
+            pendingMovementUuid = UUID.randomUUID().toString();
+        }
+
         JSONObject jsonBody = new JSONObject();
         try {
             jsonBody.put("detail_assigned_product_id", selectedProduct.id);
-            
+
             String selectedType = actvType.getText().toString();
             String typeValue = "";
             if (selectedType.equals("Cambio")) {
@@ -199,11 +235,13 @@ public class CreateProductMovementFragment extends Fragment {
                 typeValue = "royalty";
             }
             jsonBody.put("type", typeValue);
-            
+
             jsonBody.put("note", etNote.getText().toString());
             jsonBody.put("quantity", Integer.parseInt(etQuantity.getText().toString()));
+            jsonBody.put("client_request_uuid", pendingMovementUuid);
         } catch (JSONException e) {
             e.printStackTrace();
+            // Liberar el guard: de lo contrario el botón queda bloqueado permanentemente
             progressBar.setVisibility(View.GONE);
             btnSave.setEnabled(true);
             return;
@@ -216,20 +254,31 @@ public class CreateProductMovementFragment extends Fragment {
                 response -> {
                     progressBar.setVisibility(View.GONE);
                     btnSave.setEnabled(true);
+                    pendingMovementUuid = null; // Movimiento registrado: el UUID ya no debe reutilizarse
+                    if (!isAdded()) return;
                     Toast.makeText(getContext(), "Movimiento registrado exitosamente", Toast.LENGTH_SHORT).show();
                     Navigation.findNavController(getView()).popBackStack();
                 },
                 error -> {
                     progressBar.setVisibility(View.GONE);
                     btnSave.setEnabled(true);
+                    if (!isAdded()) return;
                     error.printStackTrace();
-                    String errorMsg = "Error al registrar movimiento";
+                    String errorMsg;
                     if (error.networkResponse != null && error.networkResponse.data != null) {
+                        errorMsg = "Error al registrar movimiento";
                         try {
                             String errorData = new String(error.networkResponse.data);
                             JSONObject errorJson = new JSONObject(errorData);
                             errorMsg = errorJson.optString("message", errorMsg);
                         } catch (Exception e) {}
+                    } else {
+                        // Sin respuesta del servidor (timeout / sin conexión): el
+                        // movimiento pudo haberse registrado; al reintentar se
+                        // reutiliza el mismo UUID y el servidor lo descarta si ya existe.
+                        errorMsg = "No se pudo confirmar el movimiento por problemas de conexión. " +
+                                "Verifique su señal y presione Guardar de nuevo: " +
+                                "el sistema evitará que se duplique.";
                     }
                     Toast.makeText(getContext(), errorMsg, Toast.LENGTH_LONG).show();
                 }
@@ -239,6 +288,15 @@ public class CreateProductMovementFragment extends Fragment {
                 return Utilities.getAuthHeaders(requireContext());
             }
         };
+
+        // Sin reintentos automáticos: un POST reintentado por Volley duplica el
+        // movimiento. Timeout amplio (30s) para conexiones lentas; los reintentos
+        // son manuales y quedan protegidos por el client_request_uuid.
+        request.setRetryPolicy(new com.android.volley.DefaultRetryPolicy(
+                30000, // 30 segundos de timeout
+                0,     // 0 reintentos automáticos
+                1.0f
+        ));
 
         VolleySingleton.getInstance(requireContext()).addToRequestQueue(request);
     }
